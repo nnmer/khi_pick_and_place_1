@@ -1,0 +1,1 @@
+roslaunch niryo_moveit part_3.launch tcp_port:=10005
