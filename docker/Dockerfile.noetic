@@ -2,7 +2,9 @@ FROM ros:noetic-ros-base
 
 RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
 
-RUN sudo apt-get update && sudo apt-get install -y vim iputils-ping net-tools python3-pip ros-noetic-robot-state-publisher ros-noetic-moveit ros-noetic-rosbridge-suite ros-noetic-joy ros-noetic-ros-control ros-noetic-ros-controllers ros-noetic-tf2-web-republisher ros-noetic-rqt ros-noetic-rqt-common-plugins ros-noetic-tf-conversions dos2unix
+RUN sudo apt-get update && sudo apt-get install -y vim iputils-ping net-tools python3-pip ros-noetic-robot-state-publisher ros-noetic-joint-state-publisher ros-noetic-moveit ros-noetic-rosbridge-suite ros-noetic-joy ros-noetic-ros-control ros-noetic-ros-controllers ros-noetic-tf2-web-republisher ros-noetic-rqt ros-noetic-rqt-common-plugins ros-noetic-tf-conversions dos2unix
+
+RUN sudo apt-get install -y ros-noetic-rosservice
 
 RUN sudo apt-get install -y libopenblas-dev
 
@@ -12,6 +14,7 @@ RUN sudo -H pip install rospkg jsonpickle
 ENV ROS_WORKSPACE=/catkin_ws
 
 # Copy each directory explicitly to avoid workspace cruft
+COPY ./ROS/devel $ROS_WORKSPACE/devel
 COPY ./ROS/src/moveit_msgs $ROS_WORKSPACE/src/moveit_msgs
 COPY ./ROS/src/niryo_moveit $ROS_WORKSPACE/src/niryo_moveit
 COPY ./ROS/src/niryo_one_ros $ROS_WORKSPACE/src/niryo_one_ros
