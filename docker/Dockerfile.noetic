@@ -2,7 +2,7 @@ FROM ros:noetic-ros-base
 
 RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
 
-RUN sudo apt-get update && sudo apt-get install -y vim iputils-ping net-tools python3-pip ros-noetic-robot-state-publisher ros-noetic-joint-state-publisher ros-noetic-moveit ros-noetic-rosbridge-suite ros-noetic-joy ros-noetic-ros-control ros-noetic-ros-controllers ros-noetic-tf2-web-republisher ros-noetic-rqt ros-noetic-rqt-common-plugins ros-noetic-tf-conversions dos2unix
+RUN sudo apt-get update && sudo apt-get install -y vim iputils-ping net-tools python3-pip ros-noetic-robot-state-publisher ros-noetic-joint-state-publisher ros-noetic-moveit ros-noetic-rosbridge-suite ros-noetic-joy ros-noetic-ros-control ros-noetic-ros-controllers ros-noetic-tf2-web-republisher ros-noetic-tf-conversions dos2unix
 
 RUN sudo apt-get install -y ros-noetic-rosservice
 

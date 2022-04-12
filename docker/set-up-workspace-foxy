@@ -3,3 +3,4 @@
 source /opt/ros/foxy/setup.bash
 cd $ROS_WORKSPACE
 # catkin_make
+ament build
