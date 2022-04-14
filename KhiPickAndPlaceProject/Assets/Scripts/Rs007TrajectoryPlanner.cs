@@ -104,8 +104,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         var leftDrive = m_LeftGripper.xDrive;
         var rightDrive = m_RightGripper.xDrive;
 
-        leftDrive.target = 0.01f;
-        rightDrive.target = -0.01f;
+        leftDrive.target = 0.02f;
+        rightDrive.target = -0.02f;
 
         m_LeftGripper.xDrive = leftDrive;
         m_RightGripper.xDrive = rightDrive;
@@ -148,7 +148,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             position = (m_Target.transform.position + m_PickPoseOffset + off).To<FLU>(),
 
             // The hardcoded x/z angles assure that the gripper is always positioned above the target cube before grasping.
-            orientation = Quaternion.Euler(90, m_Target.transform.eulerAngles.y, 0).To<FLU>()
+            // orientation = Quaternion.Euler(90, m_Target.transform.eulerAngles.y, 0).To<FLU>()
+            orientation = Quaternion.Euler(180, m_Target.transform.eulerAngles.y, 0).To<FLU>()
         };
         var msg0 = $"m_PickPoseOffset:{m_PickPoseOffset.ToString("f3")}";
         Debug.Log(msg0);
@@ -159,10 +160,11 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         // Place Pose
         var pt2 = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>();
+        var placeorientation = Quaternion.Euler(180, 0, 0);
         request.place_pose = new PoseMsg
         {
             position = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>(),
-            orientation = m_PickOrientation.To<FLU>()
+            orientation = placeorientation.To<FLU>()
         };
         var msg2 = $"PlacePose position (FLU):{pt2.ToString("f3")}";
         Debug.Log(msg2);
@@ -258,6 +260,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
             // All trajectories have been executed, open the gripper to place the target cube
             OpenGripper();
+            yield return new WaitForSeconds(k_PoseAssignmentWait + 2);
             Debug.Log("OpenGripper");
         }
     }
