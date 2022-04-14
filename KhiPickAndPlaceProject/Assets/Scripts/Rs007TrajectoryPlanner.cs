@@ -33,6 +33,10 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     readonly Quaternion m_PickOrientation = Quaternion.Euler(90, 90, 0);
     readonly Vector3 m_PickPoseOffset = Vector3.up * 0.1f;
 
+    // offsets to make it more flexible for position changing
+    float m_robotFloorHeight = 0;
+    Vector3 m_robotOffset = Vector3.zero;
+
     // Articulation Bodies
     ArticulationBody[] m_JointArticulationBodies;
     ArticulationBody m_LeftGripper;
@@ -52,6 +56,15 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         m_Ros.RegisterRosService<MoverServiceRequest, MoverServiceResponse>(m_RosServiceName);
 
         m_JointArticulationBodies = new ArticulationBody[k_NumRobotJoints];
+
+        if (m_NiryoOne!=null)
+        {
+            m_robotFloorHeight = m_NiryoOne.transform.position.y;
+            m_robotOffset = m_NiryoOne.transform.position;
+            Debug.Log($"Robot name:{m_NiryoOne.name}");
+            Debug.Log($"Robot floor height:{m_robotFloorHeight.ToString("f3")}");
+            Debug.Log($"Robot offset:{m_robotOffset.ToString("f3")}");
+        }
 
         var linkName = string.Empty;
         for (var i = 0; i < k_NumRobotJoints; i++)
@@ -125,21 +138,34 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         var request = new MoverServiceRequest();
         request.joints_input = CurrentJointConfig();
 
+        //var off = new Vector3(0, -m_robotFloorHeight, 0);
+        var off = -m_robotOffset;
+
         // Pick Pose
+        var pt1 = (m_Target.transform.position + m_PickPoseOffset + off).To<FLU>();
         request.pick_pose = new PoseMsg
         {
-            position = (m_Target.transform.position + m_PickPoseOffset).To<FLU>(),
+            position = (m_Target.transform.position + m_PickPoseOffset + off).To<FLU>(),
 
             // The hardcoded x/z angles assure that the gripper is always positioned above the target cube before grasping.
             orientation = Quaternion.Euler(90, m_Target.transform.eulerAngles.y, 0).To<FLU>()
         };
+        var msg0 = $"m_PickPoseOffset:{m_PickPoseOffset.ToString("f3")}";
+        Debug.Log(msg0);
+        var msg00 = $"off:{off.ToString("f3")}";
+        Debug.Log(msg00);
+        var msg1 = $"PickPose  position (FLU):{pt1.ToString("f3")}";
+        Debug.Log(msg1);
 
         // Place Pose
+        var pt2 = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>();
         request.place_pose = new PoseMsg
         {
-            position = (m_TargetPlacement.transform.position + m_PickPoseOffset).To<FLU>(),
+            position = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>(),
             orientation = m_PickOrientation.To<FLU>()
         };
+        var msg2 = $"PlacePose position (FLU):{pt2.ToString("f3")}";
+        Debug.Log(msg2);
 
         m_Ros.SendServiceMessage<MoverServiceResponse>(m_RosServiceName, request, TrajectoryResponse);
     }
@@ -156,6 +182,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             Debug.LogError("No trajectory returned from MoverService.");
         }
     }
+    string[] poses = { "PreGrasp", "Grasp", "Pickup", "Place" };
 
     /// <summary>
     ///     Execute the returned trajectories from the MoverService.
@@ -175,11 +202,33 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             // For every trajectory plan returned
             for (var poseIndex = 0; poseIndex < response.trajectories.Length; poseIndex++)
             {
+                int trajidx = 0;
                 // For every robot pose in trajectory plan
+                int lsttrajidx = response.trajectories[poseIndex].joint_trajectory.points.Length-1;
                 foreach (var t in response.trajectories[poseIndex].joint_trajectory.points)
                 {
+
                     var jointPositions = t.positions;
+                    var resultRad = jointPositions.Select(r => (float)r).ToArray();
+//                    var result = jointPositions.Select(r => (float)r).ToArray();
                     var result = jointPositions.Select(r => (float)r * Mathf.Rad2Deg).ToArray();
+
+                    if (trajidx == 0 || trajidx==lsttrajidx )
+                    {
+                        var posword = poses[poseIndex];
+                        var msg = $"pose {posword} {poseIndex}:{poseIndex}-{trajidx} start-joints - ";
+                        for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
+                        {
+                            msg += $"{resultRad[joint].ToString("f4")}   ";
+                        }
+                        msg += "     degrees:";
+                        for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
+                        {
+                            msg += $"{result[joint].ToString("f1")}   ";
+                        }
+
+                        Debug.Log(msg);
+                    }
 
                     // Set the joint values for every joint
                     for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
@@ -191,20 +240,25 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
                     // Wait for robot to achieve pose for all joint assignments
                     yield return new WaitForSeconds(k_JointAssignmentWait);
+                    trajidx++;
                 }
 
                 // Close the gripper if completed executing the trajectory for the Grasp pose
                 if (poseIndex == (int)Poses.Grasp)
                 {
                     CloseGripper();
+                    Debug.Log("CloseGripper");
                 }
 
                 // Wait for the robot to achieve the final pose from joint assignment
-                yield return new WaitForSeconds(k_PoseAssignmentWait);
+                var sleeptime = 2;
+                Debug.Log($"Sleeping {sleeptime} secs");
+                yield return new WaitForSeconds(k_PoseAssignmentWait+sleeptime);
             }
 
             // All trajectories have been executed, open the gripper to place the target cube
             OpenGripper();
+            Debug.Log("OpenGripper");
         }
     }
 

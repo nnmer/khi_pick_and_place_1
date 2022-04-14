@@ -125,6 +125,17 @@ public class TrajectoryPlanner : MonoBehaviour
         var request = new MoverServiceRequest();
         request.joints_input = CurrentJointConfig();
 
+        var off = Vector3.zero;
+        var pt1 = (m_Target.transform.position + m_PickPoseOffset + off).To<FLU>();
+
+        var msg0 = $"m_PickPoseOffset:{m_PickPoseOffset.ToString("f3")}";
+        Debug.Log(msg0);
+        var msg00 = $"off:{off.ToString("f3")}";
+        Debug.Log(msg00);
+        var msg1 = $"PickPose  position (FLU):{pt1.ToString("f3")}";
+        Debug.Log(msg1);
+
+
         // Pick Pose
         request.pick_pose = new PoseMsg
         {
@@ -135,11 +146,14 @@ public class TrajectoryPlanner : MonoBehaviour
         };
 
         // Place Pose
+        var pt2 = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>();
         request.place_pose = new PoseMsg
         {
             position = (m_TargetPlacement.transform.position + m_PickPoseOffset).To<FLU>(),
             orientation = m_PickOrientation.To<FLU>()
         };
+        var msg2 = $"PlacePose position (FLU):{pt2.ToString("f3")}";
+        Debug.Log(msg2);
 
         m_Ros.SendServiceMessage<MoverServiceResponse>(m_RosServiceName, request, TrajectoryResponse);
     }
