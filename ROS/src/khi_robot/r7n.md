@@ -1,0 +1,5 @@
+roslaunch khi_robot_bringup rs007n_bringup.launch 
+roslaunch khi_robot_bringup rs007n_bringup.launch  viewer:=true
+roslaunch khi_robot_bringup rs007n_bringup.launch simulation:=true
+roslaunch rs007n__gazebo rs007n__world.launch
+roslaunch khi_rs007n_moveit_config moveit_planning_execution.launch
