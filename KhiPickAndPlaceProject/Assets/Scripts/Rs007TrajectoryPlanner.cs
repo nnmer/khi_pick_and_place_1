@@ -32,6 +32,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     // Assures that the gripper is always positioned above the m_Target cube before grasping.
     readonly Quaternion m_PickOrientation = Quaternion.Euler(90, 90, 0);
     readonly Vector3 m_PickPoseOffset = Vector3.up * 0.1f;
+    readonly Vector3 m_PlacePoseOffset = Vector3.up * 0.15f;
 
     // offsets to make it more flexible for position changing
     float m_robotFloorHeight = 0;
@@ -79,6 +80,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         m_RightGripper = m_NiryoOne.transform.Find(rightGripper).GetComponent<ArticulationBody>();
         m_LeftGripper = m_NiryoOne.transform.Find(leftGripper).GetComponent<ArticulationBody>();
+        //OpenGripper();
     }
 
     /// <summary>
@@ -104,8 +106,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         var leftDrive = m_LeftGripper.xDrive;
         var rightDrive = m_RightGripper.xDrive;
 
-        leftDrive.target = 0.02f;
-        rightDrive.target = -0.02f;
+        leftDrive.target = 0.01f;
+        rightDrive.target = -0.01f;
 
         m_LeftGripper.xDrive = leftDrive;
         m_RightGripper.xDrive = rightDrive;
@@ -159,11 +161,11 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         Debug.Log(msg1);
 
         // Place Pose
-        var pt2 = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>();
+        var pt2 = (m_TargetPlacement.transform.position + m_PlacePoseOffset + off).To<FLU>();
         var placeorientation = Quaternion.Euler(180, 0, 0);
         request.place_pose = new PoseMsg
         {
-            position = (m_TargetPlacement.transform.position + m_PickPoseOffset + off).To<FLU>(),
+            position = (m_TargetPlacement.transform.position + m_PlacePoseOffset + off).To<FLU>(),
             orientation = placeorientation.To<FLU>()
         };
         var msg2 = $"PlacePose position (FLU):{pt2.ToString("f3")}";
