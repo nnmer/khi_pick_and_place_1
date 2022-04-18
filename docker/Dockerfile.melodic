@@ -16,6 +16,7 @@ ENV ROS_WORKSPACE=/catkin_ws
 # Copy each directory explicitly to avoid workspace cruft
 COPY ./ROS/devel $ROS_WORKSPACE/devel
 COPY ./ROS/src/moveit_msgs $ROS_WORKSPACE/src/moveit_msgs
+COPY ./ROS/src/khi_control $ROS_WORKSPACE/src/khi_control
 COPY ./ROS/src/niryo_moveit $ROS_WORKSPACE/src/niryo_moveit
 COPY ./ROS/src/niryo_one_ros $ROS_WORKSPACE/src/niryo_one_ros
 COPY ./ROS/src/niryo_one_urdf $ROS_WORKSPACE/src/niryo_one_urdf

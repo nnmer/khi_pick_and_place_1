@@ -823,8 +823,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2cd8b33761206a4abb8fd6556075c3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_RosServiceName: niryo_moveit
-  m_NiryoOne: {fileID: 1304493507}
+  m_RosServiceName: rs007_moveit
+  m_RobotModel: {fileID: 1304493507}
   m_Target: {fileID: 977052745}
   m_TargetPlacement: {fileID: 451371862}
 --- !u!114 &1801130477

@@ -2,7 +2,8 @@ using System;
 using System.Collections;
 using System.Linq;
 using RosMessageTypes.Geometry;
-using RosMessageTypes.NiryoMoveit;
+// using RosMessageTypes.NiryoMoveit;
+using RosMessageTypes.KhiControl;
 using Unity.Robotics.ROSTCPConnector;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using UnityEngine;
@@ -20,8 +21,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     public string RosServiceName { get => m_RosServiceName; set => m_RosServiceName = value; }
 
     [SerializeField]
-    GameObject m_NiryoOne;
-    public GameObject NiryoOne { get => m_NiryoOne; set => m_NiryoOne = value; }
+    GameObject m_RobotModel;
+    public GameObject RobotModel { get => m_RobotModel; set => m_RobotModel = value; }
     [SerializeField]
     GameObject m_Target;
     public GameObject Target { get => m_Target; set => m_Target = value; }
@@ -35,7 +36,6 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     readonly Vector3 m_PlacePoseOffset = Vector3.up * 0.15f;
 
     // offsets to make it more flexible for position changing
-    float m_robotFloorHeight = 0;
     Vector3 m_robotOffset = Vector3.zero;
 
     // Articulation Bodies
@@ -58,28 +58,26 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         m_JointArticulationBodies = new ArticulationBody[k_NumRobotJoints];
 
-        if (m_NiryoOne!=null)
+        if (m_RobotModel!=null)
         {
-            m_robotFloorHeight = m_NiryoOne.transform.position.y;
-            m_robotOffset = m_NiryoOne.transform.position;
-            Debug.Log($"Robot name:{m_NiryoOne.name}");
-            Debug.Log($"Robot floor height:{m_robotFloorHeight.ToString("f3")}");
-            Debug.Log($"Robot offset:{m_robotOffset.ToString("f3")}");
+            m_robotOffset = m_RobotModel.transform.position;
+            Debug.Log($"Robot name:{m_RobotModel.name}");
+            Debug.Log($"Robot offset:{m_robotOffset:f3}");
         }
 
         var linkName = string.Empty;
         for (var i = 0; i < k_NumRobotJoints; i++)
         {
             linkName += Rs007SourceDestinationPublisher.LinkNames[i];
-            m_JointArticulationBodies[i] = m_NiryoOne.transform.Find(linkName).GetComponent<ArticulationBody>();
+            m_JointArticulationBodies[i] = m_RobotModel.transform.Find(linkName).GetComponent<ArticulationBody>();
         }
 
         // Find left and right fingers
         var rightGripper = linkName + "/tool_link/gripper_base/servo_head/control_rod_right/right_gripper";
         var leftGripper = linkName + "/tool_link/gripper_base/servo_head/control_rod_left/left_gripper";
 
-        m_RightGripper = m_NiryoOne.transform.Find(rightGripper).GetComponent<ArticulationBody>();
-        m_LeftGripper = m_NiryoOne.transform.Find(leftGripper).GetComponent<ArticulationBody>();
+        m_RightGripper = m_RobotModel.transform.Find(rightGripper).GetComponent<ArticulationBody>();
+        m_LeftGripper = m_RobotModel.transform.Find(leftGripper).GetComponent<ArticulationBody>();
         //OpenGripper();
     }
 
@@ -117,9 +115,11 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     ///     Get the current values of the robot's joint angles.
     /// </summary>
     /// <returns>NiryoMoveitJoints</returns>
-    NiryoMoveitJointsMsg CurrentJointConfig()
+    // NiryoMoveitJoints CurrentJointConfig()
+    Rs007MoveitJointsMsg CurrentJointConfig()
     {
-        var joints = new NiryoMoveitJointsMsg();
+        // var joints = new NiryoMoveitJointsMsg();
+        var joints = new Rs007MoveitJointsMsg();
 
         for (var i = 0; i < k_NumRobotJoints; i++)
         {
@@ -141,34 +141,35 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         request.joints_input = CurrentJointConfig();
 
         //var off = new Vector3(0, -m_robotFloorHeight, 0);
-        var off = -m_robotOffset;
+        var roboff = -m_robotOffset;
 
         // Pick Pose
-        var pt1 = (m_Target.transform.position + m_PickPoseOffset + off).To<FLU>();
+        var pt1 = (m_Target.transform.position + m_PickPoseOffset + roboff).To<FLU>();
+        var or1 = Quaternion.Euler(180, m_Target.transform.eulerAngles.y, 0).To<FLU>();
         request.pick_pose = new PoseMsg
         {
-            position = (m_Target.transform.position + m_PickPoseOffset + off).To<FLU>(),
+            position = pt1,
 
             // The hardcoded x/z angles assure that the gripper is always positioned above the target cube before grasping.
             // orientation = Quaternion.Euler(90, m_Target.transform.eulerAngles.y, 0).To<FLU>()
-            orientation = Quaternion.Euler(180, m_Target.transform.eulerAngles.y, 0).To<FLU>()
+            orientation = or1
         };
-        var msg0 = $"m_PickPoseOffset:{m_PickPoseOffset.ToString("f3")}";
+        var msg0 = $"m_PickPoseOffset:{m_PickPoseOffset:f3}";
         Debug.Log(msg0);
-        var msg00 = $"off:{off.ToString("f3")}";
+        var msg00 = $"roboff:{roboff:f3}";
         Debug.Log(msg00);
-        var msg1 = $"PickPose  position (FLU):{pt1.ToString("f3")}";
+        var msg1 = $"PickPose (FLU) position:{pt1:f3} orientation:{or1:f3}";
         Debug.Log(msg1);
 
         // Place Pose
-        var pt2 = (m_TargetPlacement.transform.position + m_PlacePoseOffset + off).To<FLU>();
-        var placeorientation = Quaternion.Euler(180, 0, 0);
+        var pt2 = (m_TargetPlacement.transform.position + m_PlacePoseOffset + roboff).To<FLU>();
+        var or2 = Quaternion.Euler(180, 0, 0).To<FLU>();
         request.place_pose = new PoseMsg
         {
-            position = (m_TargetPlacement.transform.position + m_PlacePoseOffset + off).To<FLU>(),
-            orientation = placeorientation.To<FLU>()
+            position = pt2,
+            orientation = or2
         };
-        var msg2 = $"PlacePose position (FLU):{pt2.ToString("f3")}";
+        var msg2 = $"PlacePose (FLU) position:{pt2:f3} orientation:{or2:f3}";
         Debug.Log(msg2);
 
         m_Ros.SendServiceMessage<MoverServiceResponse>(m_RosServiceName, request, TrajectoryResponse);
@@ -223,12 +224,12 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                         var msg = $"pose {posword} {poseIndex}:{poseIndex}-{trajidx} start-joints - ";
                         for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
                         {
-                            msg += $"{resultRad[joint].ToString("f4")}   ";
+                            msg += $"{resultRad[joint]:f4}   ";
                         }
                         msg += "     degrees:";
                         for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
                         {
-                            msg += $"{result[joint].ToString("f1")}   ";
+                            msg += $"{result[joint]:f1}   ";
                         }
 
                         Debug.Log(msg);
