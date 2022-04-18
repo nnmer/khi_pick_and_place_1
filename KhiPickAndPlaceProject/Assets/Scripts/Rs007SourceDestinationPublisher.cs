@@ -1,6 +1,6 @@
 using System;
 using RosMessageTypes.Geometry;
-using RosMessageTypes.NiryoMoveit;
+using RosMessageTypes.Rs007Control;
 using Unity.Robotics.ROSTCPConnector;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using Unity.Robotics.UrdfImporter;
@@ -15,10 +15,10 @@ public class Rs007SourceDestinationPublisher : MonoBehaviour
 
     // Variables required for ROS communication
     [SerializeField]
-    string m_TopicName = "/niryo_joints";
+    string m_TopicName = "/rs007_joints";
 
     [SerializeField]
-    GameObject m_NiryoOne;
+    GameObject m_RobotModel;
     [SerializeField]
     GameObject m_Target;
     [SerializeField]
@@ -35,7 +35,7 @@ public class Rs007SourceDestinationPublisher : MonoBehaviour
     {
         // Get ROS connection static instance
         m_Ros = ROSConnection.GetOrCreateInstance();
-        m_Ros.RegisterPublisher<NiryoMoveitJointsMsg>(m_TopicName);
+        m_Ros.RegisterPublisher<Rs007MoveitJointsMsg>(m_TopicName);
 
         m_JointArticulationBodies = new UrdfJointRevolute[k_NumRobotJoints];
 
@@ -43,13 +43,13 @@ public class Rs007SourceDestinationPublisher : MonoBehaviour
         for (var i = 0; i < k_NumRobotJoints; i++)
         {
             linkName += LinkNames[i];
-            m_JointArticulationBodies[i] = m_NiryoOne.transform.Find(linkName).GetComponent<UrdfJointRevolute>();
+            m_JointArticulationBodies[i] = m_RobotModel.transform.Find(linkName).GetComponent<UrdfJointRevolute>();
         }
     }
 
     public void Publish()
     {
-        var sourceDestinationMessage = new NiryoMoveitJointsMsg();
+        var sourceDestinationMessage = new Rs007MoveitJointsMsg();
 
         for (var i = 0; i < k_NumRobotJoints; i++)
         {

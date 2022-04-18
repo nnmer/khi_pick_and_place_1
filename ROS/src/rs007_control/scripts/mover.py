@@ -18,8 +18,8 @@ from geometry_msgs.msg import Quaternion, Pose
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
 
-from khi_control.srv import MoverService, MoverServiceRequest, MoverServiceResponse
-print("loading rs007_moveit:mover.py")
+from rs007_control.srv import MoverService, MoverServiceRequest, MoverServiceResponse
+print("loading rs007_control:mover.py")
 
 joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']
 print("joint_names",joint_names)
@@ -36,7 +36,7 @@ else:
     Given the start angles of the robot, plan a trajectory that ends at the destination pose.
 """
 def plan_trajectory(move_group, destination_pose, start_joint_angles): 
-    print("rs007_moveit:mover.py:plan_trajectory")
+    print("rs007_control:mover.py:plan_trajectory")
     print("    move_group:",move_group)
     print("    destination_pose:",destination_pose)
     print("    start_joint_angles:",start_joint_angles)
@@ -83,7 +83,7 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
     https://github.com/ros-planning/moveit/blob/master/moveit_commander/src/moveit_commander/move_group.py
 """
 def plan_pick_and_place(req):
-    print("rs007_moveit:mover.py:plan_pick_and_place")
+    print("rs007_control:mover.py:plan_pick_and_place")
     print("    req:",req)
     response = MoverServiceResponse()
 
@@ -141,7 +141,7 @@ def moveit_server():
     rospy.init_node('rs007_moveit_server')
 
     s = rospy.Service('rs007_moveit', MoverService, plan_pick_and_place)
-    print("rs007_moveit:mover.py:Ready to plan - spinning")
+    print("rs007_control:mover.py:Ready to plan - spinning")
     rospy.spin()
 
 

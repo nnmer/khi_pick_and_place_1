@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.Text;
 using Unity.Robotics.ROSTCPConnector.MessageGeneration;
 
-namespace RosMessageTypes.KhiControl
+namespace RosMessageTypes.Rs007Control
 {
     [Serializable]
     public class Rs007MoveitJointsMsg : Message
     {
-        public const string k_RosMessageName = "khi_control/Rs007MoveitJoints";
+        public const string k_RosMessageName = "rs007_control/Rs007MoveitJoints";
         public override string RosMessageName => k_RosMessageName;
 
         public double[] joints;

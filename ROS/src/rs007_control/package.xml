@@ -1,12 +1,9 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>khi_control</name>
+  <name>rs007_control</name>
   <version>0.0.0</version>
-  <description>The khi_control package</description>
+  <description>The rs007_control package</description>
 
-  <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="mike.wise@microsoft.com">Jane Doe</maintainer> -->
   <maintainer email="mike.wise@microsoft.com">mike wise</maintainer>
 
 
@@ -19,7 +16,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/khi_control</url> -->
+  <!-- <url type="website">http://wiki.ros.org/rs007_control</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->

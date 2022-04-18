@@ -827,6 +827,7 @@ MonoBehaviour:
   m_RobotModel: {fileID: 1304493507}
   m_Target: {fileID: 977052745}
   m_TargetPlacement: {fileID: 451371862}
+  posePauseSecs: 2
 --- !u!114 &1801130477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -839,8 +840,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d9fa68432781a643978c4d4bad3f70a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_TopicName: /niryo_joints
-  m_NiryoOne: {fileID: 1304493507}
+  m_TopicName: /rs007_joints
+  m_RobotModel: {fileID: 1304493507}
   m_Target: {fileID: 977052745}
   m_TargetPlacement: {fileID: 451371862}
 --- !u!1 &1834643485

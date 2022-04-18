@@ -3,7 +3,7 @@ using System.Collections;
 using System.Linq;
 using RosMessageTypes.Geometry;
 // using RosMessageTypes.NiryoMoveit;
-using RosMessageTypes.KhiControl;
+using RosMessageTypes.Rs007Control;
 using Unity.Robotics.ROSTCPConnector;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using UnityEngine;
@@ -17,7 +17,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
     // Variables required for ROS communication
     [SerializeField]
-    string m_RosServiceName = "niryo_moveit";
+    string m_RosServiceName = "rs007_moveit";
     public string RosServiceName { get => m_RosServiceName; set => m_RosServiceName = value; }
 
     [SerializeField]
@@ -29,6 +29,9 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     [SerializeField]
     GameObject m_TargetPlacement;
     public GameObject TargetPlacement { get => m_TargetPlacement; set => m_TargetPlacement = value; }
+
+
+    public float posePauseSecs = 2;
 
     // Assures that the gripper is always positioned above the m_Target cube before grasping.
     readonly Quaternion m_PickOrientation = Quaternion.Euler(90, 90, 0);
@@ -78,6 +81,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         m_RightGripper = m_RobotModel.transform.Find(rightGripper).GetComponent<ArticulationBody>();
         m_LeftGripper = m_RobotModel.transform.Find(leftGripper).GetComponent<ArticulationBody>();
+        Debug.Log("Finished Rs007TrajectoryPlanner Start");
         //OpenGripper();
     }
 
@@ -256,14 +260,14 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                 }
 
                 // Wait for the robot to achieve the final pose from joint assignment
-                var sleeptime = 2;
-                Debug.Log($"Sleeping {sleeptime} secs");
-                yield return new WaitForSeconds(k_PoseAssignmentWait+sleeptime);
+                Debug.Log($"Sleeping {posePauseSecs} secs");
+                yield return new WaitForSeconds(k_PoseAssignmentWait+ posePauseSecs);
             }
 
             // All trajectories have been executed, open the gripper to place the target cube
             OpenGripper();
-            yield return new WaitForSeconds(k_PoseAssignmentWait + 2);
+            yield return new WaitForSeconds(k_PoseAssignmentWait + posePauseSecs);
+            Debug.Log($"Sleeping {posePauseSecs} secs");
             Debug.Log("OpenGripper");
         }
     }

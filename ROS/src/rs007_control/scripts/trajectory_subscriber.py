@@ -6,7 +6,7 @@
 """
 import rospy
 
-from khi_control.msg import Rs007MoveitJoints, Rs007Trajectory
+from rs007_control.msg import Rs007MoveitJoints, Rs007Trajectory
 from moveit_msgs.msg import RobotTrajectory
 
 
