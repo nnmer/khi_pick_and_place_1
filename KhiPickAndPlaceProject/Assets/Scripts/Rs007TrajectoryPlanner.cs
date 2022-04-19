@@ -48,7 +48,9 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     ArticulationBody m_LeftGripper = null;
     ArticulationBody m_RightGripper = null;
 
+
     GameObject m_VacGripper = null;
+    Collider m_TargCollider = null;
 
     GripperType gripperType;
 
@@ -96,6 +98,13 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             m_VacGripper = vgrip.gameObject;
             m_PickPoseOffset = Vector3.up * 0.2f;
             m_PlacePoseOffset = Vector3.up * 0.2f;
+            if (Target != null)
+            {
+                m_TargCollider = Target.GetComponent<Collider>();
+            }
+            {
+                Debug.LogError("Target is null for Vacumm Gripper");
+            }
         }
         else if (rgrip!=null && lgrip!=null)
         {
@@ -136,6 +145,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                 }
             case GripperType.Vacuum:
                 {
+                    m_TargCollider.transform.parent = m_VacGripper.transform;
                     break;
                 }
         }
@@ -162,6 +172,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                 }
             case GripperType.Vacuum:
                 {
+                    m_TargCollider.transform.parent = null;
                     break;
                 }
         }
