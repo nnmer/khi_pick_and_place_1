@@ -8,6 +8,8 @@ using Unity.Robotics.ROSTCPConnector;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using UnityEngine;
 
+public enum GripperType {  None, Claw, Vacuum };
+
 public class Rs007TrajectoryPlanner : MonoBehaviour
 {
     // Hardcoded variables
@@ -34,17 +36,21 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     public float posePauseSecs = 2;
 
     // Assures that the gripper is always positioned above the m_Target cube before grasping.
-    readonly Quaternion m_PickOrientation = Quaternion.Euler(90, 90, 0);
-    readonly Vector3 m_PickPoseOffset = Vector3.up * 0.1f;
-    readonly Vector3 m_PlacePoseOffset = Vector3.up * 0.15f;
+    Quaternion m_PickOrientation = Quaternion.Euler(90, 90, 0);
+    Vector3 m_PickPoseOffset = Vector3.up * 0.1f;
+    Vector3 m_PlacePoseOffset = Vector3.up * 0.15f;
 
     // offsets to make it more flexible for position changing
     Vector3 m_robotOffset = Vector3.zero;
 
     // Articulation Bodies
     ArticulationBody[] m_JointArticulationBodies;
-    ArticulationBody m_LeftGripper;
-    ArticulationBody m_RightGripper;
+    ArticulationBody m_LeftGripper = null;
+    ArticulationBody m_RightGripper = null;
+
+    GameObject m_VacGripper = null;
+
+    GripperType gripperType;
 
     // ROS Connector
     ROSConnection m_Ros;
@@ -76,11 +82,35 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         }
 
         // Find left and right fingers
-        var rightGripper = linkName + "/tool_link/gripper_base/servo_head/control_rod_right/right_gripper";
-        var leftGripper = linkName + "/tool_link/gripper_base/servo_head/control_rod_left/left_gripper";
+        var rightGripperName = linkName + "/tool_link/gripper_base/servo_head/control_rod_right/right_gripper";
+        var leftGripperName = linkName + "/tool_link/gripper_base/servo_head/control_rod_left/left_gripper";
+        var vacGripperName = linkName +"/tool_link/GRIPPER v5_1";  
+        var rgrip = m_RobotModel.transform.Find(rightGripperName);
+        var lgrip = m_RobotModel.transform.Find(leftGripperName);
+        var vgrip = m_RobotModel.transform.Find(vacGripperName);
 
-        m_RightGripper = m_RobotModel.transform.Find(rightGripper).GetComponent<ArticulationBody>();
-        m_LeftGripper = m_RobotModel.transform.Find(leftGripper).GetComponent<ArticulationBody>();
+        if (vgrip != null)
+        {
+            Debug.Log("Vacuum Gripper found");
+            gripperType = GripperType.Vacuum;
+            m_VacGripper = vgrip.gameObject;
+            m_PickPoseOffset = Vector3.up * 0.2f;
+            m_PlacePoseOffset = Vector3.up * 0.2f;
+        }
+        else if (rgrip!=null && lgrip!=null)
+        {
+            Debug.Log("Claw Gripper found");
+            gripperType = GripperType.Claw;
+            m_RightGripper = rgrip.GetComponent<ArticulationBody>();
+            m_LeftGripper =lgrip.GetComponent<ArticulationBody>();
+            m_PickPoseOffset = Vector3.up * 0.1f;
+            m_PlacePoseOffset = Vector3.up * 0.15f;
+        }
+        else
+        {
+            Debug.Log("No Gripper found");
+            gripperType = GripperType.None;
+        }
         Debug.Log("Finished Rs007TrajectoryPlanner Start");
         //OpenGripper();
     }
@@ -90,14 +120,25 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     /// </summary>
     void CloseGripper()
     {
-        var leftDrive = m_LeftGripper.xDrive;
-        var rightDrive = m_RightGripper.xDrive;
+        switch (gripperType)
+        {
+            case GripperType.Claw:
+                {
+                    var leftDrive = m_LeftGripper.xDrive;
+                    var rightDrive = m_RightGripper.xDrive;
 
-        leftDrive.target = -0.01f;
-        rightDrive.target = 0.01f;
+                    leftDrive.target = -0.01f;
+                    rightDrive.target = 0.01f;
 
-        m_LeftGripper.xDrive = leftDrive;
-        m_RightGripper.xDrive = rightDrive;
+                    m_LeftGripper.xDrive = leftDrive;
+                    m_RightGripper.xDrive = rightDrive;
+                    break;
+                }
+            case GripperType.Vacuum:
+                {
+                    break;
+                }
+        }
     }
 
     /// <summary>
@@ -105,22 +146,33 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     /// </summary>
     void OpenGripper()
     {
-        var leftDrive = m_LeftGripper.xDrive;
-        var rightDrive = m_RightGripper.xDrive;
+        switch (gripperType)
+        {
+            case GripperType.Claw:
+                {
+                    var leftDrive = m_LeftGripper.xDrive;
+                    var rightDrive = m_RightGripper.xDrive;
 
-        leftDrive.target = 0.01f;
-        rightDrive.target = -0.01f;
+                    leftDrive.target = 0.01f;
+                    rightDrive.target = -0.01f;
 
-        m_LeftGripper.xDrive = leftDrive;
-        m_RightGripper.xDrive = rightDrive;
+                    m_LeftGripper.xDrive = leftDrive;
+                    m_RightGripper.xDrive = rightDrive;
+                    break;
+                }
+            case GripperType.Vacuum:
+                {
+                    break;
+                }
+        }
     }
 
-    /// <summary>
-    ///     Get the current values of the robot's joint angles.
-    /// </summary>
-    /// <returns>NiryoMoveitJoints</returns>
-    // NiryoMoveitJoints CurrentJointConfig()
-    Rs007MoveitJointsMsg CurrentJointConfig()
+        /// <summary>
+        ///     Get the current values of the robot's joint angles.
+        /// </summary>
+        /// <returns>NiryoMoveitJoints</returns>
+        // NiryoMoveitJoints CurrentJointConfig()
+        Rs007MoveitJointsMsg CurrentJointConfig()
     {
         // var joints = new NiryoMoveitJointsMsg();
         var joints = new Rs007MoveitJointsMsg();
