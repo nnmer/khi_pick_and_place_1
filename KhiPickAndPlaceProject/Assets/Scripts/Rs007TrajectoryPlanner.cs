@@ -72,6 +72,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         m_Ros.RegisterRosService<MoverServiceRequest, MoverServiceResponse>(m_RosServiceName);
 
         movementStyle = MovementStyle.MagicMovement;
+        movementStyle = MovementStyle.PhysicsForces;
 
         m_JointArticulationBodies = new ArticulationBody[k_NumRobotJoints];
 
@@ -86,7 +87,13 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         for (var i = 0; i < k_NumRobotJoints; i++)
         {
             linkName += Rs007SourceDestinationPublisher.LinkNames[i];
-            m_JointArticulationBodies[i] = m_RobotModel.transform.Find(linkName).GetComponent<ArticulationBody>();
+            var xform = m_RobotModel.transform.Find(linkName);
+            m_JointArticulationBodies[i] = xform.GetComponent<ArticulationBody>();
+            if (movementStyle == MovementStyle.MagicMovement)
+            {
+                //var rigid = xform.GetComponent<RigidBody>();
+             //   m_JointArticulationBodies[i].enabled = false;
+            }
         }
 
         // Find left and right fingers
@@ -111,6 +118,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             {
                 m_TargCollider = Target.GetComponent<Collider>();
             }
+            else
             {
                 Debug.LogError("Target is null for Vacumm Gripper");
             }
@@ -127,7 +135,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         }
         else
         {
-            Debug.Log("No Gripper found");
+            Debug.LogError("No Gripper found");
             gripperType = GripperType.None;
         }
         Debug.Log("Finished Rs007TrajectoryPlanner Start");
@@ -275,18 +283,28 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             var joint1XDrive = m_JointArticulationBodies[i].xDrive;
             joint1XDrive.target = joint;
             m_JointArticulationBodies[i].xDrive = joint1XDrive;
-            //switch (i)
-            //{
-            //    case 0:
-            //    case 1:
-            //    case 2:
-            //    case 3:
-            //    case 4:
-            //    case 5:
-            //        q = Quaternion.Euler(joint, 0, 0);
-            //        break;
-            //}
-            //m_JointArticulationBodies[i].transform.rotation = q;
+            switch (i)
+            {
+                case 0:  // link1
+                    q = Quaternion.Euler(0, joint, 0);
+                    break;
+                case 1:  // link2
+                    q = Quaternion.Euler(-90 + joint, 90, -90);
+                    break;
+                case 2:  // link3
+                    q = Quaternion.Euler(0, joint, 0);
+                    break;
+                case 3:  // link4
+                    q = Quaternion.Euler(joint - 200, -90, -90);
+                    break;
+                case 4:  // link5
+                    q = Quaternion.Euler(-90 - joint, -90, 90);
+                    break;
+                case 5:  // link6
+                    q = Quaternion.Euler(90 + joint, 90, 90);
+                    break;
+            }
+            m_JointArticulationBodies[i].transform.rotation = q;
             i++;
         }
     }
