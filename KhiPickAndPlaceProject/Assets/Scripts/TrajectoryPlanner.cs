@@ -113,14 +113,17 @@ public class TrajectoryPlanner : MonoBehaviour
 
         return joints;
     }
-
+    public void PublishJoints()
+    {
+        PlanAndExecutePickAndPose();
+    }
     /// <summary>
     ///     Create a new MoverServiceRequest with the current values of the robot's joint angles,
     ///     the target cube's current position and rotation, and the targetPlacement position and rotation.
     ///     Call the MoverService using the ROSConnection and if a trajectory is successfully planned,
     ///     execute the trajectories in a coroutine.
     /// </summary>
-    public void PublishJoints()
+    public void PlanAndExecutePickAndPose()
     {
         var request = new MoverServiceRequest();
         request.joints_input = CurrentJointConfig();

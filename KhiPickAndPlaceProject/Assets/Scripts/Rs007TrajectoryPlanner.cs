@@ -9,6 +9,8 @@ using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using UnityEngine;
 
 public enum GripperType {  None, Claw, Vacuum };
+public enum GripTrigger {  OnCollision, OnCommand };
+public enum MovementStyle {  PhysicsForces, MagicMovement };
 
 public class Rs007TrajectoryPlanner : MonoBehaviour
 {
@@ -53,6 +55,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     Collider m_TargCollider = null;
 
     GripperType gripperType;
+    GripTrigger gripTrigger;
+    MovementStyle movementStyle;
 
     // ROS Connector
     ROSConnection m_Ros;
@@ -66,6 +70,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         // Get ROS connection static instance
         m_Ros = ROSConnection.GetOrCreateInstance();
         m_Ros.RegisterRosService<MoverServiceRequest, MoverServiceResponse>(m_RosServiceName);
+
+        movementStyle = MovementStyle.MagicMovement;
 
         m_JointArticulationBodies = new ArticulationBody[k_NumRobotJoints];
 
@@ -91,13 +97,16 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         var lgrip = m_RobotModel.transform.Find(leftGripperName);
         var vgrip = m_RobotModel.transform.Find(vacGripperName);
 
+     
         if (vgrip != null)
         {
             Debug.Log("Vacuum Gripper found");
             gripperType = GripperType.Vacuum;
             m_VacGripper = vgrip.gameObject;
-            m_PickPoseOffset = Vector3.up * 0.2f;
-            m_PlacePoseOffset = Vector3.up * 0.2f;
+            //m_PickPoseOffset = Vector3.up * 0.1865f;
+            m_PlacePoseOffset = Vector3.up * 0.22f;
+            m_PickPoseOffset = Vector3.up * 0.22f;
+            gripTrigger = GripTrigger.OnCommand;
             if (Target != null)
             {
                 m_TargCollider = Target.GetComponent<Collider>();
@@ -114,6 +123,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             m_LeftGripper =lgrip.GetComponent<ArticulationBody>();
             m_PickPoseOffset = Vector3.up * 0.1f;
             m_PlacePoseOffset = Vector3.up * 0.15f;
+            gripTrigger = GripTrigger.OnCommand;
         }
         else
         {
@@ -256,6 +266,31 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     }
     string[] poses = { "PreGrasp", "Grasp", "Pickup", "Place" };
 
+    void RealizeJoints(float [] joints)
+    {
+        int i = 0;
+        var q = Quaternion.identity;
+        foreach (var joint in joints)
+        {
+            var joint1XDrive = m_JointArticulationBodies[i].xDrive;
+            joint1XDrive.target = joint;
+            m_JointArticulationBodies[i].xDrive = joint1XDrive;
+            //switch (i)
+            //{
+            //    case 0:
+            //    case 1:
+            //    case 2:
+            //    case 3:
+            //    case 4:
+            //    case 5:
+            //        q = Quaternion.Euler(joint, 0, 0);
+            //        break;
+            //}
+            //m_JointArticulationBodies[i].transform.rotation = q;
+            i++;
+        }
+    }
+
     /// <summary>
     ///     Execute the returned trajectories from the MoverService.
     ///     The expectation is that the MoverService will return four trajectory plans,
@@ -302,12 +337,24 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                         Debug.Log(msg);
                     }
 
-                    // Set the joint values for every joint
-                    for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
+                    switch (movementStyle)
                     {
-                        var joint1XDrive = m_JointArticulationBodies[joint].xDrive;
-                        joint1XDrive.target = result[joint];
-                        m_JointArticulationBodies[joint].xDrive = joint1XDrive;
+                        case MovementStyle.PhysicsForces:
+                            {
+                                // Set the joint values for every joint
+                                for (var joint = 0; joint < m_JointArticulationBodies.Length; joint++)
+                                {
+                                    var joint1XDrive = m_JointArticulationBodies[joint].xDrive;
+                                    joint1XDrive.target = result[joint];
+                                    m_JointArticulationBodies[joint].xDrive = joint1XDrive;
+                                }
+                                break;
+                            }
+                        case MovementStyle.MagicMovement:
+                            {
+                                RealizeJoints(result);
+                                break;
+                            }
                     }
 
                     // Wait for robot to achieve pose for all joint assignments
