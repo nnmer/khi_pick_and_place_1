@@ -4,7 +4,7 @@ import random
 import rospy
 import rosgraph
 import time
-from rs007_control.msg import UnityColor
+from unity_robotics_demo_msgs.msg import UnityColor
 
 
 TOPIC_NAME = 'color'

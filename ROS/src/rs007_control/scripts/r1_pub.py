@@ -4,24 +4,24 @@ import random
 import rospy
 import rosgraph
 import time
-from rs007_control.msg import UnityColor
+from rs007_control.msg import Rs007Joints1
 
 
-TOPIC_NAME = 'color'
-NODE_NAME = 'color_publisher'
+TOPIC_NAME = 'Rs007Joints1'
+NODE_NAME = 'joint1_publisher'
 
 
-def post_color():
-    pub = rospy.Publisher(TOPIC_NAME, UnityColor, queue_size=10)
+def post_joint():
+    pub = rospy.Publisher(TOPIC_NAME, Rs007Joints1, queue_size=10)
     rospy.init_node(NODE_NAME, anonymous=True)
 
-    r = random.randint(0, 255)
-    g = random.randint(0, 255)
-    b = random.randint(0, 255)
-    color = UnityColor(r, g, b, 1)
+    idx = random.randint(0, 5)
+    ang = random.randint(0, 360)
+    j1 = Rs007Joints1(idx,ang)
 
     wait_for_connections(pub, TOPIC_NAME)
-    pub.publish(color)
+    pub.publish(j1)
+    print("published joint idx:"+str(idx)+" ang:"+str(ang)+" to "+TOPIC_NAME)
 
     time.sleep(0.1)
 
@@ -48,6 +48,6 @@ def wait_for_connections(pub, topic):
 
 if __name__ == '__main__':
     try:
-        post_color()
+        post_joint()
     except rospy.ROSInterruptException:
         pass

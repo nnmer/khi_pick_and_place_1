@@ -8,7 +8,7 @@ RUN sudo apt-get install -y ros-melodic-rosservice
 
 RUN sudo apt-get install -y libopenblas-dev
 
-RUN sudo -H pip install rospkg jsonpickle 
+RUN sudo -H pip install rospkg jsonpickle pyzmq
 
 
 ENV ROS_WORKSPACE=/catkin_ws

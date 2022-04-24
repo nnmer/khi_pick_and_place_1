@@ -8,6 +8,12 @@ using Unity.Robotics.ROSTCPConnector;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using UnityEngine;
 
+
+using RsJ1Msg = RosMessageTypes.Rs007Control.Rs007Joints1Msg;
+using RsJ6Msg = RosMessageTypes.Rs007Control.Rs007Joints6Msg;
+
+
+
 public enum GripperType {  None, Claw, Vacuum };
 public enum GripTrigger {  OnCollision, OnCommand };
 public enum MovementStyle {  PhysicsForces, MagicMovement };
@@ -76,7 +82,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         m_JointArticulationBodies = new ArticulationBody[k_NumRobotJoints];
 
-        if (m_RobotModel!=null)
+        if (m_RobotModel != null)
         {
             m_robotOffset = m_RobotModel.transform.position;
             Debug.Log($"Robot name:{m_RobotModel.name}");
@@ -92,19 +98,19 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             if (movementStyle == MovementStyle.MagicMovement)
             {
                 //var rigid = xform.GetComponent<RigidBody>();
-             //   m_JointArticulationBodies[i].enabled = false;
+                //   m_JointArticulationBodies[i].enabled = false;
             }
         }
 
         // Find left and right fingers
         var rightGripperName = linkName + "/tool_link/gripper_base/servo_head/control_rod_right/right_gripper";
         var leftGripperName = linkName + "/tool_link/gripper_base/servo_head/control_rod_left/left_gripper";
-        var vacGripperName = linkName +"/tool_link/GRIPPER v5_1";  
+        var vacGripperName = linkName + "/tool_link/GRIPPER v5_1";
         var rgrip = m_RobotModel.transform.Find(rightGripperName);
         var lgrip = m_RobotModel.transform.Find(leftGripperName);
         var vgrip = m_RobotModel.transform.Find(vacGripperName);
 
-     
+
         if (vgrip != null)
         {
             Debug.Log("Vacuum Gripper found");
@@ -123,12 +129,12 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                 Debug.LogError("Target is null for Vacumm Gripper");
             }
         }
-        else if (rgrip!=null && lgrip!=null)
+        else if (rgrip != null && lgrip != null)
         {
             Debug.Log("Claw Gripper found");
             gripperType = GripperType.Claw;
             m_RightGripper = rgrip.GetComponent<ArticulationBody>();
-            m_LeftGripper =lgrip.GetComponent<ArticulationBody>();
+            m_LeftGripper = lgrip.GetComponent<ArticulationBody>();
             m_PickPoseOffset = Vector3.up * 0.1f;
             m_PlacePoseOffset = Vector3.up * 0.15f;
             gripTrigger = GripTrigger.OnCommand;
@@ -138,9 +144,44 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             Debug.LogError("No Gripper found");
             gripperType = GripperType.None;
         }
+        ROSConnection.GetOrCreateInstance().Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
+        ROSConnection.GetOrCreateInstance().Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
+
+
         Debug.Log("Finished Rs007TrajectoryPlanner Start");
         //OpenGripper();
     }
+
+    void PositionJoint(int idx, float joint)
+    {
+        Debug.Log($"   PositionJoint idx:{idx} to {joint:f1} degrees");
+        if (0 <= idx && idx <= 5)
+        {
+            var joint1XDrive = m_JointArticulationBodies[idx].xDrive;
+            joint1XDrive.target = joint;
+            m_JointArticulationBodies[idx].xDrive = joint1XDrive;
+        }
+    }
+
+    void Rs007J1Change(RsJ1Msg j1msg)
+    {
+        Debug.Log($"RsJ1Msg:{j1msg.ToString()}");
+        var idx = j1msg.idx;
+        var joint = (float) j1msg.joint;
+        PositionJoint(idx, joint);
+    }
+
+    void Rs007J6Change(RsJ6Msg j6msg)
+    {
+        Debug.Log($"RsJ6Msg:{j6msg.ToString()}");
+        for(int i=0; i<6; i++)
+        {
+            PositionJoint( i, (float) j6msg.joints[i] );
+        }
+
+    }
+
+
 
     /// <summary>
     ///     Close the gripper
@@ -196,12 +237,12 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         }
     }
 
-        /// <summary>
-        ///     Get the current values of the robot's joint angles.
-        /// </summary>
-        /// <returns>NiryoMoveitJoints</returns>
-        // NiryoMoveitJoints CurrentJointConfig()
-        Rs007MoveitJointsMsg CurrentJointConfig()
+    /// <summary>
+    ///     Get the current values of the robot's joint angles.
+    /// </summary>
+    /// <returns>NiryoMoveitJoints</returns>
+    // NiryoMoveitJoints CurrentJointConfig()
+    Rs007MoveitJointsMsg CurrentJointConfig()
     {
         // var joints = new NiryoMoveitJointsMsg();
         var joints = new Rs007MoveitJointsMsg();
@@ -274,7 +315,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     }
     string[] poses = { "PreGrasp", "Grasp", "Pickup", "Place" };
 
-    void RealizeJoints(float [] joints)
+    void RealizeJoints(float[] joints)
     {
         int i = 0;
         var q = Quaternion.identity;
@@ -329,16 +370,16 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             {
                 int trajidx = 0;
                 // For every robot pose in trajectory plan
-                int lsttrajidx = response.trajectories[poseIndex].joint_trajectory.points.Length-1;
+                int lsttrajidx = response.trajectories[poseIndex].joint_trajectory.points.Length - 1;
                 foreach (var t in response.trajectories[poseIndex].joint_trajectory.points)
                 {
 
                     var jointPositions = t.positions;
                     var resultRad = jointPositions.Select(r => (float)r).ToArray();
-//                    var result = jointPositions.Select(r => (float)r).ToArray();
+                    //                    var result = jointPositions.Select(r => (float)r).ToArray();
                     var result = jointPositions.Select(r => (float)r * Mathf.Rad2Deg).ToArray();
 
-                    if (trajidx == 0 || trajidx==lsttrajidx )
+                    if (trajidx == 0 || trajidx == lsttrajidx)
                     {
                         var posword = poses[poseIndex];
                         var msg = $"pose {posword} {poseIndex}:{poseIndex}-{trajidx} start-joints - ";
@@ -389,7 +430,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
                 // Wait for the robot to achieve the final pose from joint assignment
                 Debug.Log($"Sleeping {posePauseSecs} secs");
-                yield return new WaitForSeconds(k_PoseAssignmentWait+ posePauseSecs);
+                yield return new WaitForSeconds(k_PoseAssignmentWait + posePauseSecs);
             }
 
             // All trajectories have been executed, open the gripper to place the target cube
@@ -408,3 +449,4 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         Place
     }
 }
+
