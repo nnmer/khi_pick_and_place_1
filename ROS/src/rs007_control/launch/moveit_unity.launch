@@ -15,7 +15,11 @@
     <!-- <param name="/use_gui" value="$(arg use_gui)"/> -->
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
   </node>
- 
+  
+   <node name="robrelay" pkg="rs007_control" type="robrelay.py" args="--wait" output="screen" respawn="true">
+                <param name="zmq_port" type="int" value="$(arg zmq_port)"/>
+  </node> 
+
         
   <!-- robot state publisher -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />  

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function
 import time
 import zmq
@@ -6,14 +7,14 @@ import rosgraph
 from rs007_control.msg import Rs007Joints6
 from rs007_control.msg import Rs007Joints1
 
-tcpport = 10006
+zmqport = rospy.get_param("ZMQ_PORT",10006)
 
 
 def zmqinit():
   global socket
   context = zmq.Context()
   socket = context.socket(zmq.REP)
-  socket.bind("tcp://*:"+str(tcpport))
+  socket.bind("tcp://*:"+str(zmqport))
 
 J1_TOPIC_NAME = 'Rs007Joints1'
 J6_TOPIC_NAME = 'Rs007Joints6'

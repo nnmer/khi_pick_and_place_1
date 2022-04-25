@@ -1,1 +1,1 @@
-roslaunch rs007_control  unity_ros.launch tcp_port:=10005
+roslaunch rs007_control  unity_ros.launch tcp_port:=10005 zmq_port:=10005

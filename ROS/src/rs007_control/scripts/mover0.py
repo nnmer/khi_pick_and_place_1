@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# Mover1 - 23 April 2022
-
 from __future__ import print_function
 
 import rospy
@@ -44,10 +42,10 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
     print("    start_joint_angles:",start_joint_angles)
     print("    ------------------")
     current_joint_state = JointState()
+    print("    current_joint_state:",current_joint_state)
     current_joint_state.name = joint_names
     current_joint_state.position = start_joint_angles
-    print("    current_joint_state:",current_joint_state)
-    
+
     moveit_robot_state = RobotState()
     print("    moveit_robot_state:",moveit_robot_state)
     moveit_robot_state.joint_state = current_joint_state
@@ -69,61 +67,7 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
     print("    returning plan")   
     return planCompat(plan)
 
-def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
-    print("cartesian_plan")
-    print("move_group")
-    print(move_group)
-    print("tu_pose")
-    print(tu_pose)
-    print("fr_pose")
-    print(fr_pose)
-    print("current_joints")
-    print(current_joints)    
-    print("nbetween:"+str(nbetween))
 
-    current_joint_state = JointState()
-    current_joint_state.name = joint_names
-    current_joint_state.position = current_joints
-    print("    current_joint_state:",current_joint_state)
- 
-
-    moveit_robot_state = RobotState()
-    print("    moveit_robot_state:",moveit_robot_state)
-    moveit_robot_state.joint_state = current_joint_state
-    move_group.set_start_state(moveit_robot_state)
-    move_group.set_pose_target(tu_pose)    
-
-    waypoints = []
-    
-    waypoints.append(copy.deepcopy(fr_pose))
-    
-    deltx = tu_pose.position.x-fr_pose.position.x
-    delty = tu_pose.position.y-fr_pose.position.y
-    deltz = tu_pose.position.z-fr_pose.position.z
-    
-    for i in range(0,nbetween):
-        frac = (i+1.0)/(nbetween+1.0)
-        wpose = fr_pose
-        wx = deltx*frac + fr_pose.position.x
-        wy = delty*frac + fr_pose.position.y
-        wz = deltz*frac + fr_pose.position.z
-        wpose.position.x = wx
-        wpose.position.y = wy
-        wpose.position.z = wz
-        wpose.orientation.x = 0
-        wpose.orientation.y = -1
-        wpose.orientation.z = 0
-        wpose.orientation.w = 0
-        print("waypoint:"+str(i+1)+" wx"+str(wx)+" wy:"+str(wy)+" wz:"+str(wz))        
-        waypoints.append(copy.deepcopy(wpose))
-
-    waypoints.append(copy.deepcopy(tu_pose))
-    
-    (plan,fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0 )
-    print("plan")
-    print(plan)
-    return plan
-    
 """
     Creates a pick and place plan using the four states below.
     
@@ -160,24 +104,17 @@ def plan_pick_and_place(req):
     previous_ending_joint_angles = pre_grasp_pose.joint_trajectory.points[-1].positions
 
     # Grasp - lower gripper so that fingers are on either side of object
-    orig_pick_pose = copy.deepcopy(req.pick_pose)
     pick_pose = copy.deepcopy(req.pick_pose)
     pick_pose.position.z -= 0.05  # Static value coming from Unity, TODO: pass along with request
-    print("current_robot_joint_configuration")
-    print(current_robot_joint_configuration)   
-    print("previous_ending_joint_angles")
-    print(previous_ending_joint_angles)
+    grasp_pose = plan_trajectory(move_group, pick_pose, previous_ending_joint_angles)
     
-    # grasp_pose = None
-    grasp_pose = cartesian_plan(move_group, pick_pose, req.pick_pose, previous_ending_joint_angles,)
-        
+    if not grasp_pose.joint_trajectory.points:
+        return response
 
     previous_ending_joint_angles = grasp_pose.joint_trajectory.points[-1].positions
 
     # Pick Up - raise gripper back to the pre grasp position
-    #pick_up_pose = plan_trajectory(move_group, req.pick_pose, previous_ending_joint_angles)
-    
-    pick_up_pose = cartesian_plan(move_group, orig_pick_pose, pick_pose, previous_ending_joint_angles)
+    pick_up_pose = plan_trajectory(move_group, req.pick_pose, previous_ending_joint_angles)
     
     if not pick_up_pose.joint_trajectory.points:
         return response
@@ -185,8 +122,7 @@ def plan_pick_and_place(req):
     previous_ending_joint_angles = pick_up_pose.joint_trajectory.points[-1].positions
 
     # Place - move gripper to desired placement position
-    # place_pose = plan_trajectory(move_group, req.place_pose, previous_ending_joint_angles)
-    place_pose = cartesian_plan(move_group,  req.place_pose, orig_pick_pose, previous_ending_joint_angles)
+    place_pose = plan_trajectory(move_group, req.place_pose, previous_ending_joint_angles)
 
     if not place_pose.joint_trajectory.points:
         return response
@@ -202,7 +138,27 @@ def plan_pick_and_place(req):
     return response
 
 
-def plan_pick_and_place_original(req):
+def cartesian_plan(move_group,fr_pose,tu_pose,nbetween):
+    waypoints = []
+    
+    waypoints.append(copy.deepcopy(fr_pose))
+    
+    for i in range(1,nbetween):
+        frac = i*1.0/(nbetween+1)
+        wpose = geometry_msg.msg.Pose()
+        wpose.orientation.w = 1
+        wpose.position.x = (tu_pose.x-fr_pose.x)*frac + fr_pose.x
+        wpose.position.y = (tu_pose.y-fr_pose.y)*frac + fr_pose.x
+        wpose.position.z = (tu_pose.z-fr_pose.z)*frac + fr_pose.x
+        waypoints.append(copy.deepcopy(wpose))
+
+    waypoints.append(copy.deepcopy(tu_pose))
+    
+    (plan,fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0 )
+    return plan
+
+
+def plan_pick_and_place_cartesian(req):
     print("rs007_control:mover.py:plan_pick_and_place")
     print("    req:",req)
     response = MoverServiceResponse()
@@ -228,8 +184,6 @@ def plan_pick_and_place_original(req):
     
     if not grasp_pose.joint_trajectory.points:
         return response
-        
-
 
     previous_ending_joint_angles = grasp_pose.joint_trajectory.points[-1].positions
 

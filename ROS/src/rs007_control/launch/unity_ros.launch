@@ -8,4 +8,7 @@
                 <param name="tcp_port" type="int" value="$(arg tcp_port)"/>
   </node>
 
+  <node name="robrelay" pkg="rs007_control" type="robrelay.py" args="--wait" output="screen" respawn="true">
+                <param name="zmq_port" type="int" value="$(arg zmq_port)"/>
+  </node>
 </launch>
