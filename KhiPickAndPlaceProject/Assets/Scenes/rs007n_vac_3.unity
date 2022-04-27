@@ -760,7 +760,7 @@ MonoBehaviour:
   m_RobotModel: {fileID: 1903876434}
   m_Target: {fileID: 977052745}
   m_TargetPlacement: {fileID: 451371862}
-  posePauseSecs: 2
+  posePauseSecs: 0
 --- !u!114 &1801130477
 MonoBehaviour:
   m_ObjectHideFlags: 0

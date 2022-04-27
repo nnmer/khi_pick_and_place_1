@@ -109,6 +109,11 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         var rgrip = m_RobotModel.transform.Find(rightGripperName);
         var lgrip = m_RobotModel.transform.Find(leftGripperName);
         var vgrip = m_RobotModel.transform.Find(vacGripperName);
+        if (vgrip==null)
+        {
+            vacGripperName = linkName + "/tool_link/gripper_base/Visuals/unnamed/RS007_Gripper_C_u";
+            vgrip = m_RobotModel.transform.Find(vacGripperName);
+        }
 
 
         if (vgrip != null)
