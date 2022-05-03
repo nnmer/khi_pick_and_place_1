@@ -12,6 +12,7 @@ public class MmSled : MonoBehaviour
     float pathdist;
     SledForm sledform;
     GameObject sledgo;
+    public string sledid;
     // Start is called before the first frame update
     void Start()
     {
@@ -25,7 +26,7 @@ public class MmSled : MonoBehaviour
     {
         Destroy(sledgo);
     }
-    public void Construct(MmTable mmt,GameObject parent, SledForm sledform, string sname,int pathnum,float pathdist, Vector3 pt, float ang, float speed=0)
+    public void Construct(MmTable mmt,GameObject parent, SledForm sledform, string sledid,int pathnum,float pathdist,  float speed=0)
     {
         this.mmt = mmt;
         this.sledform = sledform;
@@ -33,8 +34,9 @@ public class MmSled : MonoBehaviour
         sledgo = new GameObject("sled");
         this.pathnum = pathnum;
         this.pathdist = pathdist;
+        this.sledid = sledid;
         var path = mmt.GetPath(pathnum);
-        (pt,ang) = path.GetPositionAndOrientation(pathdist);
+        var (pt,ang) = path.GetPositionAndOrientation(pathdist);
         switch (this.sledform)
         {
             case SledForm.Cigar:
@@ -55,7 +57,7 @@ public class MmSled : MonoBehaviour
                 {
                     MmUtil.mmcolor = Color.gray;
                     var go = MmUtil.CreateCube(sledgo, size: sphrad / 3);
-                    go.name = $"sled";
+                    go.name = $"tray";
                     // 6.5x11.0x2cm
                     go.transform.localScale = new Vector3(0.88f, 0.52f, 0.16f);
 
@@ -76,6 +78,11 @@ public class MmSled : MonoBehaviour
         }
         sledgo.transform.position = pt;
         sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+        if (mmt.useMeters)
+        {
+            var u2m = mmt.UnitsToMeters;
+            sledgo.transform.localScale = new Vector3( u2m,u2m,u2m );
+        }
         sledgo.transform.parent = parent.transform;
     }
 
@@ -91,8 +98,25 @@ public class MmSled : MonoBehaviour
             (pathnum, pathdist) = path.AdvancePathdist(pathdist, deltdist);
             var newpath = mmt.GetPath(pathnum);
             var (pt, ang) = newpath.GetPositionAndOrientation(pathdist);
-            sledgo.transform.position = pt;
-            sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+            var parenttrans = sledgo.transform.parent;
+            var parentparenttrans = parenttrans.transform.parent;
+            parenttrans.transform.parent = null;
+            parenttrans.transform.position = pt;
+            parenttrans.transform.rotation = Quaternion.Euler(0, 0, -ang);
+            parenttrans.transform.SetParent(parentparenttrans, worldPositionStays:false);
         }
+        //if (speed > 0 && pathnum >= 0)
+        //{
+        //    var deltdist = speed * Time.deltaTime;
+        //    var path = mmt.GetPath(pathnum);
+        //    (pathnum, pathdist) = path.AdvancePathdist(pathdist, deltdist);
+        //    var newpath = mmt.GetPath(pathnum);
+        //    var (pt, ang) = newpath.GetPositionAndOrientation(pathdist);
+        //    var parenttrans = sledgo.transform.parent;
+        //    sledgo.transform.parent = null;
+        //    sledgo.transform.position = pt;
+        //    sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+        //    sledgo.transform.SetParent(parenttrans,worldPositionStays:false);
+        //}
     }
 }

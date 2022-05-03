@@ -195,11 +195,6 @@ public class MmPathSeg
             return pt;
         }
     }
-    Vector3 UnitsToMeters(Vector3 v)
-    {
-        var rv = MmTable.UnitsToMeters * v;
-        return rv;
-    }
     public void MakeGos(GameObject parent)
     {
         MmUtil.mmcolor = Color.green;
@@ -262,7 +257,7 @@ public class MmPath
     public string name;
     Vector3 startpt;
     Vector3 endpt;
-    int idx;
+    public int idx;
     public float unitLength = 0;
     public List<MmPathSeg> segs = new List<MmPathSeg>();
     [NonSerialized]
@@ -277,35 +272,34 @@ public class MmPath
         this.endpt = this.startpt;
     }
 
-    public void MakeSled(string sname,int pathnum,float pathdist,Vector3 pt,float ang)
+    public void MakeRail(string rname, int pathnum, float pathdist)
     {
-        var sledgo = new GameObject(sname);
-        sledgo.transform.position = pt;
-        sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-        var sled = sledgo.AddComponent<MmSled>();
-        mmt.sleds.Add(sled);
-        var sledform = MmSled.SledForm.Boxes;
-        sled.Construct(mmt,sledgo, sledform, sname,pathnum,pathdist, pt, ang, 2.0f);
-        sledgo.transform.parent = mmt.sledsgo.transform;
-    }
-    public void MakeRail(string sname, int pathnum, float pathdist, Vector3 pt, float ang)
-    {
-        var railgo = new GameObject(sname);
+        var railgo = new GameObject(rname);
+        var path = mmt.GetPath(pathnum);
+        var (pt, ang) = path.GetPositionAndOrientation(pathdist);
         railgo.transform.position = pt;
         railgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
         var rail = railgo.AddComponent<MmSled>();
         mmt.rails.Add(rail);
         var sledform = MmSled.SledForm.Cigar;
-        rail.Construct(mmt,railgo, sledform, sname, pathnum, pathdist, pt, ang);
-        railgo.transform.parent = mmt.sledsgo.transform;
+        var sledid = "";
+        rail.Construct(mmt,railgo, sledform, sledid, pathnum, pathdist, speed:0);
+        railgo.transform.parent = mmt.mmtgo.transform;
     }
     public void MakeGos(GameObject parent,bool seggos,bool pathgos)
     {
-        MmUtil.mmcolor = UnityEngine.Color.red;
 
-        startgo = MmUtil.CreateSphere(parent, size: sphrad/2);
+        var sz = sphrad / 2;
+        var pos = this.startpt;
+        if (mmt.useMeters)
+        {
+            sz *= mmt.UnitsToMeters;
+            pos *= mmt.UnitsToMeters; 
+        }
+        MmUtil.mmcolor = UnityEngine.Color.red;
+        startgo = MmUtil.CreateSphere(parent, size: sz );
         startgo.name = name;
-        startgo.transform.position = this.startpt;
+        startgo.transform.position = pos;
         if (seggos)
         {
             foreach (var seg in segs)
@@ -315,17 +309,6 @@ public class MmPath
         }
         if (pathgos)
         {
-            // sleds
-            var nsleds = (int) this.unitLength/3.0f;
-            for (int i = 0; i < nsleds; i++)
-            {
-                var frac = i * 1.0f / nsleds;
-                var pathdist = frac * this.unitLength;
-                var (pt,ang) = GetPositionAndOrientation(pathdist);
-                var sname = $"sled-path:{idx}-{i}";
-                MakeSled(sname,idx,pathdist,pt, ang);
-            }
-            // rails
             var nrails = (int)this.unitLength /0.4f;
             for (int i = 0; i < nrails; i++)
             {
@@ -333,10 +316,14 @@ public class MmPath
                 var pathdist = frac * this.unitLength;
                 var (pt, ang) = GetPositionAndOrientation(pathdist);
                 var rname = $"{name} rail - frac:{frac:f2} ang:{ang:f0}";
-                MakeRail(rname,idx,pathdist, pt, ang);
+                MakeRail(rname,idx,pathdist);
             }
         }
     }
+
+
+
+
     int selcount = 0;
     public (int newpathidx,float newpathdist) AdvancePathdist(float curpathdist,float deltadist)
     {
@@ -416,6 +403,11 @@ public class MmPath
         var pt = sg.ptOfLmb(lamb);
         var ang = sg.pangOfLmbDeg(lamb);
         //Debug.Log($"rv:{rv}");
+        if (mmt.useMeters)
+        {
+            var u2m = mmt.UnitsToMeters;
+            pt = new Vector3(u2m*pt.x, u2m*pt.y, u2m*pt.z);
+        }
         return (pt,ang);
     }
 }
@@ -425,10 +417,15 @@ public class MmTable
     public GameObject mmtgo;
     public string tableName = "TableName";
     public List<MmPath> paths = new List<MmPath>();
-    public static float UnitsToMeters = 0.125f;
+    public float UnitsToMeters = 0.125f;
     public GameObject sledsgo;
     public List<MmSled> sleds = new List<MmSled>();
     public List<MmSled> rails = new List<MmSled>();
+
+    public bool useMeters = false;
+
+    public  Dictionary<string,MmSled> SledDict = new Dictionary<string, MmSled>();
+
 
     public MmTable()
     {
@@ -500,6 +497,23 @@ public class MmTable
         p8.AddContinuationPath(p6);
     }
 
+    public void MakeSled(string sledid, int pathnum, float pathdist)
+    {
+        var sname1 = $"sledid:{sledid}";
+        var sledgo = new GameObject(sname1);
+        var path = this.GetPath(pathnum);
+        var (pt, ang) = path.GetPositionAndOrientation(pathdist);
+        sledgo.transform.position = pt;
+        sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+        var sled = sledgo.AddComponent<MmSled>();
+        this.sleds.Add(sled);
+        var sledform = MmSled.SledForm.Boxes;
+        sled.Construct(this, sledgo, sledform, sledid, pathnum, pathdist, speed: 2.0f);
+        sledgo.transform.parent = this.mmtgo.transform;
+        this.SledDict[sledid] = sled;
+    }
+
+
     MmPath makePath(string name,Vector3 pt)
     {
         var idx = paths.Count;
@@ -507,7 +521,7 @@ public class MmTable
         paths.Add(rv);
         return rv;
     }
-    public void MakeGos()
+    public void MakeGos(GameObject parent=null)
     {
         mmtgo = new GameObject(tableName);
         sledsgo = new GameObject("Sleds");
@@ -516,25 +530,36 @@ public class MmTable
         {
             p.MakeGos(mmtgo,seggos:false,pathgos:true);
         }
-    }
-}
 
-public class MagneMotion : MonoBehaviour
-{
-    public MmTable mmt=null;
-    // Start is called before the first frame update
-    void Start()
-    {
-        mmt = new MmTable();
-        mmt.MakeMsftDemoMagmo();
-        mmt.MakeGos();
+        // Add Sleds
+        foreach (var p in paths)
+        {
+            var nsleds = (int)p.unitLength / 3.0f;
+            for (int i = 0; i < nsleds; i++)
+            {
+                var frac = i * 1.0f / nsleds;
+                var pathdist = frac * p.unitLength;
+                var iid = sleds.Count + 1;
+                var sledid = $"{iid}";
+                MakeSled(sledid, p.idx, pathdist);
+            }
+        }
+
+        mmtgo.transform.localRotation = Quaternion.Euler(90, 180, 0);
+
+        var floorgo = GameObject.Find("Floor");
+        if (floorgo != null)
+        {
+            mmtgo.transform.SetParent( floorgo.transform, worldPositionStays:false );
+        }
+        mmtgo.transform.position += new Vector3(0.2f, 0.2f, 0.77f);
+
     }
 
-    // Update is called once per frame
-    void Update()
+    public void DeleteSledsAsNeeded()
     {
         var deleteList = new List<MmSled>();
-        foreach(var sled in mmt.sleds)
+        foreach (var sled in sleds)
         {
             if (sled.ShouldDelete())
             {
@@ -546,13 +571,35 @@ public class MagneMotion : MonoBehaviour
             Debug.Log($"Deleteing {deleteList.Count} sleds");
             foreach (var sled in deleteList)
             {
+                if (SledDict.ContainsKey(sled.sledid))
+                {
+                    SledDict.Remove(sled.sledid);
+                }
                 Debug.Log($"   Deleteing {sled.name} ");
-                mmt.sleds.Remove(sled);
+                sleds.Remove(sled);
                 sled.DeleteStuff();
-                Destroy(sled);
             }
-            Debug.Log($"{mmt.sleds.Count} sleds left");
+            Debug.Log($"{sleds.Count} sleds left");
         }
+    }
+}
 
+public class MagneMotion : MonoBehaviour
+{
+    public bool useMeters = false;
+    public MmTable mmt=null;
+    // Start is called before the first frame update
+    void Start()
+    {
+        mmt = new MmTable();
+        mmt.useMeters = useMeters;
+        mmt.MakeMsftDemoMagmo();
+        mmt.MakeGos(this.gameObject);
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        mmt.DeleteSledsAsNeeded();
     }
 }
