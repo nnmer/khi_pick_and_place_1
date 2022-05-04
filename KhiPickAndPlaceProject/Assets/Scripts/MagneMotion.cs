@@ -421,6 +421,7 @@ public class MmTable
     public List<MmRail> rails = new List<MmRail>();
 
     public bool useMeters = false;
+    public float sledSpeed = 2f;
 
     public  Dictionary<string,MmSled> SledDict = new Dictionary<string, MmSled>();
 
@@ -503,7 +504,7 @@ public class MmTable
         p8.LinkToContinuationPath(p6);
     }
 
-    public void MakeSled(string sledid, int pathnum, float pathdist,float speed=0)
+    public void MakeSled(string sledid, int pathnum, float pathdist,bool loaded)
     {
         var sname1 = $"sledid:{sledid}";
         var sledgeomgo = new GameObject(sname1);
@@ -514,7 +515,7 @@ public class MmTable
         var sled = sledgeomgo.AddComponent<MmSled>();
         this.sleds.Add(sled);
         var sledform = MmSled.SledForm.Prefab;
-        sled.Construct(this, sledgeomgo, sledform, sledid, pathnum, pathdist );
+        sled.Construct(this, sledgeomgo, sledform, sledid, pathnum, pathdist,loaded );
         sledgeomgo.transform.parent = this.mmtgo.transform;
         this.SledDict[sledid] = sled;
     }
@@ -551,7 +552,7 @@ public class MmTable
                     var pathdist = frac * p.unitLength;
                     var iid = sleds.Count + 1;
                     var sledid = $"{iid}";
-                    MakeSled(sledid, p.pidx, pathdist, speed:0);
+                    MakeSled(sledid, p.pidx, pathdist, loaded:true);
                 }
             }
         }
@@ -599,15 +600,26 @@ public class MmTable
         }
     }
 
+    System.Random ran = new System.Random(1234);
+    float lastLoadChange = 0f;
+    float timeToLoadStateChange = 3f;
     public void UpdateTable()
     {
-        var sledspeed = 2f;
-        var cnt = 0;
+        if (this.sledSpeed>0)
         foreach (var sled in sleds)
         {
-            sled.AdvanceSledBySpeed(sledspeed);
-            sled.SetLoadState(cnt % 2 == 0);
-            cnt++;
+            sled.AdvanceSledBySpeed(sledSpeed);
+        }
+        if ((Time.time-lastLoadChange)>timeToLoadStateChange)
+        {
+            if (sleds.Count>0)
+            {
+                var i = ran.Next(sleds.Count);
+                var sled = sleds[i];
+                sled.SetLoadState(!sled.GetLoadState());
+                Debug.Log($"Toggled sledid:{sled.sledid} load state to {sled.GetLoadState()}");
+                lastLoadChange = Time.time;
+            }
         }
     }
 }
@@ -615,14 +627,21 @@ public class MmTable
 public class MagneMotion : MonoBehaviour
 {
     public bool useMeters = false;
-    public MmTable mmt=null;
+    public MmTable mmtable=null;
+    public MmTray mmtray = null;
     // Start is called before the first frame update
     void Start()
     {
-        mmt = new MmTable();
-        mmt.useMeters = useMeters;
-        mmt.MakeMsftDemoMagmo();
-        mmt.SetupGeometry(addPathMarkers:true,addPathSleds:true,positionOnFloor:true);
+        mmtable = new MmTable();
+        mmtable.useMeters = useMeters;
+        mmtable.MakeMsftDemoMagmo();
+        mmtable.SetupGeometry(addPathMarkers:true,addPathSleds:true,positionOnFloor:true);
+
+        mmtray = FindObjectOfType<MmTray>();
+        if (mmtray!=null)
+        {
+            mmtray.Init(mmtable);
+        }
 
         ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", SledChange);
     }
@@ -630,11 +649,25 @@ public class MagneMotion : MonoBehaviour
 
     void SledChange(MmSledMsg sledmsg)
     {
-        Debug.Log($"Rs007Sleds:{sledmsg.ToString()}");
-        var sledid = sledmsg.cartid;
+        Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
+        var sledid = $"{sledmsg.cartid}";
         var loaded = sledmsg.loaded;
         var pathid = sledmsg.pathid;
-        var position = sledmsg.position;
+        var position = (float) sledmsg.position;
+        if (mmtable.SledDict.ContainsKey(sledid))
+        {
+            var sled = mmtable.SledDict[sledid];
+            var oldstate = sled.GetLoadState();
+            sled.UpdateSled(pathid, position, loaded);
+            if (oldstate!=loaded)
+            {
+                Debug.Log($"Sled {sledid} changed loaded state to {loaded}");
+            }
+        }
+        else
+        {
+            mmtable.MakeSled(sledid, pathid, position,loaded);
+        }
     }
 
 
@@ -642,7 +675,7 @@ public class MagneMotion : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        mmt.DeleteSledsAsNeeded();
-        mmt.UpdateTable();
+        mmtable.DeleteSledsAsNeeded();
+        mmtable.UpdateTable();
     }
 }

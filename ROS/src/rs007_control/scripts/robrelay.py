@@ -6,6 +6,9 @@ import rospy
 import rosgraph
 from rs007_control.msg import Rs007Joints6
 from rs007_control.msg import Rs007Joints1
+from rs007_control.msg import MagneMotionSled
+from rs007_control.msg import MagneMotionTray
+from rs007_control.msg import MagneMotionTray1
 
 zmqport = rospy.get_param("ZMQ_PORT",10006)
 
@@ -18,6 +21,9 @@ def zmqinit():
 
 J1_TOPIC_NAME = 'Rs007Joints1'
 J6_TOPIC_NAME = 'Rs007Joints6'
+SLED_TOPIC_NAME = 'Rs007Sleds'
+TRAY_TOPIC_NAME = 'Rs007Tray'
+TRAY1_TOPIC_NAME = 'Rs007Tray1'
 NODE_NAME = 'joint_publisher'
 
 
@@ -41,13 +47,19 @@ def wait_for_connections(pub, topic):
     # raise RuntimeError("failed to get publisher pub_num_connects:"+str(pub_num_connects))
 
 def rosinit():
-    global pub1,pub6, J1_TOPIC_NAME, J6_TOPIC_NAME
+    global pub1con,pub6con, sledcon,traycon,tray1con
+    global J1_TOPIC_NAME, J6_TOPIC_NAME, SLED_TOPIC_NAME, TRAY_TOPIC_NAME, TRAY1_TOPIC_NAME
     rospy.init_node(NODE_NAME, anonymous=True)
-    pub1 = rospy.Publisher(J1_TOPIC_NAME, Rs007Joints1, queue_size=10)
-    wait_for_connections( pub1, J1_TOPIC_NAME)
-    pub6 = rospy.Publisher(J6_TOPIC_NAME, Rs007Joints6, queue_size=10)
-    wait_for_connections( pub6, J6_TOPIC_NAME)
-
+    pub1con = rospy.Publisher(J1_TOPIC_NAME, Rs007Joints1, queue_size=10)
+    wait_for_connections( pub1con, J1_TOPIC_NAME)
+    pub6con = rospy.Publisher(J6_TOPIC_NAME, Rs007Joints6, queue_size=10)
+    wait_for_connections( pub6con, J6_TOPIC_NAME)
+    sledcon = rospy.Publisher(SLED_TOPIC_NAME, MagneMotionSled, queue_size=10)
+    wait_for_connections( sledcon, SLED_TOPIC_NAME)
+    traycon = rospy.Publisher(TRAY_TOPIC_NAME, MagneMotionTray, queue_size=10)
+    wait_for_connections( traycon, TRAY_TOPIC_NAME)
+    tray1con = rospy.Publisher(TRAY1_TOPIC_NAME, MagneMotionTray1, queue_size=10)
+    wait_for_connections( traycon, TRAY1_TOPIC_NAME)    
 
 def killme(param):
      print("killing server")
@@ -59,13 +71,54 @@ def doj1(param):
     s2 = param.split(',')
     ln = len(s2)
     if ln!=2:
-      return "Error - j1 - wrong number of values need 2 have :"+st(ln)
+      return "Error - j1 - wrong number of values need 2 have :"+str(ln)
     idx = int(float(s2[0]))
     ang = float(s2[1])
     j1 = Rs007Joints1( idx,ang )
-    pub1.publish(j1)       
+    pub1con.publish(j1)       
     return "ok - doj1"
-
+    
+def str_to_bool(s):
+    rv = True
+    s = s.lower()
+    if (s=="false" or s=="0" or s=="f"):
+      rv = false
+    return rv
+    
+def docart1(param):
+    global sledcon
+    print("docart1:"+param)
+    s2 = param.split(',')
+    ln = len(s2)
+    if ln!=4:
+      return "Error - docart1 - wrong number of values need 4 have :"+str(ln)
+    loaded = str_to_bool(s2[0])
+    position = float(s2[1])
+    pathid = int(float(s2[2]))    
+    sledid = int(float(s2[3]))    
+    mmmsg = MagneMotionSled( loaded,position,pathid,sledid )
+    sledcon.publish(mmmsg)       
+    return "ok - docart1"
+    
+def docartjson(param):
+    global sledcon
+    print("docartjson:"+param)
+    return "not implmented - docartjson"    
+    
+def dotray1(param):
+    global tray1con
+    print("dotray1:"+param)
+    s2 = param.split(',')
+    ln = len(s2)
+    if ln!=3:
+      return "Error - dotray1 - wrong number of values need 3 have :"+str(ln)
+    row = int(float(s2[0]))    
+    col = int(float(s2[1]))    
+    loaded = int(float(s2[2])) 
+    mmmsg = MagneMotionTray1( row, col, loaded )
+    tray1con.publish(mmmsg)       
+    return "ok - dotray1"    
+    
 def doj6(param):
     global pub6
     print("dojj6:"+param)
@@ -80,7 +133,7 @@ def doj6(param):
     ang4 = float(s6[4])
     ang5 = float(s6[5])
     j6 = Rs007Joints6( [ang0,ang1,ang2,ang3,ang4,ang5] )
-    pub6.publish(j6)       
+    pub6con.publish(j6)       
     return "ok - doj6"
 
 def mainloop():
@@ -99,14 +152,26 @@ def mainloop():
         parm = ""
         if len(sar)>1:
             parm = sar[1]
-        rv = "unknown command:"+cmd
+            
+        rv = "not set"
         
-        if cmd=="kill":
-          rv = killme(parm)
-        elif cmd=="j1":
-          rv = doj1(parm)
-        elif cmd=="j6":
-          rv = doj6(parm)
+        try:
+          if cmd=="kill":
+            rv = killme(parm)
+          elif cmd=="j1":
+            rv = doj1(parm)
+          elif cmd=="j6":
+            rv = doj6(parm)
+          elif cmd=="cart1" or cmd=="sled1":
+            rv = docart1(parm)
+          elif cmd=="cartjson" or cmd=="sledjson":
+            rv = docartjson(parm)   
+          elif cmd=="tray1":
+            rv = dotray1(parm)                 
+          else:
+            rv = "unknown command:"+cmd
+        except Exception as ex:
+            rv = "Exception occured:"+repr(ex)
           
         #  Do some 'work'
         time.sleep(0.001)

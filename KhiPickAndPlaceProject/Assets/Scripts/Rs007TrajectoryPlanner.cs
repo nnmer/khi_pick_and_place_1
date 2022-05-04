@@ -11,10 +11,8 @@ using UnityEngine;
 
 using RsJ1Msg = RosMessageTypes.Rs007Control.Rs007Joints1Msg;
 using RsJ6Msg = RosMessageTypes.Rs007Control.Rs007Joints6Msg;
-using MmSledMsg = RosMessageTypes.Rs007Control.MagneMotionSledMsg;
+// using MmSledMsg = RosMessageTypes.Rs007Control.MagneMotionSledMsg;
 // using MmTrayMsg = RosMessageTypes.Rs007Control.MagneMotionTrayMsg;
-
-
 
 public enum GripperType {  None, Claw, Vacuum };
 public enum GripTrigger {  OnCollision, OnCommand };

@@ -28,6 +28,10 @@ public class MmSled : MonoBehaviour
     {
         markedForDeletion = true;
     }
+    public bool GetLoadState()
+    {
+        return loadState;
+    }
     public void SetLoadState(bool newLoadState)
     {
         if (newLoadState == loadState) return;
@@ -42,7 +46,7 @@ public class MmSled : MonoBehaviour
         var parentgo = formgo.transform.parent.gameObject;
         Destroy(geomgo);
     }
-    public void Construct(MmTable mmt,GameObject geomgo, SledForm sledform, string sledid,int pathnum,float pathdist)
+    public void Construct(MmTable mmt,GameObject geomgo, SledForm sledform, string sledid,int pathnum,float pathdist,bool loaded)
     {
         this.geomgo = geomgo;
         this.mmt = mmt;
@@ -110,6 +114,8 @@ public class MmSled : MonoBehaviour
                     break;
                 }
         }
+        loadState = loaded;
+        boxgo.SetActive(loadState);
         formgo.transform.position = pt;
         formgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
         if (mmt.useMeters)
@@ -129,6 +135,16 @@ public class MmSled : MonoBehaviour
         geomgo.transform.position = pt;
         geomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
         geomgo.transform.SetParent(geomparenttrans, worldPositionStays: false);
+        geomgo.transform.SetAsFirstSibling();
+    }
+
+    public void UpdateSled(int pathnum,float position,bool loaded)
+    {
+        this.pathnum = pathnum;
+        this.pathdist = position;
+        var newpath = mmt.GetPath(pathnum);
+        var (pt, ang) = newpath.GetPositionAndOrientation(pathdist);
+        AdjustSledPositionAndOrientation(pt, ang);
     }
     public void AdvanceSledBySpeed(float spedspeed)
     {
