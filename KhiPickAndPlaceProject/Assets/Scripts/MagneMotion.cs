@@ -2,6 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using RosMessageTypes.Rs007Control;
+using MmSledMsg = RosMessageTypes.Rs007Control.MagneMotionSledMsg;
+using Unity.Robotics.ROSTCPConnector;
 
 
 public enum MmSegForm {  None, Straight, Curved }
@@ -278,11 +281,11 @@ public class MmPath
         var (pt, ang) = path.GetPositionAndOrientation(pathdist);
         railgo.transform.position = pt;
         railgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-        var rail = railgo.AddComponent<MmSled>();
+        var rail = railgo.AddComponent<MmRail>();
         mmt.rails.Add(rail);
-        var sledform = MmSled.SledForm.Cigar;
+        var railform = MmRail.RailForm.Cigar;
         var sledid = "";
-        rail.Construct(mmt,railgo, sledform, sledid, pathnum, pathdist, speed:0);
+        rail.Construct(mmt,railgo, railform, sledid, pathnum, pathdist, speed:0);
         railgo.transform.parent = mmt.mmtgo.transform;
     }
     public void AddPathMarkers(GameObject parent,bool seggos,bool pathgos)
@@ -415,7 +418,7 @@ public class MmTable
     public float UnitsToMeters = 0.125f;
     public GameObject sledsgo;
     public List<MmSled> sleds = new List<MmSled>();
-    public List<MmSled> rails = new List<MmSled>();
+    public List<MmRail> rails = new List<MmRail>();
 
     public bool useMeters = false;
 
@@ -510,9 +513,8 @@ public class MmTable
         sledgeomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
         var sled = sledgeomgo.AddComponent<MmSled>();
         this.sleds.Add(sled);
-        //var sledform = MmSled.SledForm.BoxCubeBased;
         var sledform = MmSled.SledForm.Prefab;
-        sled.Construct(this, sledgeomgo, sledform, sledid, pathnum, pathdist, speed: speed);
+        sled.Construct(this, sledgeomgo, sledform, sledid, pathnum, pathdist );
         sledgeomgo.transform.parent = this.mmtgo.transform;
         this.SledDict[sledid] = sled;
     }
@@ -549,7 +551,7 @@ public class MmTable
                     var pathdist = frac * p.unitLength;
                     var iid = sleds.Count + 1;
                     var sledid = $"{iid}";
-                    MakeSled(sledid, p.pidx, pathdist, speed:2f );
+                    MakeSled(sledid, p.pidx, pathdist, speed:0);
                 }
             }
         }
@@ -596,6 +598,18 @@ public class MmTable
             Debug.Log($"{sleds.Count} sleds left");
         }
     }
+
+    public void UpdateTable()
+    {
+        var sledspeed = 2f;
+        var cnt = 0;
+        foreach (var sled in sleds)
+        {
+            sled.AdvanceSledBySpeed(sledspeed);
+            sled.SetLoadState(cnt % 2 == 0);
+            cnt++;
+        }
+    }
 }
 
 public class MagneMotion : MonoBehaviour
@@ -609,11 +623,26 @@ public class MagneMotion : MonoBehaviour
         mmt.useMeters = useMeters;
         mmt.MakeMsftDemoMagmo();
         mmt.SetupGeometry(addPathMarkers:true,addPathSleds:true,positionOnFloor:true);
+
+        ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", SledChange);
     }
+
+
+    void SledChange(MmSledMsg sledmsg)
+    {
+        Debug.Log($"Rs007Sleds:{sledmsg.ToString()}");
+        var sledid = sledmsg.cartid;
+        var loaded = sledmsg.loaded;
+        var pathid = sledmsg.pathid;
+        var position = sledmsg.position;
+    }
+
+
 
     // Update is called once per frame
     void Update()
     {
         mmt.DeleteSledsAsNeeded();
+        mmt.UpdateTable();
     }
 }

@@ -1,4 +1,4 @@
-int32 loaded 
+bool loaded 
 float64 position
 int32 pathid
-int32 cardit
+int32 cartid

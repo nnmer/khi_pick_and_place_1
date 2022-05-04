@@ -5,15 +5,16 @@ using UnityEngine;
 public class MmSled : MonoBehaviour
 {
     MmTable mmt;
-    public enum SledForm { Cigar,BoxCubeBased,Prefab }
+    public enum SledForm { BoxCubeBased,Prefab }
     static float sphrad = 0.2f;
-    float speed;
     int pathnum;
     float pathdist;
     bool markedForDeletion = false;
     SledForm sledform;
     GameObject geomgo;
     GameObject formgo;
+    GameObject boxgo;
+    public bool loadState;
     public string sledid;
     // Start is called before the first frame update
     void Start()
@@ -27,18 +28,26 @@ public class MmSled : MonoBehaviour
     {
         markedForDeletion = true;
     }
+    public void SetLoadState(bool newLoadState)
+    {
+        if (newLoadState == loadState) return;
+        loadState = newLoadState;
+        if (boxgo!=null)
+        {
+            boxgo.SetActive(loadState);
+        }
+    }
     public void DeleteStuff()
     {
         var parentgo = formgo.transform.parent.gameObject;
         Destroy(geomgo);
     }
-    public void Construct(MmTable mmt,GameObject geomgo, SledForm sledform, string sledid,int pathnum,float pathdist,  float speed=0)
+    public void Construct(MmTable mmt,GameObject geomgo, SledForm sledform, string sledid,int pathnum,float pathdist)
     {
         this.geomgo = geomgo;
         this.mmt = mmt;
         this.sledform = sledform;
-        this.speed = speed;
-        formgo = new GameObject("sled");
+        formgo = new GameObject("sledform");
         this.pathnum = pathnum;
         this.pathdist = pathdist;
         this.sledid = sledid;
@@ -46,20 +55,6 @@ public class MmSled : MonoBehaviour
         var (pt,ang) = path.GetPositionAndOrientation(pathdist);
         switch (this.sledform)
         {
-            case SledForm.Cigar:
-                {
-                    MmUtil.mmcolor = Color.gray;
-                    var go = MmUtil.CreateSphere(formgo, size: sphrad / 3);
-                    go.name = $"cigar";
-                    go.transform.localScale = new Vector3(0.1f, 0.3f, 0.1f);
-
-                    MmUtil.mmcolor = Color.red;
-                    var go1 = MmUtil.CreateSphere(formgo, size: sphrad / 3);
-                    go1.name = $"nose";
-                    go1.transform.position = new Vector3(0.0f, 0.1f, 0);
-                    go1.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-                    break;
-                }
             case SledForm.BoxCubeBased:
                 {
                     MmUtil.mmcolor = Color.gray;
@@ -74,6 +69,7 @@ public class MmSled : MonoBehaviour
                     // 7x5.4x4.3.5
                     go1.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
                     go1.transform.localScale = new Vector3(0.56f, 0.32f, 0.28f);
+                    boxgo = go1;
 
                     MmUtil.mmcolor = MmUtil.GetRandomColor();
                     var go2 = MmUtil.CreateSphere(formgo, size: sphrad / 3);
@@ -104,7 +100,7 @@ public class MmSled : MonoBehaviour
                     go1.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
                     go1.transform.localRotation = Quaternion.Euler(180,90,-90);
                     go1.transform.localScale = new Vector3(8, 8, 8);
-
+                    boxgo = go1;
 
                     MmUtil.mmcolor = MmUtil.GetRandomColor();
                     var go2 = MmUtil.CreateSphere(formgo, size: sphrad / 3);
@@ -122,31 +118,36 @@ public class MmSled : MonoBehaviour
             formgo.transform.localScale = new Vector3( u2m,u2m,u2m );
         }
         formgo.transform.parent = geomgo.transform;
+        AdjustSledPositionAndOrientation(pt, ang);
     }
 
+
+    void AdjustSledPositionAndOrientation(Vector3 pt, float ang)
+    {
+        var geomparenttrans = geomgo.transform.parent;
+        geomgo.transform.parent = null;
+        geomgo.transform.position = pt;
+        geomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+        geomgo.transform.SetParent(geomparenttrans, worldPositionStays: false);
+    }
+    public void AdvanceSledBySpeed(float spedspeed)
+    {
+        var deltdist = spedspeed * Time.deltaTime;
+        var path = mmt.GetPath(pathnum);
+        bool markfordeletion;
+        (pathnum, pathdist, markfordeletion) = path.AdvancePathdist(pathdist, deltdist);
+        if (markfordeletion)
+        {
+            this.MarkForDeletion();
+        }
+        var newpath = mmt.GetPath(pathnum);
+        var (pt, ang) = newpath.GetPositionAndOrientation(pathdist);
+        AdjustSledPositionAndOrientation(pt, ang);
+    }
     int updatecount = 0;
     // Update is called once per frame
     void Update()
     {
         updatecount++;
-        if (speed>0 && pathnum>=0)
-        {
-            //Debug.Log($"Updating {sledid}");
-            var deltdist = speed * Time.deltaTime;
-            var path = mmt.GetPath(pathnum);
-            bool markfordeletion;
-            (pathnum, pathdist, markfordeletion) = path.AdvancePathdist(pathdist, deltdist);
-            if (markfordeletion)
-            {
-                this.MarkForDeletion();
-            }
-            var newpath = mmt.GetPath(pathnum);
-            var (pt, ang) = newpath.GetPositionAndOrientation(pathdist);
-            var geomparenttrans = geomgo.transform.parent;
-            geomgo.transform.parent = null;
-            geomgo.transform.position = pt;
-            geomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-            geomgo.transform.SetParent(geomparenttrans, worldPositionStays:false);
-        }
     }
 }

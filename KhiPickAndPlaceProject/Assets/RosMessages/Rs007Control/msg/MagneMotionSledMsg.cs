@@ -13,25 +13,25 @@ namespace RosMessageTypes.Rs007Control
         public const string k_RosMessageName = "rs007_control/MagneMotionSled";
         public override string RosMessageName => k_RosMessageName;
 
-        public int loaded;
+        public bool loaded;
         public double position;
         public int pathid;
-        public int cardit;
+        public int cartid;
 
         public MagneMotionSledMsg()
         {
-            this.loaded = 0;
+            this.loaded = false;
             this.position = 0.0;
             this.pathid = 0;
-            this.cardit = 0;
+            this.cartid = 0;
         }
 
-        public MagneMotionSledMsg(int loaded, double position, int pathid, int cardit)
+        public MagneMotionSledMsg(bool loaded, double position, int pathid, int cartid)
         {
             this.loaded = loaded;
             this.position = position;
             this.pathid = pathid;
-            this.cardit = cardit;
+            this.cartid = cartid;
         }
 
         public static MagneMotionSledMsg Deserialize(MessageDeserializer deserializer) => new MagneMotionSledMsg(deserializer);
@@ -41,7 +41,7 @@ namespace RosMessageTypes.Rs007Control
             deserializer.Read(out this.loaded);
             deserializer.Read(out this.position);
             deserializer.Read(out this.pathid);
-            deserializer.Read(out this.cardit);
+            deserializer.Read(out this.cartid);
         }
 
         public override void SerializeTo(MessageSerializer serializer)
@@ -49,7 +49,7 @@ namespace RosMessageTypes.Rs007Control
             serializer.Write(this.loaded);
             serializer.Write(this.position);
             serializer.Write(this.pathid);
-            serializer.Write(this.cardit);
+            serializer.Write(this.cartid);
         }
 
         public override string ToString()
@@ -58,7 +58,7 @@ namespace RosMessageTypes.Rs007Control
             "\nloaded: " + loaded.ToString() +
             "\nposition: " + position.ToString() +
             "\npathid: " + pathid.ToString() +
-            "\ncardit: " + cardit.ToString();
+            "\ncartid: " + cartid.ToString();
         }
 
 #if UNITY_EDITOR
