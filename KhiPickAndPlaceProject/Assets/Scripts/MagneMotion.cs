@@ -6,7 +6,6 @@ using UnityEngine;
 
 public enum MmSegForm {  None, Straight, Curved }
 
-
 public class MmUtil
 {
     public static Color mmcolor = Color.white;
@@ -257,7 +256,7 @@ public class MmPath
     public string name;
     Vector3 startpt;
     Vector3 endpt;
-    public int idx;
+    public int pidx;
     public float unitLength = 0;
     public List<MmPathSeg> segs = new List<MmPathSeg>();
     [NonSerialized]
@@ -267,12 +266,12 @@ public class MmPath
     {
         this.mmt = mmt;
         this.name = name;
-        this.idx = idx;
+        this.pidx = idx;
         this.startpt = startpt;
         this.endpt = this.startpt;
     }
 
-    public void MakeRail(string rname, int pathnum, float pathdist)
+    public void MakePathRail(string rname, int pathnum, float pathdist)
     {
         var railgo = new GameObject(rname);
         var path = mmt.GetPath(pathnum);
@@ -286,7 +285,7 @@ public class MmPath
         rail.Construct(mmt,railgo, sledform, sledid, pathnum, pathdist, speed:0);
         railgo.transform.parent = mmt.mmtgo.transform;
     }
-    public void MakeGos(GameObject parent,bool seggos,bool pathgos)
+    public void AddPathMarkers(GameObject parent,bool seggos,bool pathgos)
     {
 
         var sz = sphrad / 2;
@@ -316,33 +315,29 @@ public class MmPath
                 var pathdist = frac * this.unitLength;
                 var (pt, ang) = GetPositionAndOrientation(pathdist);
                 var rname = $"{name} rail - frac:{frac:f2} ang:{ang:f0}";
-                MakeRail(rname,idx,pathdist);
+                MakePathRail(rname,pidx,pathdist);
             }
         }
     }
-
-
-
-
     int selcount = 0;
-    public (int newpathidx,float newpathdist) AdvancePathdist(float curpathdist,float deltadist)
+    public (int newpathidx,float newpathdist,bool markfordeletion) AdvancePathdist(float curpathdist,float deltadist)
     {
         var newdist = curpathdist + deltadist;
         if (newdist < this.unitLength)
         {
-            return (idx, newdist);
+            return (pidx, newdist, false);
         }
         var restdist = newdist - this.unitLength;
         if (continuationPaths.Count==0)
         {
-            return (-1, this.unitLength);
+            return (pidx, this.unitLength, true);
         }
         var newpath = continuationPaths[selcount % continuationPaths.Count];
         selcount++;
-        return (newpath.idx, restdist);
+        return (newpath.pidx, restdist, false);
     }
 
-    public void AddContinuationPath(MmPath contpath)
+    public void LinkToContinuationPath(MmPath contpath)
     {
         continuationPaths.Add(contpath);
     }
@@ -354,7 +349,7 @@ public class MmPath
     {
         return endpt;
     }
-    public void makeStrSeg( string direction, float lengthUnits)
+    public void MakeLineSeg( string direction, float lengthUnits)
     {
         var name= $"line-seg {segs.Count}";
         var seg = new MmPathSeg(this, MmSegForm.Straight, name, direction, lengthUnits);
@@ -362,7 +357,7 @@ public class MmPath
         segs.Add(seg);
 
     }
-    public void makeCrcSeg(string startCompassPt, string rotdir)
+    public void MakeCircSeg(string startCompassPt, string rotdir)
     {
         var name = $"circ-seg {segs.Count}";
         var seg = new MmPathSeg(this, MmSegForm.Curved, name, startCompassPt, rotdir);
@@ -436,6 +431,14 @@ public class MmTable
     }
     public MmPath GetPath(int idx)
     {
+        if (idx <0)
+        {
+            Debug.LogError("GetPath - path idx<0");
+        }
+        if (idx>=paths.Count)
+        {
+            Debug.LogError("GetPath - path idx exceeds count");
+        }
         return paths[idx];
     }
     public void MakeMsftDemoMagmo()
@@ -445,71 +448,72 @@ public class MmTable
         var mmt = this;
         var ptstar = new Vector3(4, 0, 0);
         var p1 = mmt.makePath("path1", ptstar);
-        p1.makeStrSeg("w", 2);
-        p1.makeStrSeg("w", 8);
-        p1.makeStrSeg("w", 2);
-        p1.makeCrcSeg("s", "cw");
-        p1.makeCrcSeg("w", "cw");
+        p1.MakeLineSeg("w", 2);
+        p1.MakeLineSeg("w", 8);
+        p1.MakeLineSeg("w", 2);
+        p1.MakeCircSeg("s", "cw");
+        p1.MakeCircSeg("w", "cw");
 
         var p2 = mmt.makePath("path2", p1.End());
-        p2.makeCrcSeg("s", "ccw");
-        p1.AddContinuationPath(p2);
+        p2.MakeCircSeg("s", "ccw");
+        p1.LinkToContinuationPath(p2);
 
 
         var p3 = mmt.makePath("path3", p2.End());
-        p3.makeStrSeg("n", 2);
-        p2.AddContinuationPath(p3);
+        p3.MakeLineSeg("n", 2);
+        p2.LinkToContinuationPath(p3);
 
         var p4 = mmt.makePath("path4", p2.End());
-        p4.makeCrcSeg("w", "cw");
-        p4.makeStrSeg("e", 2);
-        p4.makeStrSeg("e", 8);
-        p4.makeStrSeg("e", 2);
-        p4.makeCrcSeg("n", "cw");
-        p4.makeCrcSeg("w", "ccw");
-        p2.AddContinuationPath(p4);
+        p4.MakeCircSeg("w", "cw");
+        p4.MakeLineSeg("e", 2);
+        p4.MakeLineSeg("e", 8);
+        p4.MakeLineSeg("e", 2);
+        p4.MakeCircSeg("n", "cw");
+        p4.MakeCircSeg("w", "ccw");
+        p2.LinkToContinuationPath(p4);
 
         var p5 = mmt.makePath("path5", p1.End());
-        p5.makeStrSeg("e", 2);
-        p5.makeStrSeg("e", 8);
-        p5.makeStrSeg("e", 2);
-        p1.AddContinuationPath(p5);
+        p5.MakeLineSeg("e", 2);
+        p5.MakeLineSeg("e", 8);
+        p5.MakeLineSeg("e", 2);
+        p1.LinkToContinuationPath(p5);
 
         var p6 = mmt.makePath("path6", p5.End());
-        p6.makeStrSeg("e", 2);
-        p6.makeStrSeg("e", 2);
-        p5.AddContinuationPath(p6);
+        p6.MakeLineSeg("e", 2);
+        p6.MakeLineSeg("e", 2);
+        p5.LinkToContinuationPath(p6);
 
         var p7 = mmt.makePath("path7", p4.End());
-        p7.makeCrcSeg("n", "cw");
-        p7.makeCrcSeg("e", "cw");
-        p7.makeStrSeg("w", 2);
-        p7.makeStrSeg("w", 2);
-        p4.AddContinuationPath(p7);
-        p6.AddContinuationPath(p7);
+        p7.MakeCircSeg("n", "cw");
+        p7.MakeCircSeg("e", "cw");
+        p7.MakeLineSeg("w", 2);
+        p7.MakeLineSeg("w", 2);
+        p4.LinkToContinuationPath(p7);
+        p6.LinkToContinuationPath(p7);
 
 
         var p8 = mmt.makePath("path8", p7.End());
-        p8.makeCrcSeg("s", "cw");
-        p8.makeCrcSeg("w", "cw");
-        p7.AddContinuationPath(p1);
-        p7.AddContinuationPath(p8);
-        p8.AddContinuationPath(p6);
+        p8.MakeCircSeg("s", "cw");
+        p8.MakeCircSeg("w", "cw");
+        p7.LinkToContinuationPath(p1);
+        p7.LinkToContinuationPath(p8);
+        p8.LinkToContinuationPath(p6);
     }
 
-    public void MakeSled(string sledid, int pathnum, float pathdist)
+    public void MakeSled(string sledid, int pathnum, float pathdist,float speed=0)
     {
         var sname1 = $"sledid:{sledid}";
-        var sledgo = new GameObject(sname1);
+        var sledgeomgo = new GameObject(sname1);
         var path = this.GetPath(pathnum);
         var (pt, ang) = path.GetPositionAndOrientation(pathdist);
-        sledgo.transform.position = pt;
-        sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-        var sled = sledgo.AddComponent<MmSled>();
+        sledgeomgo.transform.position = pt;
+        sledgeomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+        var sled = sledgeomgo.AddComponent<MmSled>();
         this.sleds.Add(sled);
-        var sledform = MmSled.SledForm.Boxes;
-        sled.Construct(this, sledgo, sledform, sledid, pathnum, pathdist, speed: 2.0f);
-        sledgo.transform.parent = this.mmtgo.transform;
+        //var sledform = MmSled.SledForm.BoxCubeBased;
+        var sledform = MmSled.SledForm.Prefab;
+        sled.Construct(this, sledgeomgo, sledform, sledid, pathnum, pathdist, speed: speed);
+        sledgeomgo.transform.parent = this.mmtgo.transform;
         this.SledDict[sledid] = sled;
     }
 
@@ -521,39 +525,49 @@ public class MmTable
         paths.Add(rv);
         return rv;
     }
-    public void MakeGos(GameObject parent=null)
+    public void SetupGeometry(bool addPathMarkers,bool addPathSleds,bool positionOnFloor)
     {
         mmtgo = new GameObject(tableName);
-        sledsgo = new GameObject("Sleds");
-        sledsgo.transform.parent = mmtgo.transform;
-        foreach (var p in paths)
-        {
-            p.MakeGos(mmtgo,seggos:false,pathgos:true);
-        }
 
-        // Add Sleds
-        foreach (var p in paths)
+        if (addPathMarkers)
         {
-            var nsleds = (int)p.unitLength / 3.0f;
-            for (int i = 0; i < nsleds; i++)
+            foreach (var p in paths)
             {
-                var frac = i * 1.0f / nsleds;
-                var pathdist = frac * p.unitLength;
-                var iid = sleds.Count + 1;
-                var sledid = $"{iid}";
-                MakeSled(sledid, p.idx, pathdist);
+                p.AddPathMarkers(mmtgo, seggos: false, pathgos: true);
             }
         }
 
-        mmtgo.transform.localRotation = Quaternion.Euler(90, 180, 0);
-
-        var floorgo = GameObject.Find("Floor");
-        if (floorgo != null)
+        // Add Sleds
+        if (addPathSleds)
         {
-            mmtgo.transform.SetParent( floorgo.transform, worldPositionStays:false );
+            foreach (var p in paths)
+            {
+                var nsleds = (int)p.unitLength / 3.0f;
+                for (int i = 0; i < nsleds; i++)
+                {
+                    var frac = i * 1.0f / nsleds;
+                    var pathdist = frac * p.unitLength;
+                    var iid = sleds.Count + 1;
+                    var sledid = $"{iid}";
+                    MakeSled(sledid, p.pidx, pathdist, speed:2f );
+                }
+            }
         }
-        mmtgo.transform.position += new Vector3(0.2f, 0.2f, 0.77f);
+        if (positionOnFloor)
+        {
+            // flatten to XZ plane and twist around
+            mmtgo.transform.localRotation = Quaternion.Euler(90, 180, 0);
 
+            // attach to floor if there is one
+            var floorgo = GameObject.Find("Floor");
+            if (floorgo != null)
+            {
+                mmtgo.transform.SetParent(floorgo.transform, worldPositionStays: false);
+                // move it behind the robot and up to the first robot joint 
+                mmtgo.transform.position += new Vector3(0.2f, 0.2f, 0.77f);
+            }
+
+        }
     }
 
     public void DeleteSledsAsNeeded()
@@ -561,7 +575,7 @@ public class MmTable
         var deleteList = new List<MmSled>();
         foreach (var sled in sleds)
         {
-            if (sled.ShouldDelete())
+            if (sled.ShouldDeleted())
             {
                 deleteList.Add(sled);
             }
@@ -594,7 +608,7 @@ public class MagneMotion : MonoBehaviour
         mmt = new MmTable();
         mmt.useMeters = useMeters;
         mmt.MakeMsftDemoMagmo();
-        mmt.MakeGos(this.gameObject);
+        mmt.SetupGeometry(addPathMarkers:true,addPathSleds:true,positionOnFloor:true);
     }
 
     // Update is called once per frame
