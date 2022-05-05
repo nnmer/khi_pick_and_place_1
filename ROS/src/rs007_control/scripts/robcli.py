@@ -80,7 +80,7 @@ def main():
         print("sending cart_json_long")
         msg = "cartjson" + "|" + cart_json_long
     if nargs>2:
-        msg = "cartjson"  + "|" + sys.argv[2]
+        msg = msg + "|" + sys.argv[2]
     sendmsg(msg)
     print("done")
 
