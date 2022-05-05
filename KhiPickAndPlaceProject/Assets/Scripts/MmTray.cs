@@ -16,6 +16,7 @@ public class MmTray : MonoBehaviour
     const int nrow = 4;
     const int ncol = 3;
     Dictionary<(int, int), bool> loaded = new Dictionary<(int, int), bool>();
+    Dictionary<(int, int), GameObject> box = new Dictionary<(int, int), GameObject>();
 
     bool positionOnFloor = true;
 
@@ -48,7 +49,7 @@ public class MmTray : MonoBehaviour
     public void Init(MmTable mmt)
     {
         this.mmt = mmt;
-        // 15.7x2, 28.9, 1.7 
+        // size in cm - 31.4, 28.9, 1.7 
         var floorgo = GameObject.Find("Floor");
         if (positionOnFloor && floorgo != null)
         {
@@ -70,8 +71,52 @@ public class MmTray : MonoBehaviour
 
             mmtraygo.transform.position = new Vector3(0, 0, 0);
         }
+        CreateBoxes();
+    }
+    void CreateBoxes()
+    {
+        var rowdelt = 0.25f;
+        var coldelt = 0.3f;
+        var rowstar = -rowdelt * (((float)nrow-1) / 2f);
+        var colstar = -coldelt * (((float)ncol-1) / 2f);
+        var rowpos = rowstar;
+        for (var i = 0; i< nrow; i++)
+        {
+            //var msg = $"i:{i} rowpos:{rowpos:f4}";
+            //Debug.Log(msg);
+            var colpos = colstar;
+            for( var j=0; j<ncol; j++)
+            {
+                //var msgj = $"     j:{j} colpos:{colpos:f4}";
+                //Debug.Log(msgj);
+                var pt = new Vector3(rowpos, 1, colpos);
+                MmUtil.mmcolor = Color.yellow;
+                var boxgo = MmUtil.CreateCube(null, size: 1);
+                boxgo.name = $"box {i}-{j}";
+                boxgo.transform.parent = null;
+                boxgo.transform.position = pt;
+                boxgo.transform.localScale = new Vector3(0.12f, 1, 0.16f );
+                boxgo.transform.SetParent(mmtraygo.transform,worldPositionStays:false);
+                box[(i, j)] = boxgo;
+                loaded[(i, j)] = true;
+                colpos += coldelt;
+            }
+            rowpos += rowdelt;
+        }
+        RealizeLoadStatus();
     }
 
+    void RealizeLoadStatus()
+    {
+        for (var i = 0; i < nrow; i++)
+        {
+            for (var j = 0; j < ncol; j++)
+            {
+                var bkey = (i, j);
+                box[bkey].SetActive(loaded[bkey]);
+            }
+        }
+    }
 
     void Tray1Change(MmTray1Msg traymsg)
     {
@@ -80,7 +125,13 @@ public class MmTray : MonoBehaviour
         if (ok)
         {
             var oldstat = GetVal(traymsg.row, traymsg.col);
-            SetVal(traymsg.row, traymsg.col, traymsg.loaded != 0);
+            var newstat = traymsg.loaded != 0;
+            Debug.Log($"   oldstat:{oldstat} newstat:{newstat}");
+            if (oldstat != newstat)
+            {
+                SetVal(traymsg.row, traymsg.col, traymsg.loaded != 0);
+                RealizeLoadStatus();
+            }
         }
         else
         {

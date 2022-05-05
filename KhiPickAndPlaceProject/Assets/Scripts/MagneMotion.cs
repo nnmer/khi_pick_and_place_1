@@ -25,7 +25,10 @@ public class MmUtil
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.transform.localScale = new Vector3(size, size, size);
-        go.transform.parent = parent.transform;
+        if (parent != null)
+        {
+            go.transform.parent = parent.transform;
+        }
         var material = go.GetComponent<Renderer>().material;
         material.color = mmcolor;
         return go;
@@ -421,7 +424,7 @@ public class MmTable
     public List<MmRail> rails = new List<MmRail>();
 
     public bool useMeters = false;
-    public float sledSpeed = 2f;
+    public float sledSpeed = 0.01f;
 
     public  Dictionary<string,MmSled> SledDict = new Dictionary<string, MmSled>();
 
@@ -465,7 +468,7 @@ public class MmTable
 
         var p3 = mmt.makePath("path3", p2.End());
         p3.MakeLineSeg("n", 2);
-        p2.LinkToContinuationPath(p3);
+        //p2.LinkToContinuationPath(p3);
 
         var p4 = mmt.makePath("path4", p2.End());
         p4.MakeCircSeg("w", "cw");
@@ -506,6 +509,9 @@ public class MmTable
 
     public void MakeSled(string sledid, int pathnum, float pathdist,bool loaded)
     {
+        var msg = $"Making sled {sledid} at path:{pathnum} pos:{pathdist:f2} loaded:{loaded}";
+        Debug.Log(msg);
+
         var sname1 = $"sledid:{sledid}";
         var sledgeomgo = new GameObject(sname1);
         var path = this.GetPath(pathnum);
@@ -635,14 +641,13 @@ public class MagneMotion : MonoBehaviour
         mmtable = new MmTable();
         mmtable.useMeters = useMeters;
         mmtable.MakeMsftDemoMagmo();
-        mmtable.SetupGeometry(addPathMarkers:true,addPathSleds:true,positionOnFloor:true);
+        mmtable.SetupGeometry(addPathMarkers:true,addPathSleds:false,positionOnFloor:true);
 
         mmtray = FindObjectOfType<MmTray>();
         if (mmtray!=null)
         {
             mmtray.Init(mmtable);
         }
-
         ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", SledChange);
     }
 
@@ -652,8 +657,13 @@ public class MagneMotion : MonoBehaviour
         Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
         var sledid = $"{sledmsg.cartid}";
         var loaded = sledmsg.loaded;
-        var pathid = sledmsg.pathid;
-        var position = (float) sledmsg.position;
+        var pathid = sledmsg.pathid-1;
+        var position = (float)sledmsg.position / mmtable.UnitsToMeters;
+        if (sledmsg.pathid<=0)
+        {
+            Debug.LogWarning($"Bad pathid detected {sledmsg.pathid}");
+            return;
+        }
         if (mmtable.SledDict.ContainsKey(sledid))
         {
             var sled = mmtable.SledDict[sledid];
@@ -669,9 +679,6 @@ public class MagneMotion : MonoBehaviour
             mmtable.MakeSled(sledid, pathid, position,loaded);
         }
     }
-
-
-
     // Update is called once per frame
     void Update()
     {

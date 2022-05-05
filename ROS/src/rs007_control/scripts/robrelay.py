@@ -2,6 +2,7 @@
 from __future__ import print_function
 import time
 import zmq
+import json
 import rospy
 import rosgraph
 from rs007_control.msg import Rs007Joints6
@@ -101,9 +102,20 @@ def docart1(param):
     return "ok - docart1"
     
 def docartjson(param):
+    print("docartjson:...")
     global sledcon
-    print("docartjson:"+param)
-    return "not implmented - docartjson"    
+    cartdict = json.loads(param)
+    # print(cartdict)
+    ncarts = 0
+    for key,cart in cartdict.items():
+        loaded = cart["Loaded"]
+        position = cart["Position"]
+        pathid = cart["PathId"]   
+        sledid = cart["CartId"]    
+        mmmsg = MagneMotionSled( loaded,position,pathid,sledid ) 
+        sledcon.publish(mmmsg)      
+        ncarts = ncarts+1
+    return "ok - docartjson processed "+str(ncarts)+" carts"    
     
 def dotray1(param):
     global tray1con

@@ -140,6 +140,8 @@ public class MmSled : MonoBehaviour
 
     public void UpdateSled(int pathnum,float position,bool loaded)
     {
+        var msg = $"Updating {sledid} to path:{pathnum} pos:{position:f2} loaded:{loaded}";
+        Debug.Log(msg);
         this.pathnum = pathnum;
         this.pathdist = position;
         var newpath = mmt.GetPath(pathnum);
