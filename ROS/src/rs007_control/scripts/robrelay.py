@@ -114,9 +114,27 @@ def docartjson(param):
         sledid = cart["CartId"]    
         mmmsg = MagneMotionSled( loaded,position,pathid,sledid ) 
         sledcon.publish(mmmsg)      
-        ncarts = ncarts+1
+        ncarts += 1
     return "ok - docartjson processed "+str(ncarts)+" carts"    
-    
+ 
+def dotrayjson(param):
+    print("dotrayjson:...")
+    global tray1con
+    traylist = json.loads(param)
+    print(traylist)
+    ntrays = 0
+    itray = 0
+    for traystat in traylist:
+        row = int(itray / 4)    
+        col = int(itray % 4)    
+        print(str(itray)+": "+str(row)+" "+str(col)+": "+str(traystat))
+        loaded = int(traystat)
+        mmmsg = MagneMotionTray1( row, col, loaded )
+        tray1con.publish(mmmsg)       
+        itray += 1
+        ntrays += 1
+    return "ok - dotrayjson processed "+str(ntrays)+" trays"  
+ 
 def dotray1(param):
     global tray1con
     print("dotray1:"+param)
@@ -178,6 +196,8 @@ def mainloop():
             rv = docart1(parm)
           elif cmd=="cartjson" or cmd=="sledjson":
             rv = docartjson(parm)   
+          elif cmd=="trayjson":
+            rv = dotrayjson(parm)              
           elif cmd=="tray1":
             rv = dotray1(parm)                 
           else:

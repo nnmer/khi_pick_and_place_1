@@ -12,22 +12,25 @@ public enum MmSegForm {  None, Straight, Curved }
 public class MmUtil
 {
     public static Color mmcolor = Color.white;
-    public static GameObject CreateSphere(GameObject parent,float size=0.5f)
+    public static GameObject CreateSphere(GameObject parent,float size=0.5f, bool wps = true)
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         go.transform.localScale = new Vector3(size, size, size);
-        go.transform.parent = parent.transform;
+        if (parent != null)
+        {
+            go.transform.SetParent(parent.transform, worldPositionStays: wps);
+        }
         var material = go.GetComponent<Renderer>().material;
         material.color = mmcolor;
         return go;
     }
-    public static GameObject CreateCube(GameObject parent, float size = 0.5f)
+    public static GameObject CreateCube(GameObject parent, float size = 0.5f, bool wps = true)
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.transform.localScale = new Vector3(size, size, size);
         if (parent != null)
         {
-            go.transform.parent = parent.transform;
+            go.transform.SetParent(parent.transform,worldPositionStays:wps);
         }
         var material = go.GetComponent<Renderer>().material;
         material.color = mmcolor;
