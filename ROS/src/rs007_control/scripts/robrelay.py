@@ -108,6 +108,7 @@ def docartjson(param):
     # print(cartdict)
     ncarts = 0
     for key,cart in cartdict.items():
+        print("  key:"+str(key)+" cart:"+str(cart))
         loaded = cart["Loaded"]
         position = cart["Position"]
         pathid = cart["PathId"]   
@@ -118,22 +119,22 @@ def docartjson(param):
     return "ok - docartjson processed "+str(ncarts)+" carts"    
  
 def dotrayjson(param):
-    print("dotrayjson:...")
+    print("dotrayjson:"+param)
     global tray1con
-    traylist = json.loads(param)
+    traylist = json.loads(param.lower())
     print(traylist)
     ntrays = 0
     itray = 0
     for traystat in traylist:
         row = int(itray / 4)    
         col = int(itray % 4)    
-        print(str(itray)+": "+str(row)+" "+str(col)+": "+str(traystat))
+        # print(str(itray)+": "+str(row)+" "+str(col)+": "+str(traystat))
         loaded = int(traystat)
         mmmsg = MagneMotionTray1( row, col, loaded )
         tray1con.publish(mmmsg)       
         itray += 1
         ntrays += 1
-    return "ok - dotrayjson processed "+str(ntrays)+" trays"  
+    return "ok -  dotrayjson processed "+str(ntrays)+" trays"  
  
 def dotray1(param):
     global tray1con

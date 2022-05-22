@@ -619,17 +619,17 @@ public class MmTable
         {
             sled.AdvanceSledBySpeed(sledSpeed);
         }
-        if ((Time.time-lastLoadChange)>timeToLoadStateChange)
-        {
-            if (sleds.Count>0)
-            {
-                var i = ran.Next(sleds.Count);
-                var sled = sleds[i];
-                sled.SetLoadState(!sled.GetLoadState());
-                Debug.Log($"Toggled sledid:{sled.sledid} load state to {sled.GetLoadState()}");
-                lastLoadChange = Time.time;
-            }
-        }
+        //if ((Time.time-lastLoadChange)>timeToLoadStateChange)
+        //{
+        //    if (sleds.Count>0)
+        //    {
+        //        var i = ran.Next(sleds.Count);
+        //        var sled = sleds[i];
+        //        sled.SetLoadState(!sled.GetLoadState());
+        //        Debug.Log($"Toggled sledid:{sled.sledid} load state to {sled.GetLoadState()}");
+        //        lastLoadChange = Time.time;
+        //    }
+        //}
     }
 }
 
