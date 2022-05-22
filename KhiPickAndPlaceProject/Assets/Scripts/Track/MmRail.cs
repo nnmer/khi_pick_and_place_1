@@ -19,7 +19,22 @@ public class MmRail : MonoBehaviour
     {
     }
 
-    public void Construct(MmTable mmt,GameObject geomgo, RailForm railform, string sledid,int pathnum,float pathdist,  float speed=0)
+
+    public static MmRail ConstructRail(MmTable mmt, string rname, int pathnum, float pathdist)
+    {
+        var railgo = new GameObject(rname);
+        var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
+        railgo.transform.position = pt;
+        railgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+        var rail = railgo.AddComponent<MmRail>();
+        var railform = MmRail.RailForm.Cigar;
+        var sledid = "";
+        rail.ConstructForm(mmt, railgo, railform, sledid, pathnum, pathdist, speed: 0);
+        railgo.transform.parent = mmt.mmtgo.transform;
+        return rail;
+    }
+
+    public void ConstructForm(MmTable mmt,GameObject geomgo, RailForm railform, string sledid,int pathnum,float pathdist,  float speed=0)
     {
         this.geomgo = geomgo;
         this.mmt = mmt;
@@ -29,19 +44,18 @@ public class MmRail : MonoBehaviour
         this.pathnum = pathnum;
         this.pathdist = pathdist;
         this.sledid = sledid;
-        var path = mmt.GetPath(pathnum);
-        var (pt,ang) = path.GetPositionAndOrientation(pathdist);
+        var pt = Vector3.zero;
+        var ang = 0f;
+        (pt,ang) = mmt.GetPositionAndOrientation(pathnum,pathdist);
         switch (this.railform)
         {
             case RailForm.Cigar:
                 {
-                    MmUtil.mmcolor = Color.gray;
-                    var go = MmUtil.CreateSphere(formgo, size: sphrad / 3);
+                    var go = UnityUt.CreateSphere(formgo,"gray", size: sphrad / 3);
                     go.name = $"cigar";
                     go.transform.localScale = new Vector3(0.1f, 0.3f, 0.1f);
 
-                    MmUtil.mmcolor = Color.red;
-                    var go1 = MmUtil.CreateSphere(formgo, size: sphrad / 3);
+                    var go1 = UnityUt.CreateSphere(formgo, "red", size: sphrad / 3);
                     go1.name = $"nose";
                     go1.transform.position = new Vector3(0.0f, 0.1f, 0);
                     go1.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
@@ -49,15 +63,14 @@ public class MmRail : MonoBehaviour
                 }
             case RailForm.Box:
                 {
-                    MmUtil.mmcolor = Color.gray;
-                    var go = MmUtil.CreateCube(formgo, size: sphrad / 3);
+                    var go = UnityUt.CreateCube(formgo, "gray", size: sphrad / 3);
                     go.name = $"tray";
                     // 6.5x11.0x2cm
                     go.transform.localScale = new Vector3(0.88f, 0.52f, 0.16f);
 
 
-                    MmUtil.mmcolor = MmUtil.GetRandomColor();
-                    var go2 = MmUtil.CreateSphere(formgo, size: sphrad / 3);
+                    var clr = UnityUt.GetRandomColorString();
+                    var go2 = UnityUt.CreateSphere(formgo,clr, size: sphrad / 3);
                     go2.name = $"nose";
                     go2.transform.position = new Vector3(0.0f, 0.2f, -0.16f);
                     go2.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
@@ -65,6 +78,7 @@ public class MmRail : MonoBehaviour
                 }
 
         }
+        formgo.SetActive(pathnum >= 0);
         formgo.transform.position = pt;
         formgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
         if (mmt.useMeters)
@@ -84,6 +98,5 @@ public class MmRail : MonoBehaviour
     void Update()
     {
         updatecount++;
-
     }
 }

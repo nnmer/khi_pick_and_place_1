@@ -55,58 +55,26 @@ public class MmTray : MonoBehaviour
     {
         this.mmt = mmt;
         // size in cm - 31.4, 28.9, 1.7
-        CreateTray();
+        CreateTray(gameObject.transform);
         CreateBoxes();
     }
-    void CreateTray()
+    void CreateTray(Transform parent)
     {
-        var floorgo = GameObject.Find("Floor");
-        if (positionOnFloor && floorgo != null)
-        {
-            mmtrayrep = new GameObject("mmtrayrep");
-            //// move it behind the robot and up to the first robot joint 
-            mmtrayrep.transform.position = new Vector3(0.376f, 0.256f, 0.0324f);
-            mmtrayrep.transform.SetParent(floorgo.transform, worldPositionStays: false);
-            // attach to floor if there is one
-            MmUtil.mmcolor = Color.gray;
-            mmtraygo = MmUtil.CreateCube(mmtrayrep, size: 1, wps:false );
-            mmtraygo.name = "mmtraygo";
-            mmtraygo.transform.localScale = new Vector3(0.289f, 0.017f, 0.314f);
-        }
-        else
-        {
-            MmUtil.mmcolor = Color.gray;
-            mmtraygo.transform.localScale = new Vector3(0.289f, 0.314f, 0.017f);
+        mmtrayrep = new GameObject("mmtrayrep");
 
-            mmtraygo.transform.position = new Vector3(0, 0, 0);
-        }
+        //// move it behind the robot and up to the first robot joint 
+        //mmtrayrep.transform.position = new Vector3(0.376f, 0.256f, 0.0324f);
+        //mmtrayrep.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
+
+        mmtrayrep.transform.SetParent(parent, worldPositionStays: false);
+        //mmtrayrep.transform.position = new Vector3(0.182f, -0.06199f, 2.6299f);
+
+        // attach to floor if there is one
+        mmtraygo = UnityUt.CreateCube(mmtrayrep,"gray", size: 1, wps:false );
+        mmtraygo.name = "mmtraygo";
+        mmtraygo.transform.localScale = new Vector3(0.289f, 0.017f, 0.314f);
     }
 
-    void CreateTrayOld()
-    {
-        var floorgo = GameObject.Find("Floor");
-        if (positionOnFloor && floorgo != null)
-        {
-
-            // attach to floor if there is one
-            MmUtil.mmcolor = Color.gray;
-            mmtraygo = MmUtil.CreateCube(floorgo, size: 1, wps:false);
-            mmtraygo.transform.parent = null;
-            //mmtraygo.transform.position = new Vector3(0.63f, 0.314f, 0.017f);
-            mmtraygo.transform.position = new Vector3(0.376f, 0.256f, 0.0324f);
-            mmtraygo.transform.SetParent(floorgo.transform, worldPositionStays: false);
-            mmtraygo.name = "mmtraygo";
-            //// move it behind the robot and up to the first robot joint 
-            mmtraygo.transform.localScale = new Vector3(0.289f, 0.017f, 0.314f);
-        }
-        else
-        {
-            MmUtil.mmcolor = Color.gray;
-            mmtraygo.transform.localScale = new Vector3(0.289f, 0.314f, 0.017f);
-
-            mmtraygo.transform.position = new Vector3(0, 0, 0);
-        }
-    }
 
 
     void CreateBoxes()
@@ -135,8 +103,7 @@ public class MmTray : MonoBehaviour
                 {
                     case TrayBoxForm.Box:
                         {
-                            MmUtil.mmcolor = Color.yellow;
-                            boxgo = MmUtil.CreateCube(null, size: 1);
+                            boxgo = UnityUt.CreateCube(null,"yellow", size: 1);
                             boxgo.transform.localScale = new Vector3(0.04f, 0.04f, 0.06f);
                             break;
                         }
@@ -177,13 +144,13 @@ public class MmTray : MonoBehaviour
 
     void Tray1Change(MmTray1Msg traymsg)
     {
-        Debug.Log($"Received ROS message on topic Rs007Tray1:{traymsg.ToString()}");
+        //Debug.Log($"Received ROS message on topic Rs007Tray1:{traymsg.ToString()}");
         var (ok, msg) = CheckIndexes(traymsg.row, traymsg.col, "Tray1Change");
         if (ok)
         {
             var oldstat = GetVal(traymsg.row, traymsg.col);
             var newstat = traymsg.loaded != 0;
-            Debug.Log($"   oldstat:{oldstat} newstat:{newstat}");
+            //Debug.Log($"   oldstat:{oldstat} newstat:{newstat}");
             if (oldstat != newstat)
             {
                 SetVal(traymsg.row, traymsg.col, traymsg.loaded != 0);
