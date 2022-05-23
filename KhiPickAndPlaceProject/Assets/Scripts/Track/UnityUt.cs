@@ -210,80 +210,76 @@ public class UnityUt : MonoBehaviour
     {
         
     }
-    public static void AddFltTextMeshGameObject(GameObject go, Vector3 pt, string text, string colorname, FltTextRotate rotmeth = FltTextRotate.specified, float xrot = 0, float yrot = 0, float zrot = 0, float xoff = 0, float yoff = 0, float zoff = 0, bool wps=true)
+    public static void AddFltTextMeshGameObject(GameObject go, Vector3 pt, string text, string colorname, Vector3 rot, Vector3 off, FltTextImpl lfltTextImpl = FltTextImpl.TextPro, FltTextRotate rotmeth = FltTextRotate.Specified, bool wps =false)
     {
         var ngo = new GameObject("FltText");
-        ngo.transform.rotation = Quaternion.Euler(xrot,yrot,zrot);
-        ngo.transform.position = new Vector3(xoff,yoff,zoff);
+        switch (rotmeth)
+        {
+            case FltTextRotate.Specified:
+                ngo.transform.rotation = Quaternion.Euler(rot);
+                break;
+            case FltTextRotate.MainCam:
+            case FltTextRotate.SceneCam:
+                ngo.transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
+                break;
+        }
+        ngo.transform.position = off;
         ngo.transform.localScale = new Vector3(1,1,1);
         ngo.transform.SetParent(go.transform, worldPositionStays:wps);
         var txgo = new GameObject("TextMesh");
         txgo.transform.SetParent(ngo.transform,worldPositionStays:false);
-        AddFltTextMeshComponent(txgo, Vector3.zero, text, colorname, rotmeth, 0,0,0, xoff:0, yoff:0, zoff:0,wps:false);
-        //AddFltTextMeshComponent(txgo, Vector3.zero, text, colorname, rotmeth, 0, 0, 0, xoff: xoff, yoff: yoff, zoff: zoff);
+        AddFltTextMeshComponent(txgo, Vector3.zero, text, colorname, lfltTextImpl, wps:false);
         //var cgo = CreateSphere(ngo, "limegreen", size: 0.2f, wps: false);
         //cgo.name = "sphere";
     }
 
-    public enum FltTextImplE { TextMesh, GUIText, TextPro };
-    public static FltTextImplE fltTextImpl = FltTextImplE.TextMesh;
-    public enum FltTextRotate { specified, mainCam, sceneCam }
-    public static void AddFltTextMeshComponent(GameObject go, Vector3 pt, string text, string colorname, FltTextRotate rotmeth=FltTextRotate.specified, float xrot = 0, float yrot = 0, float zrot = 0, float xoff = 0, float yoff = 0, float zoff = 0,bool wps=true)
+    public enum FltTextImpl { TextMesh, TextPro };
+    public enum FltTextRotate { Specified, MainCam, SceneCam }
+    public static void AddFltTextMeshComponent(GameObject go, Vector3 pt, string text, string colorname, FltTextImpl lfltTextImpl, bool wps=false)
     {
-        switch (fltTextImpl)
+        // Turns out this is easier to debug
+        switch (lfltTextImpl)
         {
             default:
-            case FltTextImplE.TextMesh:
+            case FltTextImpl.TextMesh:
                 {
                     var tm = go.AddComponent<TextMesh>();
-                    int linecount = text.Split('\n').Length-1;
+                    int linecountMinus1 = text.Split('\n').Length-1;
                     tm.text = text;
                     tm.fontSize = 12;
-                    tm.anchor = TextAnchor.UpperCenter;
+                    if (linecountMinus1==0)
+                    {
+                        tm.anchor = TextAnchor.MiddleCenter;
+                    }
+                    else
+                    {
+                        tm.anchor = TextAnchor.UpperCenter;
+                    }
                     float sfak = 0.1f;
                     tm.transform.localScale = new Vector3(sfak, sfak, sfak);
-                    switch(rotmeth)
-                    {
-                        case FltTextRotate.specified:
-                            tm.transform.Rotate(xrot, yrot, zrot);
-                            break;
-                        case FltTextRotate.mainCam:
-                        case FltTextRotate.sceneCam:
-                            tm.transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
-                            break;
-                    }
-                    tm.transform.localPosition = pt + new Vector3(xoff, sfak * yoff + linecount * 0.25f, zoff);
+                    tm.transform.localPosition = pt + new Vector3(0, linecountMinus1 * 0.125f, 0);
                     tm.transform.SetParent(go.transform,worldPositionStays:wps);
                     tm.color = GetColorByName(colorname);
                     break;
                 }
-            case FltTextImplE.GUIText:
-                {
-                    Vector2 worldPoint = Camera.main.WorldToScreenPoint(go.transform.position);
-                    GUI.Label(new Rect(worldPoint.x - 100, (Screen.height - worldPoint.y) - 50, 200, 100), text);
-                    break;
-                }
-            case FltTextImplE.TextPro:
+            case FltTextImpl.TextPro:
                 {
                     var tm = go.AddComponent<TMPro.TextMeshPro>();
-                    int linecount = text.Split('\n').Length-1;
+                    int linecountMinus1 = text.Split('\n').Length-1;
                     //tm.text = "<mark=#000000>"+text+"</mark>"; // this only works with an alpha of less than 1
                     tm.text = text;
                     tm.fontSize = 12;
-                    tm.alignment = TMPro.TextAlignmentOptions.Center;
+                    if (linecountMinus1 == 0)
+                    {
+                        tm.alignment = TMPro.TextAlignmentOptions.Center;
+                    }
+                    else
+                    {
+                        tm.alignment = TMPro.TextAlignmentOptions.Center;
+                    }
                     float sfak = 0.1f;
                     tm.transform.localScale = new Vector3(sfak, sfak, sfak);
-                    switch (rotmeth)
-                    {
-                        case FltTextRotate.specified:
-                            tm.transform.Rotate(xrot, yrot, zrot);
-                            break;
-                        case FltTextRotate.mainCam:
-                        case FltTextRotate.sceneCam:
-                            tm.transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
-                            break;
-                    }
-                    tm.transform.localPosition = pt + new Vector3(xoff, sfak * yoff + linecount * 0.25f, zoff);
+                    tm.transform.localPosition = pt + new Vector3(0, linecountMinus1 * 0, 0);
                     tm.transform.SetParent(go.transform, worldPositionStays: wps);
                     tm.color = GetColorByName(colorname);
                     tm.alpha = 1.0f; // this has to stay at the end or it gets overwritten !!
@@ -291,6 +287,71 @@ public class UnityUt : MonoBehaviour
                 }
         }
     }
+
+    //public static void AddFltTextMeshComponentOld(GameObject go, Vector3 pt, string text, string colorname,FltTextImpl lfltTextImpl, FltTextRotate rotmeth = FltTextRotate.Specified, float xrot = 0, float yrot = 0, float zrot = 0, float xoff = 0, float yoff = 0, float zoff = 0, bool wps = true)
+    //{
+    //    // Turns out this is easier to debug
+    //    switch (lfltTextImpl)
+    //    {
+    //        default:
+    //        case FltTextImpl.TextMesh:
+    //            {
+    //                var tm = go.AddComponent<TextMesh>();
+    //                int linecount = text.Split('\n').Length - 1;
+    //                tm.text = text;
+    //                tm.fontSize = 12;
+    //                tm.anchor = TextAnchor.UpperCenter;
+    //                float sfak = 0.1f;
+    //                tm.transform.localScale = new Vector3(sfak, sfak, sfak);
+    //                switch (rotmeth)
+    //                {
+    //                    case FltTextRotate.Specified:
+    //                        tm.transform.Rotate(xrot, yrot, zrot);
+    //                        break;
+    //                    case FltTextRotate.MainCam:
+    //                    case FltTextRotate.SceneCam:
+    //                        tm.transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
+    //                        break;
+    //                }
+    //                tm.transform.localPosition = pt + new Vector3(xoff, sfak * yoff + linecount * 0.25f, zoff);
+    //                tm.transform.SetParent(go.transform, worldPositionStays: wps);
+    //                tm.color = GetColorByName(colorname);
+    //                break;
+    //            }
+    //        case FltTextImpl.GUIText:
+    //            {
+    //                Vector2 worldPoint = Camera.main.WorldToScreenPoint(go.transform.position);
+    //                GUI.Label(new Rect(worldPoint.x - 100, (Screen.height - worldPoint.y) - 50, 200, 100), text);
+    //                break;
+    //            }
+    //        case FltTextImpl.TextPro:
+    //            {
+    //                var tm = go.AddComponent<TMPro.TextMeshPro>();
+    //                int linecount = text.Split('\n').Length - 1;
+    //                //tm.text = "<mark=#000000>"+text+"</mark>"; // this only works with an alpha of less than 1
+    //                tm.text = text;
+    //                tm.fontSize = 12;
+    //                tm.alignment = TMPro.TextAlignmentOptions.Center;
+    //                float sfak = 0.1f;
+    //                tm.transform.localScale = new Vector3(sfak, sfak, sfak);
+    //                switch (rotmeth)
+    //                {
+    //                    case FltTextRotate.Specified:
+    //                        tm.transform.Rotate(xrot, yrot, zrot);
+    //                        break;
+    //                    case FltTextRotate.MainCam:
+    //                    case FltTextRotate.SceneCam:
+    //                        tm.transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward);
+    //                        break;
+    //                }
+    //                tm.transform.localPosition = pt + new Vector3(xoff, sfak * yoff + linecount * 0.25f, zoff);
+    //                tm.transform.SetParent(go.transform, worldPositionStays: wps);
+    //                tm.color = GetColorByName(colorname);
+    //                tm.alpha = 1.0f; // this has to stay at the end or it gets overwritten !!
+    //                break;
+    //            }
+    //    }
+    //}
 
     //public static Color mmcolor = Color.white;
     public static GameObject CreateSphere(GameObject parent, string cname="white", float size = 0.5f, bool wps = true)

@@ -138,9 +138,14 @@ public class MmSled : MonoBehaviour
         formgo.SetActive(visible);
         formgo.transform.position = pt;
         formgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-        UnityUt.fltTextImpl = UnityUt.FltTextImplE.TextPro;
-        UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, sledid, "yellow", UnityUt.FltTextRotate.specified, xrot: 0, yrot:+90, zrot: -90, xoff: -0.27f, yoff: 0, zoff: -0.12f, wps: false);
-        UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, sledid, "yellow", UnityUt.FltTextRotate.specified, xrot: 0, yrot:-90, zrot: +90, xoff: +0.27f, yoff: 0, zoff: -0.12f, wps: false);
+        var rot1 = new Vector3(0, 90, -90);
+        var rot2 = -rot1;
+        var off1 = new Vector3(-0.27f, 0, -0.12f);
+        var off2 = new Vector3(+0.27f, 0, -0.12f);
+        var txt = $"{sledid}";
+        var meth = UnityUt.FltTextImpl.TextPro;
+        UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, meth);
+        UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, meth);
 
         if (mmt.useMeters)
         {
