@@ -1,22 +1,19 @@
-using System;
-using System.Collections;
-using System.Linq;
 using RosMessageTypes.Geometry;
 // using RosMessageTypes.NiryoMoveit;
 using RosMessageTypes.Rs007Control;
+using System.Collections;
+using System.Linq;
 using Unity.Robotics.ROSTCPConnector;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using UnityEngine;
-
-
 using RsJ1Msg = RosMessageTypes.Rs007Control.Rs007Joints1Msg;
 using RsJ6Msg = RosMessageTypes.Rs007Control.Rs007Joints6Msg;
 // using MmSledMsg = RosMessageTypes.Rs007Control.MagneMotionSledMsg;
 // using MmTrayMsg = RosMessageTypes.Rs007Control.MagneMotionTrayMsg;
 
-public enum GripperType {  None, Claw, Vacuum };
-public enum GripTrigger {  OnCollision, OnCommand };
-public enum MovementStyle {  PhysicsForces, MagicMovement };
+public enum GripperType { None, Claw, Vacuum };
+public enum GripTrigger { OnCollision, OnCommand };
+public enum MovementStyle { PhysicsForces, MagicMovement };
 
 public class Rs007TrajectoryPlanner : MonoBehaviour
 {
@@ -66,12 +63,13 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
     // ROS Connector
     ROSConnection m_Ros;
+    public Transform vgriptrans;
 
     /// <summary>
     ///     Find all robot joints in Awake() and add them to the jointArticulationBodies array.
     ///     Find left and right finger joints and assign them to their respective articulation body objects.
     /// </summary>
-    void Start()
+    void Awake()
     {
         // Get ROS connection static instance
         m_Ros = ROSConnection.GetOrCreateInstance();
@@ -108,19 +106,19 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         var vacGripperName = linkName + "/tool_link/GRIPPER v5_1";
         var rgrip = m_RobotModel.transform.Find(rightGripperName);
         var lgrip = m_RobotModel.transform.Find(leftGripperName);
-        var vgrip = m_RobotModel.transform.Find(vacGripperName);
-        if (vgrip==null)
+        vgriptrans = m_RobotModel.transform.Find(vacGripperName);
+        if (vgriptrans == null)
         {
             vacGripperName = linkName + "/tool_link/gripper_base/Visuals/unnamed/RS007_Gripper_C_u";
-            vgrip = m_RobotModel.transform.Find(vacGripperName);
+            vgriptrans = m_RobotModel.transform.Find(vacGripperName);
         }
 
 
-        if (vgrip != null)
+        if (vgriptrans != null)
         {
-            Debug.Log("Vacuum Gripper found");
+            Debug.Log($"Vacuum Gripper found gameObject.name:{vgriptrans.name}");
             gripperType = GripperType.Vacuum;
-            m_VacGripper = vgrip.gameObject;
+            m_VacGripper = vgriptrans.gameObject;
             //m_PickPoseOffset = Vector3.up * 0.1865f;
             m_PlacePoseOffset = Vector3.up * 0.22f;
             m_PickPoseOffset = Vector3.up * 0.22f;
@@ -172,16 +170,16 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     {
         Debug.Log($"RsJ1Msg:{j1msg.ToString()}");
         var idx = j1msg.idx;
-        var joint = (float) j1msg.joint;
+        var joint = (float)j1msg.joint;
         PositionJoint(idx, joint);
     }
 
     void Rs007J6Change(RsJ6Msg j6msg)
     {
         Debug.Log($"RsJ6Msg:{j6msg.ToString()}");
-        for(int i=0; i<6; i++)
+        for (int i = 0; i < 6; i++)
         {
-            PositionJoint( i, (float) j6msg.joints[i] );
+            PositionJoint(i, (float)j6msg.joints[i]);
         }
 
     }
@@ -259,23 +257,50 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         return joints;
     }
+    public Vector3 TransformToRobotCoordinates(Vector3 pt, string cmt = "", string frcolor = "blue", string toculor = "cyan")
+    {
+        var rm = this.RobotModel;
+        if (rm == null)
+        {
+            Debug.LogError("TransformToRobotCoordinates No robot model found");
+            return Vector3.zero;
+        }
+        var rot = Quaternion.Inverse(rm.transform.rotation);
+        var pivotpt = rm.transform.position;
+        var tpt = rot * (pt - pivotpt);
 
+        Debug.Log($"TransformToRobotCoordinates rot:{rot} pivotpt:{pivotpt:f3} mapped:{pt:f3} to {tpt:f3}");
+
+        //if (cmt != "")
+        //{
+        //    var sz = 0.02f;
+        //    var go0 = UnityUt.CreateSphere(null, "yellow", size: sz);
+        //    go0.name = $"PivotPoint";
+        //    go0.transform.position = pivotpt;
+        //    var go1 = UnityUt.CreateSphere(null, frcolor, size: sz);
+        //    go1.name = $"{cmt} - pt";
+        //    go1.transform.position = pt;
+        //    var go2 = UnityUt.CreateSphere(null, toculor, size: sz);
+        //    go2.name = $"{cmt} - tpt";
+        //    go2.transform.position = tpt;
+        //}
+        return tpt;
+    }
     /// <summary>
     ///     Create a new MoverServiceRequest with the current values of the robot's joint angles,
     ///     the target cube's current position and rotation, and the targetPlacement position and rotation.
     ///     Call the MoverService using the ROSConnection and if a trajectory is successfully planned,
     ///     execute the trajectories in a coroutine.
     /// </summary>
-    public void PublishJoints()
+    public void PlanAndExecutePickAndPlace()
     {
         var request = new MoverServiceRequest();
         request.joints_input = CurrentJointConfig();
 
-        //var off = new Vector3(0, -m_robotFloorHeight, 0);
-        var roboff = -m_robotOffset;
 
         // Pick Pose
-        var pt1 = (m_Target.transform.position + m_PickPoseOffset + roboff).To<FLU>();
+        var targpos = TransformToRobotCoordinates(m_Target.transform.position, "pickpose", "blue", "cyan");
+        var pt1 = (targpos + m_PickPoseOffset).To<FLU>();
         var or1 = Quaternion.Euler(180, m_Target.transform.eulerAngles.y, 0).To<FLU>();
         request.pick_pose = new PoseMsg
         {
@@ -287,13 +312,12 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         };
         var msg0 = $"m_PickPoseOffset:{m_PickPoseOffset:f3}";
         Debug.Log(msg0);
-        var msg00 = $"roboff:{roboff:f3}";
-        Debug.Log(msg00);
         var msg1 = $"PickPose (FLU) position:{pt1:f3} orientation:{or1:f3}";
         Debug.Log(msg1);
 
         // Place Pose
-        var pt2 = (m_TargetPlacement.transform.position + m_PlacePoseOffset + roboff).To<FLU>();
+        var placepos = TransformToRobotCoordinates(m_TargetPlacement.transform.position, "placepose", "red", "magenta");
+        var pt2 = (placepos + m_PlacePoseOffset).To<FLU>();
         var or2 = Quaternion.Euler(180, 0, 0).To<FLU>();
         request.place_pose = new PoseMsg
         {
@@ -371,11 +395,15 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         if (response.trajectories != null)
         {
             // For every trajectory plan returned
+            var nposes = response.trajectories.Length;
             for (var poseIndex = 0; poseIndex < response.trajectories.Length; poseIndex++)
             {
                 int trajidx = 0;
+                var ntraj = response.trajectories[poseIndex].joint_trajectory.points.Length;
                 // For every robot pose in trajectory plan
-                int lsttrajidx = response.trajectories[poseIndex].joint_trajectory.points.Length - 1;
+                int lsttrajidx = ntraj - 1;
+                var sleepmax = 3f / ntraj;
+                var sleep = Mathf.Min(k_JointAssignmentWait,sleepmax);
                 foreach (var t in response.trajectories[poseIndex].joint_trajectory.points)
                 {
 
@@ -422,7 +450,8 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                     }
 
                     // Wait for robot to achieve pose for all joint assignments
-                    yield return new WaitForSeconds(k_JointAssignmentWait);
+                    // Debug.Log($"Sleeping {sleep} secs on trajidx:{trajidx}/{ntraj}");
+                    yield return new WaitForSeconds(sleep);
                     trajidx++;
                 }
 
@@ -434,14 +463,14 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
                 }
 
                 // Wait for the robot to achieve the final pose from joint assignment
-                Debug.Log($"Sleeping {posePauseSecs} secs");
+                Debug.Log($"Sleeping {k_PoseAssignmentWait + posePauseSecs} secs");
                 yield return new WaitForSeconds(k_PoseAssignmentWait + posePauseSecs);
             }
 
             // All trajectories have been executed, open the gripper to place the target cube
             OpenGripper();
             yield return new WaitForSeconds(k_PoseAssignmentWait + posePauseSecs);
-            Debug.Log($"Sleeping {posePauseSecs} secs");
+            Debug.Log($"Sleeping {k_PoseAssignmentWait + posePauseSecs} secs");
             Debug.Log("OpenGripper");
         }
     }
