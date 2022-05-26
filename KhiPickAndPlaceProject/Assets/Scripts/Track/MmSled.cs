@@ -94,6 +94,7 @@ namespace KhiDemo
             this.sledform = sledform;
 
             formgo = new GameObject("sledform");
+            var ska8 = 1f/8;
 
             switch (this.sledform)
             {
@@ -103,15 +104,15 @@ namespace KhiDemo
                         //go.transform.localScale = new Vector3(0.88f, 0.52f, 0.16f);
                         // 6.5x11.0x2cm
                         var go = UnityUt.CreateCube(formgo, "gray", size: 1 );
-                        go.transform.position = new Vector3(0.0f, 0.0f, 0.09f);
-                        go.transform.localScale = new Vector3(0.9f, 0.53f, 0.224f);
+                        go.transform.position = new Vector3(0.0f, 0.0f, 0.09f) * ska8;
+                        go.transform.localScale = new Vector3(0.9f, 0.53f, 0.224f) * ska8;
                         go.name = $"tray";
 
                         var gobx = UnityUt.CreateCube(formgo, "yellow", size: 1);
                         gobx.name = $"box";
                         // 7x5.4x4.3.5
-                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
-                        gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f);
+                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f) * ska8;
+                        gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f) * ska8;
                         boxgo = gobx;
 
                         break;
@@ -123,18 +124,18 @@ namespace KhiDemo
                         go.name = $"tray";
                         // 6.5x11.0x2cm
                         go.transform.parent = formgo.transform;
-                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f);
+                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        go.transform.localScale = new Vector3(8, 8, 8);
+                        //go.transform.localScale = new Vector3(8, 8, 8);
 
                         var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
                         var gobx = Instantiate<GameObject>(prefab1);
                         gobx.name = $"box";
                         // 7x5.4x4.3.5
                         gobx.transform.parent = formgo.transform;
-                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
+                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*ska8;
                         gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        gobx.transform.localScale = new Vector3(8, 8, 8);
+                        //gobx.transform.localScale = new Vector3(8, 8, 8);
                         boxgo = gobx;
 
                         break;
@@ -146,15 +147,13 @@ namespace KhiDemo
                         go.name = $"tray";
                         // 6.5x11.0x2cm
                         go.transform.parent = formgo.transform;
-                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f);
+                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        go.transform.localScale = new Vector3(8, 8, 8);
+                        //go.transform.localScale = new Vector3(8, 8, 8);
 
-                        var gobx = MmBox.ConstructBox(mmt, "");
+                        var gobx = MmBox.ConstructBox(mmt, sledid);
                         gobx.name = "NewBox";
                         gobx.transform.parent = formgo.transform;
-                        //gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
-                        //gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
                         //gobx.transform.localScale = new Vector3(8, 8, 8);
                         boxgo = gobx.gameObject;
 
@@ -164,25 +163,26 @@ namespace KhiDemo
 
             AddSledIdToSledForm();
 
-            if (mmt.useMeters)
-            {
-                var u2m = mmt.UnitsToMeters;
-                formgo.transform.localScale = new Vector3(u2m, u2m, u2m);
-            }
+            //if (mmt.useMeters)
+            //{
+            //    var u2m = mmt.UnitsToMeters;
+            //    formgo.transform.localScale = new Vector3(u2m, u2m, u2m);
+            //}
             formgo.transform.SetParent(transform, worldPositionStays: false);
             Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
         }
 
         void AddSledIdToSledForm()
         {
+            var ska = 1f/8;
             var rot1 = new Vector3(0, 90, -90);
             var rot2 = -rot1;
-            var off1 = new Vector3(-0.27f, 0, -0.12f);
-            var off2 = new Vector3(+0.27f, 0, -0.12f);
+            var off1 = new Vector3(-0.27f, 0, -0.12f)*ska;
+            var off2 = new Vector3(+0.27f, 0, -0.12f)*ska;
             var txt = $"{sledid}";
             var meth = UnityUt.FltTextImpl.TextPro;
-            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, meth);
-            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, meth);
+            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, ska, meth);
+            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, ska, meth);
         }
 
         void AdjustSledOnPathDist(int pathnum, float pathdist)

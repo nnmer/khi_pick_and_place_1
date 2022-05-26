@@ -10,7 +10,7 @@ namespace KhiDemo
     {
         MagneMotion mmt;
 
-        public enum TrayBoxForm { Box, Prefab }
+        public enum TrayBoxForm { Box, Prefab, BoxComp }
 
         public GameObject mmtrayrep;
         public GameObject mmtraygo;
@@ -20,8 +20,7 @@ namespace KhiDemo
         Dictionary<(int, int), bool> loaded = new Dictionary<(int, int), bool>();
         Dictionary<(int, int), GameObject> box = new Dictionary<(int, int), GameObject>();
 
-        bool positionOnFloor = true;
-        TrayBoxForm trayBoxForm = TrayBoxForm.Prefab;
+        TrayBoxForm trayBoxForm = TrayBoxForm.BoxComp;
 
         public MmTray()
         {
@@ -112,6 +111,16 @@ namespace KhiDemo
                                 var ska = 1f;
                                 boxgo.transform.localScale = new Vector3(ska, ska, ska);
                                 boxgo.transform.localRotation = Quaternion.Euler(0, 90, 0);
+                                break;
+                            }
+                        case TrayBoxForm.BoxComp:
+                            {
+                                var boxid = $"{i},{j}";
+                                var gobx = MmBox.ConstructBox(mmt, boxid);
+                                boxgo = gobx.gameObject;
+                                var ska = 1f;
+                                boxgo.transform.localScale = new Vector3(ska, ska, ska);
+                                boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
                                 break;
                             }
                     }

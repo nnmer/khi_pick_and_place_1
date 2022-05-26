@@ -210,7 +210,7 @@ public class UnityUt : MonoBehaviour
     {
         
     }
-    public static void AddFltTextMeshGameObject(GameObject go, Vector3 pt, string text, string colorname, Vector3 rot, Vector3 off, FltTextImpl lfltTextImpl = FltTextImpl.TextPro, FltTextRotate rotmeth = FltTextRotate.Specified, bool wps =false)
+    public static void AddFltTextMeshGameObject(GameObject go, Vector3 pt, string text, string colorname, Vector3 rot, Vector3 off, float ska=1,FltTextImpl lfltTextImpl = FltTextImpl.TextPro, FltTextRotate rotmeth = FltTextRotate.Specified, bool wps =false)
     {
         var ngo = new GameObject("FltText");
         switch (rotmeth)
@@ -224,7 +224,7 @@ public class UnityUt : MonoBehaviour
                 break;
         }
         ngo.transform.position = off;
-        ngo.transform.localScale = new Vector3(1,1,1);
+        ngo.transform.localScale = new Vector3(ska,ska,ska);
         ngo.transform.SetParent(go.transform, worldPositionStays:wps);
         var txgo = new GameObject("TextMesh");
         txgo.transform.SetParent(ngo.transform,worldPositionStays:false);
