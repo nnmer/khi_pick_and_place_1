@@ -7,8 +7,8 @@ namespace KhiDemo
 
     public class MmSled : MonoBehaviour
     {
-        MmTable mmt;
-        public enum SledForm { BoxCubeBased, Prefab }
+        MagneMotion mmt;
+        public enum SledForm { BoxCubeBased, Prefab, PrefabWithBox }
         public int pathnum;
         public float pathdist;
         bool markedForDeletion = false;
@@ -20,14 +20,14 @@ namespace KhiDemo
         public bool loadState;
         public string sledid;
 
-        public static MmSled ConstructSled(MmTable mmt, string sledid, int pathnum, float pathdist, bool loaded)
+        public static MmSled ConstructSled(MagneMotion mmt, string sledid, int pathnum, float pathdist, bool loaded)
         {
             var sname1 = $"sledid:{sledid}";
             var sledgo = new GameObject(sname1);
             //var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
             //sledgo.transform.position = pt;
             //sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-            var sledform = mmt.mmSledForm;
+            var sledform = mmt.sledForm;
 
             var sled = sledgo.AddComponent<MmSled>();
             sled.sledid = sledid;
@@ -136,6 +136,27 @@ namespace KhiDemo
                         gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
                         gobx.transform.localScale = new Vector3(8, 8, 8);
                         boxgo = gobx;
+
+                        break;
+                    }
+                case SledForm.PrefabWithBox:
+                    {
+                        var prefab = (GameObject)Resources.Load("Prefabs/Sled");
+                        var go = Instantiate<GameObject>(prefab);
+                        go.name = $"tray";
+                        // 6.5x11.0x2cm
+                        go.transform.parent = formgo.transform;
+                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f);
+                        go.transform.localRotation = Quaternion.Euler(180, 90, -90);
+                        go.transform.localScale = new Vector3(8, 8, 8);
+
+                        var gobx = MmBox.ConstructBox(mmt, "");
+                        gobx.name = "NewBox";
+                        gobx.transform.parent = formgo.transform;
+                        //gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
+                        //gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
+                        //gobx.transform.localScale = new Vector3(8, 8, 8);
+                        boxgo = gobx.gameObject;
 
                         break;
                     }

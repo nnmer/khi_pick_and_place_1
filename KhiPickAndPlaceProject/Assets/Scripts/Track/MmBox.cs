@@ -7,7 +7,7 @@ namespace KhiDemo
 {
     public class MmBox : MonoBehaviour
     {
-        MmTable mmt;
+        MagneMotion mmt;
         GameObject geomgo;
         GameObject formgo;
         public enum BoxForm { CubeBased, Prefab }
@@ -16,15 +16,17 @@ namespace KhiDemo
         string boxid;
 
 
-        public static MmBox ConstructBox(MmTable mmt, string boxid)
+        public static MmBox ConstructBox(MagneMotion mmt, string boxid)
         {
             var sname1 = $"sledid:{boxid}";
             var boxgeomgo = new GameObject(sname1);
             boxgeomgo.transform.position = Vector3.zero;
             boxgeomgo.transform.rotation = Quaternion.identity;
             var box = boxgeomgo.AddComponent<MmBox>();
-            var boxform = MmBox.BoxForm.Prefab;
-            box.ConstructForm(mmt, boxgeomgo, boxform, boxid);
+            var boxform = mmt.boxForm;
+            box.mmt = mmt;
+            box.boxid = boxid;
+            box.ConstructForm(boxform);
             boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
             return box;
             //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
@@ -35,13 +37,10 @@ namespace KhiDemo
 
         }
 
-        public void ConstructForm(MmTable mmt, GameObject geomgo, BoxForm boxform, string boxid)
+        public void ConstructForm(BoxForm boxform)
         {
-            this.geomgo = geomgo;
-            this.mmt = mmt;
             this.boxform = boxform;
             formgo = new GameObject("boxform");
-            this.boxid = boxid;
             switch (this.boxform)
             {
                 case BoxForm.CubeBased:
@@ -78,21 +77,24 @@ namespace KhiDemo
                 var u2m = mmt.UnitsToMeters;
                 formgo.transform.localScale = new Vector3(u2m, u2m, u2m);
             }
-            formgo.transform.SetParent(geomgo.transform, worldPositionStays: true);
+            formgo.transform.SetParent(gameObject.transform, worldPositionStays: true);
             //Debug.Log($"ConstructSledForm pathnum:{pathnum} dist:{pathdist:f1} pt:{formgo.transform.position:f1}");
         }
 
 
         void AddBoxIdToBoxForm()
         {
-            var rot1 = new Vector3(0, 90, -90);
-            var rot2 = -rot1;
-            var off1 = new Vector3(-0.27f, 0, -0.12f);
-            var off2 = new Vector3(+0.27f, 0, -0.12f);
-            var txt = $"{boxid}";
-            var meth = UnityUt.FltTextImpl.TextPro;
-            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, meth);
-            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, meth);
+            if (boxid != "")
+            {
+                var rot1 = new Vector3(0, 90, -90);
+                var rot2 = -rot1;
+                var off1 = new Vector3(-0.27f, 0, -0.12f);
+                var off2 = new Vector3(+0.27f, 0, -0.12f);
+                var txt = $"{boxid}";
+                var meth = UnityUt.FltTextImpl.TextPro;
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, meth);
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, meth);
+            }
         }
 
         // Update is called once per frame

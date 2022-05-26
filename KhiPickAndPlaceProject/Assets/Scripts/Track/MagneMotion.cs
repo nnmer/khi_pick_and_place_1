@@ -10,12 +10,11 @@ namespace KhiDemo
 
     public enum MmSegForm { None, Straight, Curved }
 
-    public class MmTable
+    public class MagneMotion : MonoBehaviour
     {
         public GameObject robmodel;
         public GameObject vgrip;
         public MmBoxMode mmBoxMode = MmBoxMode.Fake;
-        public MmSled.SledForm mmSledForm = MmSled.SledForm.Prefab;
         public GameObject mmtgo;
         public string tableName = "TableName";
         public List<MmPath> paths = new List<MmPath>();
@@ -28,18 +27,57 @@ namespace KhiDemo
         public float sledSpeed = 0.01f;
         public bool interpolateOnSpeed = false;
 
+        public bool addPathMarkers = false;
+        public bool addPathSledsOnStartup = true;
+        public bool positionOnFloor = false;
+
+        public MmTray mmtray = null;
+        public Rs007TrajectoryPlanner planner = null;
+        public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
+        public MmBox.BoxForm boxForm = MmBox.BoxForm.Prefab;
 
 
         public Dictionary<string, MmSled> SledDict = new Dictionary<string, MmSled>();
 
-
-        public MmTable()
+        // Start is called before the first frame update
+        void Start()
         {
-            if (!MmPathSeg.inited)
+            planner = GameObject.FindObjectOfType<Rs007TrajectoryPlanner>();
+
+            MmPathSeg.InitDicts();
+            MakeMsftDemoMagmo();
+            //MakeSimplePath();
+
+            // Initialize Robot
+            if (robmodel == null)
             {
-                MmPathSeg.InitDicts();
+                var urdfRobot = FindObjectOfType<Unity.Robotics.UrdfImporter.UrdfRobot>();
+                if (urdfRobot==null)
+                {
+                    Debug.LogError("Robmodel not set in Magnemotion table");
+                }
+                else
+                {
+                    robmodel = urdfRobot.gameObject;
+                }
             }
+
+            if (robmodel!=null && planner!=null )
+            { 
+                AddBoxToRobot(planner.vgriptrans);
+            }
+
+            var mmgo = SetupGeometry(addPathMarkers: addPathMarkers, addPathSleds: addPathSledsOnStartup, positionOnFloor: positionOnFloor);
+            mmgo.transform.SetParent(gameObject.transform, false);
+
+            mmtray = FindObjectOfType<MmTray>();
+            if (mmtray != null)
+            {
+                mmtray.Init(this);
+            }
+            ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", SledChange);
         }
+
         public MmPath GetPath(int idx)
         {
             if (idx < 0)
@@ -62,7 +100,6 @@ namespace KhiDemo
             return (pt, ang);
         }
 
-
         public void MakeMsftDemoMagmo()
         {
             Debug.Log("Making MsftDemoMagmo");
@@ -79,7 +116,6 @@ namespace KhiDemo
             var p2 = mmt.makePath("path2", p1.End());
             p2.MakeCircSeg("s", "ccw");
             p1.LinkToContinuationPath(p2);
-
 
             var p3 = mmt.makePath("path3", p2.End());
             p3.MakeLineSeg("n", 2);
@@ -133,14 +169,14 @@ namespace KhiDemo
 
             var p2 = mmt.makePath("path2", p1.End());
             p2.MakeCircSeg("w", "cw");
-            p2.MakeLineSeg("e", 8);
+            p2.MakeLineSeg("e", 4);
             p2.MakeCircSeg("n", "cw");
             p2.MakeLineSeg("s", 8);
             p1.LinkToContinuationPath(p2);
 
             var p3 = mmt.makePath("path3", p2.End());
             p3.MakeCircSeg("e", "cw");
-            p3.MakeLineSeg("w", 8);
+            p3.MakeLineSeg("w", 4);
             p3.MakeCircSeg("s", "cw");
             p2.LinkToContinuationPath(p3);
             p3.LinkToContinuationPath(p1);
@@ -175,7 +211,7 @@ namespace KhiDemo
                 }
             }
 
-            // Add Sleds
+            // Add Sleds so the begining scene is not quite so empty
             if (addPathSleds)
             {
                 var totsleds = 0;
@@ -218,6 +254,11 @@ namespace KhiDemo
         GameObject boxgo;
         public void AddBoxToRobot(Transform vgriptrans)
         {
+            if (vgriptrans==null)
+            {
+                Debug.LogError("AddBoxToRobot - Robot is null");
+                return;
+            }
             var prefab = Resources.Load<GameObject>("Prefabs/Box1");
             boxgo = Object.Instantiate<GameObject>(prefab);
             boxgo.name = "RobBox";
@@ -272,68 +313,12 @@ namespace KhiDemo
             }
         }
 
-        System.Random ran = new System.Random(1234);
-
-        float lastLoadChange = 0f;
-        float timeToLoadStateChange = 3f;
-        public void UpdateTable()
+        public void AdvanceSledsBySpeed()
         {
-
             foreach (var sled in sleds)
             {
                 sled.AdvanceSledBySpeed();
             }
-        }
-    }
-
-    public class MagneMotion : MonoBehaviour
-    {
-        public bool useMeters = false;
-        public bool addPathMarkers = false;
-        public bool addPathSledsOnStartup = true;
-        public bool positionOnFloor = false;
-        public GameObject robmodel;
-        public MmTable mmtable = null;
-        public MmTray mmtray = null;
-        public Rs007TrajectoryPlanner planner = null;
-        public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
-
-        // Start is called before the first frame update
-        void Start()
-        {
-            planner = GameObject.FindObjectOfType<Rs007TrajectoryPlanner>();
-            mmtable = new MmTable();
-            mmtable.useMeters = useMeters;
-            mmtable.mmSledForm = sledForm;
-            mmtable.MakeMsftDemoMagmo();
-            if (robmodel == null)
-            {
-                var urdf = FindObjectOfType<Unity.Robotics.UrdfImporter.UrdfRobot>();
-                if (robmodel)
-                {
-                    Debug.LogError("Robmodel not set in Magnemotion table");
-                }
-                else
-                {
-                    robmodel = urdf.gameObject;
-                }
-            }
-            else
-            {
-                mmtable.robmodel = robmodel;
-                mmtable.AddBoxToRobot(planner.vgriptrans);
-            }
-
-            //mmtable.MakeSimplePath();
-            var mmgo = mmtable.SetupGeometry(addPathMarkers: addPathMarkers, addPathSleds: addPathSledsOnStartup, positionOnFloor: positionOnFloor);
-            mmgo.transform.SetParent(gameObject.transform, false);
-
-            mmtray = FindObjectOfType<MmTray>();
-            if (mmtray != null)
-            {
-                mmtray.Init(mmtable);
-            }
-            ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", SledChange);
         }
 
 
@@ -343,15 +328,15 @@ namespace KhiDemo
             var sledid = $"{sledmsg.cartid}";
             var loaded = sledmsg.loaded;
             var pathid = sledmsg.pathid - 1;
-            var position = (float)sledmsg.position / mmtable.UnitsToMeters;
+            var position = (float)sledmsg.position / UnitsToMeters;
             if (sledmsg.pathid < 0)
             {
                 Debug.LogWarning($"Bad pathid detected {sledmsg.pathid} on cartid:{sledmsg.cartid}");
                 return;
             }
-            if (mmtable.SledDict.ContainsKey(sledid))
+            if (SledDict.ContainsKey(sledid))
             {
-                var sled = mmtable.SledDict[sledid];
+                var sled = SledDict[sledid];
                 var oldstate = sled.GetLoadState();
                 sled.UpdateSled(pathid, position, loaded);
                 if (oldstate != loaded)
@@ -364,30 +349,39 @@ namespace KhiDemo
                 //Debug.Log($"making sled:{sledid}");
                 if (pathid >= 0)
                 {
-                    mmtable.MakeSled(sledid, pathid, position, loaded);
+                    MakeSled(sledid, pathid, position, loaded);
                 }
             }
         }
-        int updatecount = 0;
+
         MmSled.SledForm oldsledForm;
-        // Update is called once per frame
-        void Update()
+        MmBox.BoxForm oldboxForm;
+        void ChangeSledFormIfRequested()
         {
-            if (updatecount++ == 0)
+            if (updatecount == 0)
             {
                 oldsledForm = sledForm;
+                oldboxForm = boxForm;
             }
-            if (sledForm != oldsledForm)
+            if (sledForm != oldsledForm || boxForm != oldboxForm)
             {
-                foreach (var sled in mmtable.sleds)
+                foreach (var sled in sleds)
                 {
                     sled.ConstructForm(sledForm);
                 }
-                mmtable.mmSledForm = sledForm;
                 oldsledForm = sledForm;
+                oldboxForm = boxForm;
             }
-            mmtable.DeleteSledsAsNeeded();
-            mmtable.UpdateTable();
+        }
+
+        int updatecount = 0;
+        // Update is called once per frame
+        void Update()
+        {
+            ChangeSledFormIfRequested();
+            DeleteSledsAsNeeded();
+            AdvanceSledsBySpeed();
+            updatecount++;
         }
     }
 }

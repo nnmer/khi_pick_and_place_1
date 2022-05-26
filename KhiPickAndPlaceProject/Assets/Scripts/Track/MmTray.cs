@@ -8,7 +8,7 @@ namespace KhiDemo
 
     public class MmTray : MonoBehaviour
     {
-        MmTable mmt;
+        MagneMotion mmt;
 
         public enum TrayBoxForm { Box, Prefab }
 
@@ -49,7 +49,7 @@ namespace KhiDemo
             ROSConnection.GetOrCreateInstance().Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
         }
 
-        public void Init(MmTable mmt)
+        public void Init(MagneMotion mmt)
         {
             this.mmt = mmt;
             // size in cm - 31.4, 28.9, 1.7
