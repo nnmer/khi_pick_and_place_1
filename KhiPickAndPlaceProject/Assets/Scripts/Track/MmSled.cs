@@ -9,18 +9,44 @@ namespace KhiDemo
     {
         MmTable mmt;
         public enum SledForm { BoxCubeBased, Prefab }
-        static float sphrad = 0.2f;
         public int pathnum;
         public float pathdist;
         bool markedForDeletion = false;
         public float sledspeed;
         public bool visible;
         SledForm sledform;
-        GameObject geomgo;
         GameObject formgo;
         GameObject boxgo;
         public bool loadState;
         public string sledid;
+
+        public static MmSled ConstructSled(MmTable mmt, string sledid, int pathnum, float pathdist, bool loaded)
+        {
+            var sname1 = $"sledid:{sledid}";
+            var sledgo = new GameObject(sname1);
+            //var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
+            //sledgo.transform.position = pt;
+            //sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+            var sledform = mmt.mmSledForm;
+
+            var sled = sledgo.AddComponent<MmSled>();
+            sled.sledid = sledid;
+            sled.mmt = mmt;
+            // Set default state
+            sled.sledspeed = 0;
+            sled.pathnum = 0;
+            sled.pathdist = 0;
+            sled.loadState = true;
+            sled.visible = true;
+
+            sled.ConstructForm( sledform );
+            sled.AdjustSledOnPathDist(pathnum, pathdist);
+            sled.SetLoadState(loaded);
+            sledgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
+            return sled;
+            //Debug.Log($"ConstructSled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
+        }
+
         // Start is called before the first frame update
         void Start()
         {
@@ -44,65 +70,50 @@ namespace KhiDemo
             if (boxgo != null)
             {
                 boxgo.SetActive(loadState);
+                mmt.ActivateRobBox(!loadState);
             }
         }
         public void DeleteStuff()
         {
             var parentgo = formgo.transform.parent.gameObject;
-            Destroy(geomgo);
+            Destroy(gameObject);
         }
 
-        public static MmSled ConstructSled(MmTable mmt, string sledid, int pathnum, float pathdist, bool loaded)
+        public void ConstructForm( SledForm sledform)
         {
-            var sname1 = $"sledid:{sledid}";
-            var sledgeomgo = new GameObject(sname1);
-            var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
-            sledgeomgo.transform.position = pt;
-            sledgeomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-            var sled = sledgeomgo.AddComponent<MmSled>();
-            var sledform = MmSled.SledForm.Prefab;
-            sled.ConstructForm(mmt, sledgeomgo, sledform, sledid, pathnum, pathdist, loaded);
-            sledgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
-            return sled;
-            //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
-        }
+            // This should have no parameters with changeable state except for the form
+            // This ensures we can update the form without disturbing the other logic and state that the sled has, like position and loadstate
+            // Coming out of this the 
 
-        public void ConstructForm(MmTable mmt, GameObject geomgo, SledForm sledform, string sledid, int pathnum, float pathdist, bool loaded)
-        {
-            this.geomgo = geomgo;
-            this.mmt = mmt;
-            this.sledform = sledform;
-            this.sledspeed = 0;
-            formgo = new GameObject("sledform");
-            this.pathnum = pathnum;
-            if (pathnum == 0)
+            if (formgo!=null)
             {
-                pathnum = 0;
+                Destroy(formgo);
+                formgo = null;
             }
-            this.pathdist = pathdist;
-            this.sledid = sledid;
-            var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
+
+            this.sledform = sledform;
+
+            formgo = new GameObject("sledform");
+
             switch (this.sledform)
             {
                 case SledForm.BoxCubeBased:
                     {
-                        var go = UnityUt.CreateCube(formgo, "gray", size: sphrad / 3);
-                        go.name = $"tray";
+                        //var go = UnityUt.CreateCube(formgo, "gray", size: sphrad / 3);
+                        //go.transform.localScale = new Vector3(0.88f, 0.52f, 0.16f);
                         // 6.5x11.0x2cm
-                        go.transform.localScale = new Vector3(0.88f, 0.52f, 0.16f);
+                        var go = UnityUt.CreateCube(formgo, "gray", size: 1 );
+                        go.transform.position = new Vector3(0.0f, 0.0f, 0.09f);
+                        go.transform.localScale = new Vector3(0.9f, 0.53f, 0.224f);
+                        go.name = $"tray";
 
-                        var go1 = UnityUt.CreateCube(formgo, "yellow", size: sphrad / 3);
-                        go1.name = $"box";
+                        var gobx = UnityUt.CreateCube(formgo, "yellow", size: 1);
+                        gobx.name = $"box";
                         // 7x5.4x4.3.5
-                        go1.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
-                        go1.transform.localScale = new Vector3(0.56f, 0.32f, 0.28f);
-                        boxgo = go1;
+                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
+                        gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f);
+                        boxgo = gobx;
 
-                        var clr = UnityUt.GetRandomColorString();
-                        var go2 = UnityUt.CreateSphere(formgo, clr, size: sphrad / 3);
-                        go2.name = $"nose";
-                        go2.transform.position = new Vector3(0.0f, 0.2f, -0.16f);
-                        go2.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
                         break;
                     }
                 case SledForm.Prefab:
@@ -115,32 +126,34 @@ namespace KhiDemo
                         go.transform.position = new Vector3(0.0f, 0.0f, 0.088f);
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
                         go.transform.localScale = new Vector3(8, 8, 8);
-                        //go.transform.localScale = new Vector3(0.88f, 0.52f, 0.16f);
 
                         var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
-                        var go1 = Instantiate<GameObject>(prefab1);
-                        go1.name = $"box";
+                        var gobx = Instantiate<GameObject>(prefab1);
+                        gobx.name = $"box";
                         // 7x5.4x4.3.5
-                        go1.transform.parent = formgo.transform;
-                        go1.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
-                        go1.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        go1.transform.localScale = new Vector3(8, 8, 8);
-                        boxgo = go1;
+                        gobx.transform.parent = formgo.transform;
+                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f);
+                        gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
+                        gobx.transform.localScale = new Vector3(8, 8, 8);
+                        boxgo = gobx;
 
-                        var clr = UnityUt.GetRandomColorString();
-                        var go2 = UnityUt.CreateSphere(formgo, clr, size: sphrad / 3);
-                        go2.name = $"nose";
-                        go2.transform.position = new Vector3(0.0f, 0.2f, -0.16f);
-                        go2.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
                         break;
                     }
             }
-            loadState = loaded;
-            boxgo.SetActive(loadState);
-            visible = pathnum >= 0;
-            formgo.SetActive(visible);
-            formgo.transform.position = pt;
-            formgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
+
+            AddSledIdToSledForm();
+
+            if (mmt.useMeters)
+            {
+                var u2m = mmt.UnitsToMeters;
+                formgo.transform.localScale = new Vector3(u2m, u2m, u2m);
+            }
+            formgo.transform.SetParent(transform, worldPositionStays: false);
+            Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
+        }
+
+        void AddSledIdToSledForm()
+        {
             var rot1 = new Vector3(0, 90, -90);
             var rot2 = -rot1;
             var off1 = new Vector3(-0.27f, 0, -0.12f);
@@ -149,27 +162,31 @@ namespace KhiDemo
             var meth = UnityUt.FltTextImpl.TextPro;
             UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, meth);
             UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, meth);
-
-            if (mmt.useMeters)
-            {
-                var u2m = mmt.UnitsToMeters;
-                formgo.transform.localScale = new Vector3(u2m, u2m, u2m);
-            }
-            formgo.transform.SetParent(geomgo.transform, worldPositionStays: true);
-            AdjustSledPositionAndOrientation(pt, ang);
-            //Debug.Log($"ConstructSledForm pathnum:{pathnum} dist:{pathdist:f1} pt:{formgo.transform.position:f1}");
         }
 
+        void AdjustSledOnPathDist(int pathnum, float pathdist)
+        {
+            this.pathnum = pathnum;
+            this.pathdist = pathdist;
+
+
+            var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
+            AdjustSledPositionAndOrientation(pt, ang);
+
+            visible = pathnum >= 0;
+            formgo.SetActive(visible);
+        }
 
         void AdjustSledPositionAndOrientation(Vector3 pt, float ang)
         {
-            var geomparenttrans = geomgo.transform.parent;
-            geomgo.transform.parent = null;
-            geomgo.transform.position = pt;
-            geomgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-            geomgo.transform.localScale = Vector3.one;
-            geomgo.transform.SetParent(geomparenttrans, worldPositionStays: false);
-            geomgo.transform.SetAsFirstSibling();
+            var geomparenttrans = transform.parent;
+            transform.parent = null;
+
+            transform.position = pt;
+            transform.rotation = Quaternion.Euler(0, 0, -ang);
+            transform.localScale = Vector3.one;
+            transform.SetParent(geomparenttrans, worldPositionStays: false);
+            transform.SetAsFirstSibling();
         }
 
         int last_pathnum;
@@ -192,8 +209,9 @@ namespace KhiDemo
             this.formgo.SetActive(visible);
             if (new_pathnum < 0) return;
 
-            var (pt, ang) = mmt.GetPositionAndOrientation(new_pathnum, new_pathdist);
-            AdjustSledPositionAndOrientation(pt, ang);
+            AdjustSledOnPathDist(new_pathnum, new_pathdist);
+            //var (pt, ang) = mmt.GetPositionAndOrientation(new_pathnum, new_pathdist);
+            //AdjustSledPositionAndOrientation(pt, ang);
             SetLoadState(new_loaded);
             if (last_pathnum == new_pathnum)
             {
@@ -232,9 +250,7 @@ namespace KhiDemo
                 {
                     this.MarkForDeletion();
                 }
-                var newpath = mmt.GetPath(pathnum);
-                var (pt, ang) = newpath.GetPositionAndOrientation(pathdist);
-                AdjustSledPositionAndOrientation(pt, ang);
+                AdjustSledOnPathDist(pathnum, pathdist);
             }
         }
         int updatecount = 0;

@@ -15,6 +15,7 @@ namespace KhiDemo
         public GameObject robmodel;
         public GameObject vgrip;
         public MmBoxMode mmBoxMode = MmBoxMode.Fake;
+        public MmSled.SledForm mmSledForm = MmSled.SledForm.Prefab;
         public GameObject mmtgo;
         public string tableName = "TableName";
         public List<MmPath> paths = new List<MmPath>();
@@ -26,6 +27,7 @@ namespace KhiDemo
         public bool useMeters = false;
         public float sledSpeed = 0.01f;
         public bool interpolateOnSpeed = false;
+
 
 
         public Dictionary<string, MmSled> SledDict = new Dictionary<string, MmSled>();
@@ -224,6 +226,23 @@ namespace KhiDemo
             boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
             boxgo.transform.localPosition = new Vector3(0, -0.14f, 0);
             boxgo.transform.SetParent(vgriptrans, worldPositionStays: false);
+            ActivateRobBox(false);
+        }
+        float lasttimeset = -99;
+        float lockpause = 0.01f;
+        public bool ActivateRobBox(bool newstat)
+        {
+            var rv = false;
+            if (boxgo != null)
+            {
+                if ((Time.time - lasttimeset) > lockpause)
+                {
+                    rv = boxgo.activeSelf;
+                    boxgo.SetActive(newstat);
+                    lasttimeset = Time.time;
+                }
+            }
+            return rv;
         }
 
         public void DeleteSledsAsNeeded()
@@ -254,10 +273,12 @@ namespace KhiDemo
         }
 
         System.Random ran = new System.Random(1234);
+
         float lastLoadChange = 0f;
         float timeToLoadStateChange = 3f;
         public void UpdateTable()
         {
+
             foreach (var sled in sleds)
             {
                 sled.AdvanceSledBySpeed();
@@ -275,16 +296,27 @@ namespace KhiDemo
         public MmTable mmtable = null;
         public MmTray mmtray = null;
         public Rs007TrajectoryPlanner planner = null;
+        public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
+
         // Start is called before the first frame update
         void Start()
         {
             planner = GameObject.FindObjectOfType<Rs007TrajectoryPlanner>();
             mmtable = new MmTable();
             mmtable.useMeters = useMeters;
+            mmtable.mmSledForm = sledForm;
             mmtable.MakeMsftDemoMagmo();
             if (robmodel == null)
             {
-                Debug.LogError("Robmodel not set in Magnemotion table");
+                var urdf = FindObjectOfType<Unity.Robotics.UrdfImporter.UrdfRobot>();
+                if (robmodel)
+                {
+                    Debug.LogError("Robmodel not set in Magnemotion table");
+                }
+                else
+                {
+                    robmodel = urdf.gameObject;
+                }
             }
             else
             {
@@ -336,9 +368,24 @@ namespace KhiDemo
                 }
             }
         }
+        int updatecount = 0;
+        MmSled.SledForm oldsledForm;
         // Update is called once per frame
         void Update()
         {
+            if (updatecount++ == 0)
+            {
+                oldsledForm = sledForm;
+            }
+            if (sledForm != oldsledForm)
+            {
+                foreach (var sled in mmtable.sleds)
+                {
+                    sled.ConstructForm(sledForm);
+                }
+                mmtable.mmSledForm = sledForm;
+                oldsledForm = sledForm;
+            }
             mmtable.DeleteSledsAsNeeded();
             mmtable.UpdateTable();
         }

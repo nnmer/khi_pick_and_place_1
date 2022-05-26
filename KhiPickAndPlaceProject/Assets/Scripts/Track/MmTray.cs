@@ -135,7 +135,13 @@ namespace KhiDemo
                 for (var j = 0; j < ncol; j++)
                 {
                     var bkey = (i, j);
-                    box[bkey].SetActive(loaded[bkey]);
+                    var oldstat = box[bkey].activeSelf;
+                    var newstat = loaded[bkey];
+                    if (oldstat != newstat)
+                    {
+                        mmt.ActivateRobBox(!newstat);
+                        box[bkey].SetActive(loaded[bkey]);
+                    }
                 }
             }
         }
