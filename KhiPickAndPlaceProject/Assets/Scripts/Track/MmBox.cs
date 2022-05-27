@@ -13,19 +13,26 @@ namespace KhiDemo
         public enum BoxForm { CubeBased, Prefab }
         static float boxsize = 0.2f;
         BoxForm boxform;
-        string boxid;
+        string boxid1;
+        string boxid2;
+        int seqnum;
+
+        static int clas_seqnum = 0;
 
 
-        public static MmBox ConstructBox(MagneMotion mmt, string boxid)
+        public static MmBox ConstructBox(MagneMotion mmt, string boxid1)
         {
-            var sname1 = $"sledid:{boxid}";
+            var sname1 = $"sledid:{boxid1}";
             var boxgeomgo = new GameObject(sname1);
             boxgeomgo.transform.position = Vector3.zero;
             boxgeomgo.transform.rotation = Quaternion.identity;
             var box = boxgeomgo.AddComponent<MmBox>();
             var boxform = mmt.boxForm;
             box.mmt = mmt;
-            box.boxid = boxid;
+            box.boxid1 = boxid1;
+            clas_seqnum++;
+            box.seqnum = clas_seqnum;
+            box.boxid2 = $"{box.seqnum}";
             box.ConstructForm(boxform);
             boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
             return box;
@@ -76,14 +83,14 @@ namespace KhiDemo
 
         void AddBoxIdToBoxFormOld()
         {
-            if (boxid != "")
+            if (boxid1 != "")
             {
                 var ska = 1f/8;
                 var rot1 = new Vector3(0, 90, -90);
                 var rot2 = -rot1;
                 var off1 = new Vector3(-0.22f, -0.23f, -0.25f);
                 var off2 = new Vector3(+0.22f, +0.23f, -0.25f);
-                var txt = $"{boxid}";
+                var txt = $"{boxid1}";
                 var meth = UnityUt.FltTextImpl.TextPro;
                 UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "black", rot1, off1, ska, meth);
                 UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "black", rot2, off2, ska, meth);
@@ -91,17 +98,21 @@ namespace KhiDemo
         }
         void AddBoxIdToBoxForm()
         {
-            if (boxid != "")
+            if (boxid1 != "")
             {
-                var ska = 1f/8;
                 var rot1 = new Vector3(0, 90, -90);
                 var rot2 = -rot1;
-                var off1 = new Vector3(-0.22f, -0.23f, -0.25f)*ska;
-                var off2 = new Vector3(+0.22f, +0.23f, -0.25f)*ska;
-                var txt = $"{boxid}";
+                var rot3 = new Vector3(0, 0, 0);
+                var off1 = new Vector3(-0.0275f, -0.02875f, -0.03125f);
+                var off2 = new Vector3(+0.0275f, +0.02875f, -0.03125f);
+                var off3 = new Vector3(+0.0188f, +0.02875f, -0.0366f);
+                var txt1 = $"{boxid1}";
+                var txt2 = $"{boxid2}";
                 var meth = UnityUt.FltTextImpl.TextPro;
-                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "black", rot1, off1, ska*0.6f, meth);
-                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "black", rot2, off2, ska*0.6f, meth);
+                var ska1 = 0.075f;
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt1, "black", rot1, off1, ska1, meth);
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt1, "black", rot2, off2, ska1, meth);
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt2, "black", rot3, off3, ska1, meth);
             }
         }
 

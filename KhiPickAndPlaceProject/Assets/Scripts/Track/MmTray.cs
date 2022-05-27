@@ -20,8 +20,6 @@ namespace KhiDemo
         Dictionary<(int, int), bool> loaded = new Dictionary<(int, int), bool>();
         Dictionary<(int, int), GameObject> box = new Dictionary<(int, int), GameObject>();
 
-        TrayBoxForm trayBoxForm = TrayBoxForm.BoxComp;
-
         public MmTray()
         {
             initVals();
@@ -59,20 +57,12 @@ namespace KhiDemo
         {
             mmtrayrep = new GameObject("mmtrayrep");
 
-            //// move it behind the robot and up to the first robot joint 
-            //mmtrayrep.transform.position = new Vector3(0.376f, 0.256f, 0.0324f);
-            //mmtrayrep.transform.localRotation = Quaternion.Euler(-90.0f, 0.0f, 0.0f);
-
             mmtrayrep.transform.SetParent(parent, worldPositionStays: false);
-            //mmtrayrep.transform.position = new Vector3(0.182f, -0.06199f, 2.6299f);
 
-            // attach to floor if there is one
             mmtraygo = UnityUt.CreateCube(mmtrayrep, "gray", size: 1, wps: false);
             mmtraygo.name = "mmtraygo";
             mmtraygo.transform.localScale = new Vector3(0.289f, 0.017f, 0.314f);
         }
-
-
 
         void CreateBoxes()
         {
@@ -96,34 +86,11 @@ namespace KhiDemo
                     var pt = new Vector3(colpos1, 0.02f, rowpos);
                     GameObject boxgo = null;
 
-                    switch (trayBoxForm)
-                    {
-                        case TrayBoxForm.Box:
-                            {
-                                boxgo = UnityUt.CreateCube(null, "yellow", size: 1);
-                                boxgo.transform.localScale = new Vector3(0.04f, 0.04f, 0.06f);
-                                break;
-                            }
-                        case TrayBoxForm.Prefab:
-                            {
-                                var prefab = Resources.Load<GameObject>("Prefabs/Box1");
-                                boxgo = Instantiate<GameObject>(prefab);
-                                var ska = 1f;
-                                boxgo.transform.localScale = new Vector3(ska, ska, ska);
-                                boxgo.transform.localRotation = Quaternion.Euler(0, 90, 0);
-                                break;
-                            }
-                        case TrayBoxForm.BoxComp:
-                            {
-                                var boxid = $"{i},{j}";
-                                var gobx = MmBox.ConstructBox(mmt, boxid);
-                                boxgo = gobx.gameObject;
-                                var ska = 1f;
-                                boxgo.transform.localScale = new Vector3(ska, ska, ska);
-                                boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
-                                break;
-                            }
-                    }
+                    var boxid = $"{i},{j}";
+                    var gobx = MmBox.ConstructBox(mmt, boxid);
+                    boxgo = gobx.gameObject;
+                    boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
+
                     boxgo.name = $"box {i}-{j}";
                     boxgo.transform.parent = null;
                     boxgo.transform.position = pt;
@@ -198,12 +165,6 @@ namespace KhiDemo
                     loaded[(i, j)] = false;
                 }
             }
-        }
-
-
-        // Update is called once per frame
-        void Update()
-        {
         }
     }
 }

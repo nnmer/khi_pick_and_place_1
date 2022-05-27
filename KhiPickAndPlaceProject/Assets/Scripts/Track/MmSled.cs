@@ -8,7 +8,7 @@ namespace KhiDemo
     public class MmSled : MonoBehaviour
     {
         MagneMotion mmt;
-        public enum SledForm { BoxCubeBased, Prefab, PrefabWithBox }
+        public enum SledForm { BoxCubeBased, Prefab }
         public int pathnum;
         public float pathdist;
         bool markedForDeletion = false;
@@ -117,6 +117,29 @@ namespace KhiDemo
 
                         break;
                     }
+                //case SledForm.Prefab:
+                //    {
+                //        var prefab = (GameObject)Resources.Load("Prefabs/Sled");
+                //        var go = Instantiate<GameObject>(prefab);
+                //        go.name = $"tray";
+                //        // 6.5x11.0x2cm
+                //        go.transform.parent = formgo.transform;
+                //        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
+                //        go.transform.localRotation = Quaternion.Euler(180, 90, -90);
+                //        //go.transform.localScale = new Vector3(8, 8, 8);
+
+                //        var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
+                //        var gobx = Instantiate<GameObject>(prefab1);
+                //        gobx.name = $"box";
+                //        // 7x5.4x4.3.5
+                //        gobx.transform.parent = formgo.transform;
+                //        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*ska8;
+                //        gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
+                //        //gobx.transform.localScale = new Vector3(8, 8, 8);
+                //        boxgo = gobx;
+
+                //        break;
+                //    }
                 case SledForm.Prefab:
                     {
                         var prefab = (GameObject)Resources.Load("Prefabs/Sled");
@@ -124,37 +147,13 @@ namespace KhiDemo
                         go.name = $"tray";
                         // 6.5x11.0x2cm
                         go.transform.parent = formgo.transform;
-                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
+                        //go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
+                        go.transform.position = new Vector3(0.0f, 0.0f, 0.011f);
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        //go.transform.localScale = new Vector3(8, 8, 8);
-
-                        var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
-                        var gobx = Instantiate<GameObject>(prefab1);
-                        gobx.name = $"box";
-                        // 7x5.4x4.3.5
-                        gobx.transform.parent = formgo.transform;
-                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*ska8;
-                        gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        //gobx.transform.localScale = new Vector3(8, 8, 8);
-                        boxgo = gobx;
-
-                        break;
-                    }
-                case SledForm.PrefabWithBox:
-                    {
-                        var prefab = (GameObject)Resources.Load("Prefabs/Sled");
-                        var go = Instantiate<GameObject>(prefab);
-                        go.name = $"tray";
-                        // 6.5x11.0x2cm
-                        go.transform.parent = formgo.transform;
-                        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
-                        go.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        //go.transform.localScale = new Vector3(8, 8, 8);
 
                         var gobx = MmBox.ConstructBox(mmt, sledid);
                         gobx.name = "NewBox";
                         gobx.transform.parent = formgo.transform;
-                        //gobx.transform.localScale = new Vector3(8, 8, 8);
                         boxgo = gobx.gameObject;
 
                         break;

@@ -1171,6 +1171,7 @@ MonoBehaviour:
   m_Target: {fileID: 977052745}
   m_TargetPlacement: {fileID: 451371862}
   posePauseSecs: 0
+  vgriptrans: {fileID: 0}
 --- !u!114 &1801130477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1609,9 +1610,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2797b379214825f4fa4875b7a1013a49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  robmodel: {fileID: 940606759}
+  vgrip: {fileID: 0}
+  mmBoxMode: 0
+  mmtgo: {fileID: 0}
+  tableName: TableName
+  paths: []
+  UnitsToMeters: 0.125
+  sledsgo: {fileID: 0}
+  sleds: []
+  rails: []
   useMeters: 1
+  sledSpeed: 0.01
+  interpolateOnSpeed: 0
   addPathMarkers: 1
   addPathSledsOnStartup: 1
   positionOnFloor: 0
-  robmodel: {fileID: 940606759}
   mmtray: {fileID: 626133821}
+  planner: {fileID: 0}
+  sledForm: 2
+  boxForm: 1
