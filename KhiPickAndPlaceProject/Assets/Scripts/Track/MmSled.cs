@@ -7,7 +7,7 @@ namespace KhiDemo
 
     public class MmSled : MonoBehaviour
     {
-        MagneMotion mmt;
+        MnTable mmt;
         public enum SledForm { BoxCubeBased, Prefab }
         public int pathnum;
         public float pathdist;
@@ -20,14 +20,15 @@ namespace KhiDemo
         public bool loadState;
         public string sledid;
 
-        public static MmSled ConstructSled(MagneMotion mmt, string sledid, int pathnum, float pathdist, bool loaded)
+        public static MmSled ConstructSled(MagneMotion magmo, string sledid, int pathnum, float pathdist, bool loaded)
         {
+            var mmt = magmo.mmt;
             var sname1 = $"sledid:{sledid}";
             var sledgo = new GameObject(sname1);
             //var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
             //sledgo.transform.position = pt;
             //sledgo.transform.rotation = Quaternion.Euler(0, 0, -ang);
-            var sledform = mmt.sledForm;
+            var sledform = magmo.sledForm;
 
             var sled = sledgo.AddComponent<MmSled>();
             sled.sledid = sledid;
@@ -79,7 +80,7 @@ namespace KhiDemo
             Destroy(gameObject);
         }
 
-        public void ConstructForm( SledForm sledform)
+        public void ConstructForm(SledForm sledform)
         {
             // This should have no parameters with changeable state except for the form
             // This ensures we can update the form without disturbing the other logic and state that the sled has, like position and loadstate
@@ -151,7 +152,7 @@ namespace KhiDemo
                         go.transform.position = new Vector3(0.0f, 0.0f, 0.011f);
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
 
-                        var gobx = MmBox.ConstructBox(mmt, sledid);
+                        var gobx = MmBox.ConstructBox(mmt.magmo, sledid);
                         gobx.name = "NewBox";
                         gobx.transform.parent = formgo.transform;
                         boxgo = gobx.gameObject;

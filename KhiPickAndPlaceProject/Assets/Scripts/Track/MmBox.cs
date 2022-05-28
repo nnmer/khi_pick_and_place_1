@@ -7,7 +7,7 @@ namespace KhiDemo
 {
     public class MmBox : MonoBehaviour
     {
-        MagneMotion mmt;
+        MnTable mmt;
         GameObject geomgo;
         GameObject formgo;
         public enum BoxForm { CubeBased, Prefab }
@@ -20,14 +20,15 @@ namespace KhiDemo
         static int clas_seqnum = 0;
 
 
-        public static MmBox ConstructBox(MagneMotion mmt, string boxid1)
+        public static MmBox ConstructBox(MagneMotion magmo, string boxid1)
         {
+            var mmt = magmo.mmt;
             var sname1 = $"sledid:{boxid1}";
             var boxgeomgo = new GameObject(sname1);
             boxgeomgo.transform.position = Vector3.zero;
             boxgeomgo.transform.rotation = Quaternion.identity;
             var box = boxgeomgo.AddComponent<MmBox>();
-            var boxform = mmt.boxForm;
+            var boxform = magmo.boxForm;
             box.mmt = mmt;
             box.boxid1 = boxid1;
             clas_seqnum++;
@@ -46,6 +47,14 @@ namespace KhiDemo
 
         public void ConstructForm(BoxForm boxform)
         {
+
+            if (formgo != null)
+            {
+                Destroy(formgo);
+                formgo = null;
+            }
+
+
             this.boxform = boxform;
             formgo = new GameObject("boxform");
             switch (this.boxform)
@@ -56,7 +65,7 @@ namespace KhiDemo
                         gobx.name = $"box";
                         // 7x5.4x4.3.5
                         gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*1f/8;
-                        gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f)*1f/8;
+                        gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.26f)*1f/8;
                         break;
                     }
                 case BoxForm.Prefab:
@@ -76,8 +85,7 @@ namespace KhiDemo
 
             AddBoxIdToBoxForm();
 
-            formgo.transform.SetParent(gameObject.transform, worldPositionStays: true);
-            //Debug.Log($"ConstructSledForm pathnum:{pathnum} dist:{pathdist:f1} pt:{formgo.transform.position:f1}");
+            formgo.transform.SetParent(transform, worldPositionStays: false);
         }
 
 

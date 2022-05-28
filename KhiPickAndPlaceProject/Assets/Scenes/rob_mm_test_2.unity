@@ -1628,5 +1628,5 @@ MonoBehaviour:
   positionOnFloor: 0
   mmtray: {fileID: 626133821}
   planner: {fileID: 0}
-  sledForm: 2
+  sledForm: 1
   boxForm: 1

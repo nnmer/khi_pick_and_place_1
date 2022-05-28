@@ -204,7 +204,8 @@ namespace KhiDemo
     {
         static float sphrad = 0.6f;
         [NonSerialized]
-        MagneMotion mmt;
+        MagneMotion magmo;
+        MnTable mmt;
         GameObject startgo;
         public string name;
         Vector3 startpt;
@@ -215,9 +216,10 @@ namespace KhiDemo
         [NonSerialized]
         public List<MmPath> continuationPaths = new List<MmPath>();
 
-        public MmPath(MagneMotion mmt, int idx, string name, Vector3 startpt)
+        public MmPath(MagneMotion magmo, int idx, string name, Vector3 startpt)
         {
-            this.mmt = mmt;
+            this.magmo = magmo;
+            this.mmt = magmo.mmt;
             this.name = name;
             this.pidx = idx;
             this.startpt = startpt;
@@ -226,7 +228,7 @@ namespace KhiDemo
 
         public MmRail MakePathRail(string sledid, int pathnum, float pathdist)
         {
-            var rail = MmRail.ConstructRail(mmt, sledid, pathnum, pathdist);
+            var rail = MmRail.ConstructRail(magmo, sledid, pathnum, pathdist);
             mmt.rails.Add(rail);
             return rail;
         }

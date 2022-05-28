@@ -6,7 +6,7 @@ namespace KhiDemo
 {
     public class MmRail : MonoBehaviour
     {
-        MagneMotion mmt;
+        MnTable mmt;
         public enum RailForm { Cigar, Box }
         static float sphrad = 0.2f;
         float speed;
@@ -17,8 +17,9 @@ namespace KhiDemo
         GameObject formgo;
         public string railid;
 
-        public static MmRail ConstructRail(MagneMotion mmt, string rname, int pathnum, float pathdist)
+        public static MmRail ConstructRail(MagneMotion magmo, string rname, int pathnum, float pathdist)
         {
+            var mmt = magmo.mmt;
             var railgo = new GameObject(rname);
             var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
             railgo.transform.position = pt;

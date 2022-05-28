@@ -8,7 +8,7 @@ namespace KhiDemo
 
     public class MmTray : MonoBehaviour
     {
-        MagneMotion mmt;
+        MnTable mmt;
 
         public enum TrayBoxForm { Box, Prefab, BoxComp }
 
@@ -46,9 +46,9 @@ namespace KhiDemo
             ROSConnection.GetOrCreateInstance().Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
         }
 
-        public void Init(MagneMotion mmt)
+        public void Init(MagneMotion magmo)
         {
-            this.mmt = mmt;
+            this.mmt = magmo.mmt;
             // size in cm - 31.4, 28.9, 1.7
             CreateTray(gameObject.transform);
             CreateBoxes();
@@ -87,7 +87,7 @@ namespace KhiDemo
                     GameObject boxgo = null;
 
                     var boxid = $"{i},{j}";
-                    var gobx = MmBox.ConstructBox(mmt, boxid);
+                    var gobx = MmBox.ConstructBox(mmt.magmo, boxid);
                     boxgo = gobx.gameObject;
                     boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
 
