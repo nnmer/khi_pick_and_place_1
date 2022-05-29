@@ -10,12 +10,14 @@ namespace KhiDemo
 
     public enum MmSegForm { None, Straight, Curved }
 
+    public enum MmMode {  None, Echo, Simulate }
+
     public class MagneMotion : MonoBehaviour
     {
         public MnTable mmt;
         public GameObject robmodel;
-        public GameObject vgrip;
         public MmBoxMode mmBoxMode = MmBoxMode.Fake;
+        public MmMode mmMode = MmMode.None;
         public GameObject mmtgo;
 
 
@@ -48,14 +50,14 @@ namespace KhiDemo
             // Initialize Robot
             if (robmodel == null)
             {
-                var urdfRobot = FindObjectOfType<Unity.Robotics.UrdfImporter.UrdfRobot>();
-                if (urdfRobot==null)
+                var mmRobot = FindObjectOfType<MmRobot>();
+                if (mmRobot==null)
                 {
                     Debug.LogError("Robmodel not set in Magnemotion table");
                 }
                 else
                 {
-                    robmodel = urdfRobot.gameObject;
+                    robmodel = mmRobot.gameObject;
                 }
             }
 
@@ -64,8 +66,13 @@ namespace KhiDemo
                 mmt.AddBoxToRobot(planner.vgriptrans);
             }
 
-            var mmgo = mmt.SetupGeometry(addPathMarkers: addPathMarkers, addPathSleds: addPathSledsOnStartup, positionOnFloor: positionOnFloor);
+            var mmgo = mmt.SetupGeometry(addPathMarkers: addPathMarkers, positionOnFloor: positionOnFloor);
             mmgo.transform.SetParent(gameObject.transform, false);
+            if (addPathSledsOnStartup)
+            {
+                mmt.AddSleds();
+            }
+            SetMode(mmMode);
 
             mmtray = FindObjectOfType<MmTray>();
             if (mmtray != null)
@@ -76,8 +83,23 @@ namespace KhiDemo
 
 
 
+        public void SetMode(MmMode mmMode)
+        {
+            switch(mmMode)
+            {
+                default:
+                case MmMode.Echo:
+                    mmt.SetSledSpeeds( SledSpeedDistribution.fixedValue, 0);
+                    break;
+                case MmMode.Simulate:
+                    mmt.SetSledSpeeds(SledSpeedDistribution.alternateHiLo, 2);
+                    break;
+            }
+        }
+
+
+
         MmSled.SledForm oldsledForm;
-        MmBox.BoxForm oldboxForm;
         void ChangeSledFormIfRequested()
         {
             if (updatecount == 0)
@@ -96,6 +118,7 @@ namespace KhiDemo
         }
 
 
+        MmBox.BoxForm oldboxForm;
         void ChangeBoxFormIfRequested()
         {
             if (updatecount == 0)
@@ -113,6 +136,19 @@ namespace KhiDemo
             }
         }
 
+        MmMode oldmmMode;
+        void ChangeModeIfRequested()
+        {
+            if (updatecount == 0)
+            {
+                oldmmMode = mmMode;
+            }
+            if (oldmmMode != mmMode)
+            {
+                SetMode(mmMode);
+                oldmmMode = mmMode;
+            }
+        }
 
         int updatecount = 0;
         // Update is called once per frame
@@ -120,6 +156,7 @@ namespace KhiDemo
         {
             ChangeSledFormIfRequested();
             ChangeBoxFormIfRequested();
+            ChangeModeIfRequested();
             updatecount++;
         }
     }

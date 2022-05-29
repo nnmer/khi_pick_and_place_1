@@ -5,7 +5,7 @@ using Unity.Robotics.ROSTCPConnector;
 
 namespace KhiDemo
 {
-
+    public enum SledSpeedDistribution { fixedValue, alternateHiLo }
 
     public class MnTable : MonoBehaviour
     {
@@ -23,7 +23,7 @@ namespace KhiDemo
         public bool useMeters = true;
         public float sledSpeed = 0.01f;
         public bool interpolateOnSpeed = false;
-
+        GameObject boxgo;
 
 
 
@@ -146,13 +146,30 @@ namespace KhiDemo
             p3.LinkToContinuationPath(p1);
         }
 
+        SledSpeedDistribution sledSpeedDistribution; 
 
-        public MmSled MakeSled(string sledid, int pathnum, float pathdist, bool loaded)
+        public void SetSledSpeeds(SledSpeedDistribution sledSpeedDistribution, float sledspeed)
         {
-            var sled = MmSled.ConstructSled(magmo, sledid, pathnum, pathdist, loaded);
-            this.sleds.Add(sled);
-            this.SledDict[sledid] = sled;
-            return sled;
+            this.sledSpeedDistribution = sledSpeedDistribution;
+            switch (sledSpeedDistribution)
+            {
+                case SledSpeedDistribution.fixedValue:
+                    foreach (var s in sleds)
+                    {
+                        s.SetSpeed(sledspeed);
+                    }
+                    break;
+                case SledSpeedDistribution.alternateHiLo:
+                    int i = 0;
+                    foreach (var s in sleds)
+                    {
+                        float val = (i % 2 == 0) ? sledspeed : sledspeed/2;
+                        Debug.Log($"Set {s.sledid} speed to {val}");
+                        s.SetSpeed(val);
+                        i++;
+                    }
+                    break;
+            }
         }
 
 
@@ -163,7 +180,7 @@ namespace KhiDemo
             paths.Add(rv);
             return rv;
         }
-        public GameObject SetupGeometry(bool addPathMarkers, bool addPathSleds, bool positionOnFloor)
+        public GameObject SetupGeometry(bool addPathMarkers, bool positionOnFloor)
         {
             mmtgo = new GameObject(tableName);
 
@@ -175,30 +192,7 @@ namespace KhiDemo
                 }
             }
 
-            // Add Sleds so the begining scene is not quite so empty
-            if (addPathSleds)
-            {
-                var totsleds = 0;
-                foreach (var p in paths)
-                {
-                    if (p.continuationPaths.Count > 0) // no dead edns
-                    {
-                        var nsleds = (int)p.unitLength / 3.0f;
-                        for (int i = 0; i < nsleds; i++)
-                        {
-                            if (totsleds <= 10) // only create 10
-                            {
-                                var frac = i * 1.0f / nsleds;
-                                var pathdist = frac * p.unitLength;
-                                var iid = sleds.Count + 1;
-                                var sledid = $"{iid}";
-                                MakeSled(sledid, p.pidx, pathdist, loaded: true);
-                                totsleds++;
-                            }
-                        }
-                    }
-                }
-            }
+
             if (positionOnFloor)
             {
                 // flatten to XZ plane and twist around
@@ -215,7 +209,39 @@ namespace KhiDemo
             }
             return mmtgo;
         }
-        GameObject boxgo;
+
+        public MmSled MakeSled(string sledid, int pathnum, float pathdist, bool loaded)
+        {
+            var sled = MmSled.ConstructSled(magmo, sledid, pathnum, pathdist, loaded);
+            this.sleds.Add(sled);
+            this.SledDict[sledid] = sled;
+            return sled;
+        }
+        public void AddSleds()
+        {
+            // Add Sleds so the begining scene is not quite so empty
+            var totsleds = 0;
+            foreach (var p in paths)
+            {
+                if (p.continuationPaths.Count > 0) // no dead edns
+                {
+                    var nsleds = (int)p.pathLength / 3.0f;
+                    for (int i = 0; i < nsleds; i++)
+                    {
+                        if (totsleds <= 10) // only create 10
+                        {
+                            var frac = i * 1.0f / nsleds;
+                            var pathdist = frac * p.pathLength;
+                            var iid = sleds.Count + 1;
+                            var sledid = $"{iid}";
+                            var sled = MakeSled(sledid, p.pidx, pathdist, loaded: true);
+                            totsleds++;
+                        }
+                    }
+                }
+            }
+        }
+
         public void AddBoxToRobot(Transform vgriptrans)
         {
             if (vgriptrans == null)

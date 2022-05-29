@@ -19,6 +19,8 @@ namespace KhiDemo
         GameObject boxgo;
         public bool loadState;
         public string sledid;
+        public string sledInFront;
+        public float sledInFrontDist;
 
         public static MmSled ConstructSled(MagneMotion magmo, string sledid, int pathnum, float pathdist, bool loaded)
         {
@@ -63,6 +65,11 @@ namespace KhiDemo
         public bool GetLoadState()
         {
             return loadState;
+        }
+
+        public void SetSpeed(float newspeed)
+        {
+            sledspeed = newspeed;
         }
         public void SetLoadState(bool newLoadState)
         {
@@ -118,29 +125,6 @@ namespace KhiDemo
 
                         break;
                     }
-                //case SledForm.Prefab:
-                //    {
-                //        var prefab = (GameObject)Resources.Load("Prefabs/Sled");
-                //        var go = Instantiate<GameObject>(prefab);
-                //        go.name = $"tray";
-                //        // 6.5x11.0x2cm
-                //        go.transform.parent = formgo.transform;
-                //        go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
-                //        go.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                //        //go.transform.localScale = new Vector3(8, 8, 8);
-
-                //        var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
-                //        var gobx = Instantiate<GameObject>(prefab1);
-                //        gobx.name = $"box";
-                //        // 7x5.4x4.3.5
-                //        gobx.transform.parent = formgo.transform;
-                //        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*ska8;
-                //        gobx.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                //        //gobx.transform.localScale = new Vector3(8, 8, 8);
-                //        boxgo = gobx;
-
-                //        break;
-                //    }
                 case SledForm.Prefab:
                     {
                         var prefab = (GameObject)Resources.Load("Prefabs/Sled");
@@ -274,12 +258,38 @@ namespace KhiDemo
                 AdjustSledOnPathDist(pathnum, pathdist);
             }
         }
+
+        public void findSledInFront()
+        {
+            sledInFront = "";
+            sledInFrontDist = float.MaxValue;
+            if (pathnum >= 0)
+            {
+                foreach (var s in mmt.sleds)
+                {
+                    if (s.pathnum==pathnum)
+                    {
+                        if (s.pathdist>pathdist)
+                        {
+                            var newdist = s.pathdist - pathdist;
+                            if (newdist<sledInFrontDist)
+                            {
+                                sledInFront = s.sledid;
+                                sledInFrontDist = newdist;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         int updatecount = 0;
         // Update is called once per frame
 
         void Update()
         {
             updatecount++;
+            findSledInFront();
         }
     }
 }

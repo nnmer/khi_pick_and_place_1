@@ -211,7 +211,7 @@ namespace KhiDemo
         Vector3 startpt;
         Vector3 endpt;
         public int pidx;
-        public float unitLength = 0;
+        public float pathLength = 0;
         public List<MmPathSeg> segs = new List<MmPathSeg>();
         [NonSerialized]
         public List<MmPath> continuationPaths = new List<MmPath>();
@@ -254,11 +254,11 @@ namespace KhiDemo
             }
             if (pathgos)
             {
-                var nrails = (int)this.unitLength / 0.4f;
+                var nrails = (int)this.pathLength / 0.4f;
                 for (int i = 0; i < nrails; i++)
                 {
                     var frac = i * 1.0f / nrails;
-                    var pathdist = frac * this.unitLength;
+                    var pathdist = frac * this.pathLength;
                     var (pt, ang) = GetPositionAndOrientation(pathdist);
                     var rname = $"{name} rail - frac:{frac:f2} ang:{ang:f0}";
                     MakePathRail(rname, pidx, pathdist);
@@ -269,14 +269,14 @@ namespace KhiDemo
         public (int newpathidx, float newpathdist, bool markfordeletion) AdvancePathdist(float curpathdist, float deltadist)
         {
             var newdist = curpathdist + deltadist;
-            if (newdist < this.unitLength)
+            if (newdist < this.pathLength)
             {
                 return (pidx, newdist, false);
             }
-            var restdist = newdist - this.unitLength;
+            var restdist = newdist - this.pathLength;
             if (continuationPaths.Count == 0)
             {
-                return (pidx, this.unitLength, true);
+                return (pidx, this.pathLength, true);
             }
             var newpath = continuationPaths[selcount % continuationPaths.Count];
             selcount++;
@@ -299,7 +299,7 @@ namespace KhiDemo
         {
             var name = $"line-seg {segs.Count}";
             var seg = new MmPathSeg(this, MmSegForm.Straight, name, direction, lengthUnits);
-            unitLength += seg.lengthUnits;
+            pathLength += seg.lengthUnits;
             segs.Add(seg);
 
         }
@@ -307,7 +307,7 @@ namespace KhiDemo
         {
             var name = $"circ-seg {segs.Count}";
             var seg = new MmPathSeg(this, MmSegForm.Curved, name, startCompassPt, rotdir);
-            unitLength += seg.lengthUnits;
+            pathLength += seg.lengthUnits;
             segs.Add(seg);
         }
         public (Vector3 pt, float ang) GetPositionAndOrientation(float pathdist)
@@ -318,9 +318,9 @@ namespace KhiDemo
                 Debug.LogError($"no segs defined for path {name}");
                 return (Vector3.zero, 0);
             }
-            if (this.unitLength < pathdist)
+            if (this.pathLength < pathdist)
             {
-                Debug.LogWarning($"pathdist requested is bigger than pathlength for path {name}");
+                Debug.LogWarning($"GetPositionAndOrientation - path {name} - pathdist requested ({pathdist:f4}) is bigger than pathlength {pathLength:f4}");
                 var eang = segs[segs.Count - 1].eang;
                 return (endpt, eang);
             }
