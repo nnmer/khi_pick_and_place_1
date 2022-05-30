@@ -217,6 +217,8 @@ namespace KhiDemo
         public List<MmPath> continuationPaths = new List<MmPath>();
         public MmPath preferedLoadedPath = null;
         public MmPath preferedUnloadedPath = null;
+        public float loadedStopPoint;
+        public float unloadedStopPoint;
 
         public MmPath(MagneMotion magmo, int idx, string name, Vector3 startpt)
         {
@@ -226,6 +228,8 @@ namespace KhiDemo
             this.pidx = idx;
             this.startpt = startpt;
             this.endpt = this.startpt;
+            this.loadedStopPoint = -1;
+            this.unloadedStopPoint = -1;
         }
 
         public MmRail MakePathRail(string sledid, int pathnum, float pathdist)
@@ -304,6 +308,14 @@ namespace KhiDemo
         public void SetPreferedUnloadedPath(MmPath path)
         {
             preferedUnloadedPath = path;
+        }
+        public void SetLoadedStopPoint(float unitDist)
+        {
+            loadedStopPoint = unitDist;
+        }
+        public void SetUnloadedStopPoint(float unitDist)
+        {
+            unloadedStopPoint = unitDist;
         }
         public void AdjustEndPoint(Vector3 newendpoint)
         {
