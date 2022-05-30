@@ -23,8 +23,6 @@ namespace KhiDemo
         public bool useMeters = true;
         public float sledSpeed = 0.01f;
         public bool interpolateOnSpeed = false;
-        GameObject boxgo;
-
 
 
 
@@ -64,7 +62,7 @@ namespace KhiDemo
             return (pt, ang);
         }
 
-        public void MakeMsftDemoMagmo()
+        public void MakeMsftDemoMagmo(MmMode mode)
         {
             Debug.Log("Making MsftDemoMagmo");
             tableName = "MsftDemoMagmo";
@@ -102,7 +100,10 @@ namespace KhiDemo
             p5.MakeLineSeg("e", 2);
             p1.LinkToContinuationPath(p5);
             p1.SetPreferedUnloadedPath(p5);
-            p5.SetUnloadedStopPoint(6.0f);
+            if (mode == MmMode.SimulateRailToTray)
+            {
+                p5.SetUnloadedStopPoint(6.0f);
+            }
 
             var p6 = mmt.makePath("path6", p5.End());
             p6.MakeLineSeg("e", 2);
@@ -122,7 +123,7 @@ namespace KhiDemo
             p8.MakeCircSeg("s", "cw");
             p8.MakeCircSeg("w", "cw");
             p7.LinkToContinuationPath(p1);
-            p7.LinkToContinuationPath(p8);
+            //p7.LinkToContinuationPath(p8);
             p8.LinkToContinuationPath(p6);
         }
 
@@ -247,38 +248,16 @@ namespace KhiDemo
             }
         }
 
-        public void AddBoxToRobot(Transform vgriptrans)
+        public MmSled FindStoppedSled(bool neededLoadState)
         {
-            if (vgriptrans == null)
+            foreach(var s in sleds)
             {
-                Debug.LogError("AddBoxToRobot - Robot is null");
-                return;
-            }
-            var prefab = Resources.Load<GameObject>("Prefabs/Box1");
-            boxgo = Object.Instantiate<GameObject>(prefab);
-            boxgo.name = "RobBox";
-            var ska = 1f;
-            boxgo.transform.localScale = new Vector3(ska, ska, ska);
-            boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
-            boxgo.transform.localPosition = new Vector3(0, -0.14f, 0);
-            boxgo.transform.SetParent(vgriptrans, worldPositionStays: false);
-            ActivateRobBox(false);
-        }
-        float lasttimeset = -99;
-        float lockpause = 0.01f;
-        public bool ActivateRobBox(bool newstat)
-        {
-            var rv = false;
-            if (boxgo != null)
-            {
-                if ((Time.time - lasttimeset) > lockpause)
+                if (s.stopped && neededLoadState==s.loadState)
                 {
-                    rv = boxgo.activeSelf;
-                    boxgo.SetActive(newstat);
-                    lasttimeset = Time.time;
+                    return s;
                 }
             }
-            return rv;
+            return null;
         }
 
         public void DeleteSledsAsNeeded()

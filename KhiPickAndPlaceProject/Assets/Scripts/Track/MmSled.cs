@@ -7,6 +7,7 @@ namespace KhiDemo
 
     public class MmSled : MonoBehaviour
     {
+        MagneMotion magmo;
         MnTable mmt;
         public enum SledForm { BoxCubeBased, Prefab }
         public int pathnum;
@@ -26,6 +27,7 @@ namespace KhiDemo
 
         public static MmSled ConstructSled(MagneMotion magmo, string sledid, int pathnum, float pathdist, bool loaded)
         {
+
             var mmt = magmo.mmt;
             var sname1 = $"sledid:{sledid}";
             var sledgo = new GameObject(sname1);
@@ -36,6 +38,7 @@ namespace KhiDemo
 
             var sled = sledgo.AddComponent<MmSled>();
             sled.sledid = sledid;
+            sled.magmo = magmo;
             sled.mmt = mmt;
             // Set default state
             sled.sledUpsSpeed = 0;
@@ -83,7 +86,7 @@ namespace KhiDemo
             if (boxgo != null)
             {
                 boxgo.SetActive(loadState);
-                mmt.ActivateRobBox(!loadState);
+                magmo.mmRobot.ActivateRobBox(!loadState);
             }
         }
         public void DeleteStuff()
@@ -250,7 +253,11 @@ namespace KhiDemo
         public float maxDistToMove;
         public void AdvanceSledBySpeed()
         {
-            if (pathnum >= 0 && !stopped)
+            if (sledid=="7")
+            {
+                sledid = "7";
+            }
+            if (pathnum >= 0)
             {
                 deltDistToMove = 8*this.sledUpsSpeed * Time.deltaTime;
                 if (sledInFront!="")
@@ -264,7 +271,7 @@ namespace KhiDemo
                 }
                 var path = mmt.GetPath(pathnum);
                 bool atEndOfPath;
-                (pathnum, pathUnitDist, atEndOfPath) = path.AdvancePathdistInUnits(pathUnitDist, deltDistToMove, loadState );
+                (pathnum, pathUnitDist, atEndOfPath, stopped) = path.AdvancePathdistInUnits(pathUnitDist, deltDistToMove, loadState );
                 if (atEndOfPath)
                 {
                     this.MarkForDeletion();
@@ -298,11 +305,19 @@ namespace KhiDemo
             }
         }
 
+        void SyncLoadState()
+        {
+            if (boxgo!=null)
+            {
+                boxgo.SetActive(loadState);
+            }
+        }
         int updatecount = 0;
         // Update is called once per frame
 
         void Update()
         {
+            SyncLoadState();
             updatecount++;
         }
     }

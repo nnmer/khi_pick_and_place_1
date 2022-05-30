@@ -272,18 +272,34 @@ namespace KhiDemo
             }
         }
         int selcount = 0;
-        public (int newpathidx, float newpathdist, bool atEndOfPath) AdvancePathdistInUnits(float curpathdist, float deltadist, bool loaded)
+        public (int newpathidx, float newpathdist, bool atEndOfPath, bool stopped) AdvancePathdistInUnits(float curpathdist, float deltadist, bool loaded)
         {
             var newdist = curpathdist + deltadist;
             if (newdist < this.pathLength)
             {
-                return (pidx, newdist, atEndOfPath:false);
+                if (loaded && loadedStopPoint>0)
+                {
+                    if (curpathdist<=loadedStopPoint && loadedStopPoint<newdist)
+                    {
+                        return (pidx, loadedStopPoint, atEndOfPath: false, stopped: true);
+                    }
+                }
+                if (!loaded && unloadedStopPoint > 0)
+                {
+                    if (curpathdist <= unloadedStopPoint && unloadedStopPoint < newdist)
+                    {
+                        return (pidx, unloadedStopPoint, atEndOfPath: false, stopped: true);
+                    }
+                }
+                return (pidx, newdist, atEndOfPath:false, stopped:false);
             }
             var restdist = newdist - this.pathLength;
             if (continuationPaths.Count == 0)
             {
-                return (pidx, this.pathLength, atEndOfPath: true);
+                return (pidx, this.pathLength, atEndOfPath: true, stopped: false);
             }
+
+
             var newpath = continuationPaths[selcount % continuationPaths.Count];
             if (loaded && preferedLoadedPath!=null)
             {
@@ -294,7 +310,7 @@ namespace KhiDemo
                 newpath = preferedUnloadedPath;
             }
             selcount++;
-            return (newpath.pidx, restdist, atEndOfPath: false);
+            return (newpath.pidx, restdist, atEndOfPath: false, stopped: false);
         }
 
         public void LinkToContinuationPath(MmPath contpath)

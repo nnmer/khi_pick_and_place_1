@@ -8,6 +8,7 @@ namespace KhiDemo
 
     public class MmTray : MonoBehaviour
     {
+        MagneMotion magmo;
         MnTable mmt;
 
         public enum TrayBoxForm { Box, Prefab, BoxComp }
@@ -48,6 +49,7 @@ namespace KhiDemo
 
         public void Init(MagneMotion magmo)
         {
+            this.magmo = magmo;
             this.mmt = magmo.mmt;
             // size in cm - 31.4, 28.9, 1.7
             CreateTray(gameObject.transform);
@@ -115,7 +117,7 @@ namespace KhiDemo
                     var newstat = loaded[bkey];
                     if (oldstat != newstat)
                     {
-                        mmt.ActivateRobBox(!newstat);
+                        magmo.mmRobot.ActivateRobBox(!newstat);
                         box[bkey].SetActive(loaded[bkey]);
                     }
                 }

@@ -1625,6 +1625,8 @@ MonoBehaviour:
   mmt: {fileID: 0}
   robmodel: {fileID: 940606759}
   mmBoxMode: 0
+  mmMode: 2
+  mmTableStyle: 0
   mmtgo: {fileID: 0}
   addPathMarkers: 1
   addPathSledsOnStartup: 1

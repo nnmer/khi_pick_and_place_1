@@ -10,14 +10,14 @@ namespace KhiDemo
 
     public enum MmSegForm { None, Straight, Curved }
 
-    public enum MmMode {  None, Echo, Simulate }
+    public enum MmMode {  None, Echo, SimulateRailToRail, SimulateRailToTray }
 
     public enum MmTableStyle {  MftDemo, Simple }
 
     public class MagneMotion : MonoBehaviour
     {
         public MnTable mmt;
-        public GameObject robmodel;
+        public MmRobot mmRobot;
         public MmBoxMode mmBoxMode = MmBoxMode.Fake;
         public MmMode mmMode = MmMode.None;
         public MmTableStyle mmTableStyle = MmTableStyle.MftDemo;
@@ -51,7 +51,7 @@ namespace KhiDemo
             {
                 default:
                 case MmTableStyle.MftDemo:
-                    mmt.MakeMsftDemoMagmo();
+                    mmt.MakeMsftDemoMagmo(mmMode);
                     break;
                 case MmTableStyle.Simple:
                     mmt.MakeSimplePath();
@@ -59,23 +59,12 @@ namespace KhiDemo
             }
 
             // Initialize Robot
-            if (robmodel == null)
+            mmRobot = FindObjectOfType<MmRobot>();
+            if (mmRobot==null)
             {
-                var mmRobot = FindObjectOfType<MmRobot>();
-                if (mmRobot==null)
-                {
-                    Debug.LogError("Robmodel not set in Magnemotion table");
-                }
-                else
-                {
-                    robmodel = mmRobot.gameObject;
-                }
+                Debug.LogError("Robmodel not set in Magnemotion table");
             }
 
-            if (robmodel!=null && planner!=null )
-            { 
-                mmt.AddBoxToRobot(planner.vgriptrans);
-            }
 
             var mmgo = mmt.SetupGeometry(addPathMarkers: addPathMarkers, positionOnFloor: positionOnFloor);
             mmgo.transform.SetParent(gameObject.transform, false);
@@ -92,8 +81,6 @@ namespace KhiDemo
             }
         }
 
-
-
         public void SetMode(MmMode mmMode)
         {
             switch(mmMode)
@@ -102,13 +89,12 @@ namespace KhiDemo
                 case MmMode.Echo:
                     mmt.SetSledUpsSpeed( SledSpeedDistribution.fixedValue, 0);
                     break;
-                case MmMode.Simulate:
+                case MmMode.SimulateRailToRail:
+                case MmMode.SimulateRailToTray:
                     mmt.SetSledUpsSpeed(SledSpeedDistribution.alternateHiLo, 0.25f);
                     break;
             }
         }
-
-
 
         MmSled.SledForm oldsledForm;
         void ChangeSledFormIfRequested()
@@ -127,7 +113,6 @@ namespace KhiDemo
                 oldsledForm = sledForm;
             }
         }
-
 
         MmBox.BoxForm oldboxForm;
         void ChangeBoxFormIfRequested()
