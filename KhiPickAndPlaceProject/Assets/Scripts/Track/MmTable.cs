@@ -48,20 +48,16 @@ namespace KhiDemo
             }
             return paths[idx];
         }
-
         public void Init(MagneMotion magmo)
         {
             this.magmo = magmo;
-
         }
-
         public (Vector3 pt, float ang) GetPositionAndOrientation(int pathnum, float pathdist)
         {
             var path = GetPath(pathnum);
             var (pt, ang) = path.GetPositionAndOrientation(pathdist);
             return (pt, ang);
         }
-
         public void MakeMsftDemoMagmo(MmMode mode)
         {
             Debug.Log("Making MsftDemoMagmo");
@@ -259,7 +255,6 @@ namespace KhiDemo
             }
             return null;
         }
-
         public void DeleteSledsAsNeeded()
         {
             var deleteList = new List<MmSled>();
@@ -286,7 +281,6 @@ namespace KhiDemo
                 Debug.Log($"{sleds.Count} sleds left");
             }
         }
-
         public void AdvanceSledsBySpeed()
         {
             foreach (var sled in sleds)
@@ -298,8 +292,6 @@ namespace KhiDemo
                 sled.AdvanceSledBySpeed();
             }
         }
-
-
         void EchoSledChange(MmSledMsg sledmsg)
         {
             // Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
@@ -331,9 +323,6 @@ namespace KhiDemo
                 }
             }
         }
-
-
-
         int updatecount = 0;
         // Update is called once per frame
         void Update()

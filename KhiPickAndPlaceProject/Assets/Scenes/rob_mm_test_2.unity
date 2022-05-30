@@ -656,6 +656,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 602d84ce06cac7e478e4c306c866ce64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  loadState: 0
+  magmo: {fileID: 0}
+  vgriptrans: {fileID: 0}
+  transferBox: 0
+  boxgo: {fileID: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -1623,9 +1628,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mmt: {fileID: 0}
-  robmodel: {fileID: 940606759}
+  mmRobot: {fileID: 0}
   mmBoxMode: 0
-  mmMode: 2
+  mmMode: 1
   mmTableStyle: 0
   mmtgo: {fileID: 0}
   addPathMarkers: 1

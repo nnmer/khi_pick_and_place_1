@@ -23,7 +23,7 @@ namespace KhiDemo
 
         public MmTray()
         {
-            initVals();
+            InitVals();
         }
 
         (bool ok, string errmsg) CheckIndexes(int i, int j, string rooname)
@@ -158,7 +158,7 @@ namespace KhiDemo
             var key = (i, j);
             loaded[key] = newstat;
         }
-        void initVals()
+        void InitVals()
         {
             for (int i = 1; i < nrow; i++)
             {
@@ -167,6 +167,21 @@ namespace KhiDemo
                     loaded[(i, j)] = false;
                 }
             }
+        }
+
+        (bool found,(int i,int j)) FindFirst(bool seekLoadState)
+        {
+            for (int i = 1; i < nrow; i++)
+            {
+                for (int j = 1; j < ncol; j++)
+                {
+                    if (loaded[(i, j)] == seekLoadState)
+                    {
+                        return (true,(i, j));
+                    }
+                }
+            }
+            return (false, (-1,-1));
         }
     }
 }

@@ -61,14 +61,21 @@ namespace KhiDemo
 
         public void TransferBox()
         {
-            var s = magmo.mmt.FindStoppedSled(!loadState);
-            if (s==null)
+            switch (magmo.mmMode)
             {
-                Debug.LogError($"MmRobot.TransferBox - cound not find stoppedsled with loadState {!loadState}");
-                return;
+                case MmMode.SimulateRailToRail:
+                    {
+                        var s = magmo.mmt.FindStoppedSled(!loadState);
+                        if (s == null)
+                        {
+                            Debug.LogError($"MmRobot.TransferBox - cound not find stoppedsled with loadState {!loadState}");
+                            return;
+                        }
+                        s.SetLoadState(loadState);
+                        ActivateRobBox(!loadState);
+                        break;
+                    }
             }
-            s.SetLoadState(loadState);
-            ActivateRobBox(!loadState);
         }
 
         void Update()
