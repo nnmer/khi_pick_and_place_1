@@ -10,9 +10,10 @@ namespace KhiDemo
         MnTable mmt;
         public enum SledForm { BoxCubeBased, Prefab }
         public int pathnum;
-        public float pathdist;
+        public float pathUnitDist;
         bool markedForDeletion = false;
-        public float sledspeed;
+        public float sledUpsSpeed;
+        public float reqestedSledUpsSpeed;
         public bool visible;
         SledForm sledform;
         GameObject formgo;
@@ -21,6 +22,7 @@ namespace KhiDemo
         public string sledid;
         public string sledInFront;
         public float sledInFrontDist;
+        public bool stopped;
 
         public static MmSled ConstructSled(MagneMotion magmo, string sledid, int pathnum, float pathdist, bool loaded)
         {
@@ -36,11 +38,13 @@ namespace KhiDemo
             sled.sledid = sledid;
             sled.mmt = mmt;
             // Set default state
-            sled.sledspeed = 0;
+            sled.sledUpsSpeed = 0;
+            sled.reqestedSledUpsSpeed = 0;
             sled.pathnum = 0;
-            sled.pathdist = 0;
+            sled.pathUnitDist = 0;
             sled.loadState = true;
             sled.visible = true;
+            sled.stopped = false;
 
             sled.ConstructForm( sledform );
             sled.AdjustSledOnPathDist(pathnum, pathdist);
@@ -69,7 +73,8 @@ namespace KhiDemo
 
         public void SetSpeed(float newspeed)
         {
-            sledspeed = newspeed;
+            reqestedSledUpsSpeed = newspeed;
+            sledUpsSpeed = newspeed;
         }
         public void SetLoadState(bool newLoadState)
         {
@@ -132,7 +137,6 @@ namespace KhiDemo
                         go.name = $"tray";
                         // 6.5x11.0x2cm
                         go.transform.parent = formgo.transform;
-                        //go.transform.position = new Vector3(0.0f, 0.0f, 0.088f) * ska8;
                         go.transform.position = new Vector3(0.0f, 0.0f, 0.011f);
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
 
@@ -147,11 +151,6 @@ namespace KhiDemo
 
             AddSledIdToSledForm();
 
-            //if (mmt.useMeters)
-            //{
-            //    var u2m = mmt.UnitsToMeters;
-            //    formgo.transform.localScale = new Vector3(u2m, u2m, u2m);
-            //}
             formgo.transform.SetParent(transform, worldPositionStays: false);
             Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
         }
@@ -172,7 +171,7 @@ namespace KhiDemo
         void AdjustSledOnPathDist(int pathnum, float pathdist)
         {
             this.pathnum = pathnum;
-            this.pathdist = pathdist;
+            this.pathUnitDist = pathdist;
 
 
             var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
@@ -204,62 +203,78 @@ namespace KhiDemo
         static int nspeed_calcs = 0;
 
 
-        public void UpdateSled(int new_pathnum, float new_pathdist, bool new_loaded)
+        public void EchoUpdateSled(int new_pathnum, float new_pathdist, bool new_loaded)
         {
             var msg = $"Updating {sledid} to path:{new_pathnum} pos:{new_pathdist:f2} loaded:{new_loaded}";
             Debug.Log(msg);
             this.pathnum = new_pathnum;
-            this.pathdist = new_pathdist;
+            this.pathUnitDist = new_pathdist;
             this.visible = new_pathnum >= 0;
             this.formgo.SetActive(visible);
             if (new_pathnum < 0) return;
-
+            SetLoadState(new_loaded);
             AdjustSledOnPathDist(new_pathnum, new_pathdist);
+
             //var (pt, ang) = mmt.GetPositionAndOrientation(new_pathnum, new_pathdist);
             //AdjustSledPositionAndOrientation(pt, ang);
-            SetLoadState(new_loaded);
-            if (last_pathnum == new_pathnum)
-            {
-                var deltatime = Time.time - last_time;
-                if (mmt.interpolateOnSpeed && (deltatime > 0))
-                {
-                    sledspeed = (new_pathdist - last_pathdist) / deltatime;
-                    if (sledspeed < 0)
-                    {
-                        sledspeed = 0;
-                    }
-                    nspeed_calcs++;
-                    sum_speed += sledspeed;
-                    avg_speed = sum_speed / nspeed_calcs;
-                    if (sledspeed > max_speed)
-                    {
-                        max_speed = sledspeed;
-                    }
-                    Debug.Log($"sled {this.sledid} sledspeed:{sledspeed:f3}  avg_speed:{avg_speed:f3} sum_speed:{sum_speed}   max_speed:{max_speed:f3} nspeed_calcs:{nspeed_calcs}");
-                }
-            }
+            // This doesn't work really, causes the sleds to move backwards too often which looks terrible
+            // Need to delete this
+            //if (last_pathnum == new_pathnum)
+            //{
+            //    var deltatime = Time.time - last_time;
+            //    if (mmt.interpolateOnSpeed && (deltatime > 0))
+            //    {
+            //        sledspeed = (new_pathdist - last_pathdist) / deltatime;
+            //        if (sledspeed < 0)
+            //        {
+            //            sledspeed = 0;
+            //        }
+            //        nspeed_calcs++;
+            //        sum_speed += sledspeed;
+            //        avg_speed = sum_speed / nspeed_calcs;
+            //        if (sledspeed > max_speed)
+            //        {
+            //            max_speed = sledspeed;
+            //        }
+            //        Debug.Log($"sled {this.sledid} sledspeed:{sledspeed:f3}  avg_speed:{avg_speed:f3} sum_speed:{sum_speed}   max_speed:{max_speed:f3} nspeed_calcs:{nspeed_calcs}");
+            //    }
+            //}
+
             last_pathnum = new_pathnum;
             last_pathdist = new_pathdist;
             last_loaded = new_loaded;
             last_time = Time.time;
         }
+        const float sledMinGap = 8*0.10f;// 10 cm
+        public float deltDistToMove;
+        public float maxDistToMove;
         public void AdvanceSledBySpeed()
         {
-            if (pathnum >= 0)
+            if (pathnum >= 0 && !stopped)
             {
-                var deltdist = this.sledspeed * Time.deltaTime;
+                deltDistToMove = 8*this.sledUpsSpeed * Time.deltaTime;
+                if (sledInFront!="")
+                {
+                    maxDistToMove = sledInFrontDist - sledMinGap;
+                    deltDistToMove = Mathf.Min(maxDistToMove, deltDistToMove);
+                    if (deltDistToMove<0)
+                    {
+                        deltDistToMove = 0;
+                    }
+                }
                 var path = mmt.GetPath(pathnum);
-                bool markfordeletion;
-                (pathnum, pathdist, markfordeletion) = path.AdvancePathdist(pathdist, deltdist);
-                if (markfordeletion)
+                bool atEndOfPath;
+                (pathnum, pathUnitDist, atEndOfPath) = path.AdvancePathdistInUnits(pathUnitDist, deltDistToMove, loadState );
+                if (atEndOfPath)
                 {
                     this.MarkForDeletion();
                 }
-                AdjustSledOnPathDist(pathnum, pathdist);
+                else
+                AdjustSledOnPathDist(pathnum, pathUnitDist);
             }
         }
 
-        public void findSledInFront()
+        public void FindSledInFront()
         {
             sledInFront = "";
             sledInFrontDist = float.MaxValue;
@@ -269,9 +284,9 @@ namespace KhiDemo
                 {
                     if (s.pathnum==pathnum)
                     {
-                        if (s.pathdist>pathdist)
+                        if (s.pathUnitDist>pathUnitDist)
                         {
-                            var newdist = s.pathdist - pathdist;
+                            var newdist = s.pathUnitDist - pathUnitDist;
                             if (newdist<sledInFrontDist)
                             {
                                 sledInFront = s.sledid;
@@ -289,7 +304,6 @@ namespace KhiDemo
         void Update()
         {
             updatecount++;
-            findSledInFront();
         }
     }
 }

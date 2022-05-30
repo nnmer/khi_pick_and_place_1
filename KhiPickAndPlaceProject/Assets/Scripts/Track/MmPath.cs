@@ -215,6 +215,8 @@ namespace KhiDemo
         public List<MmPathSeg> segs = new List<MmPathSeg>();
         [NonSerialized]
         public List<MmPath> continuationPaths = new List<MmPath>();
+        public MmPath preferedLoadedPath = null;
+        public MmPath preferedUnloadedPath = null;
 
         public MmPath(MagneMotion magmo, int idx, string name, Vector3 startpt)
         {
@@ -266,26 +268,42 @@ namespace KhiDemo
             }
         }
         int selcount = 0;
-        public (int newpathidx, float newpathdist, bool markfordeletion) AdvancePathdist(float curpathdist, float deltadist)
+        public (int newpathidx, float newpathdist, bool atEndOfPath) AdvancePathdistInUnits(float curpathdist, float deltadist, bool loaded)
         {
             var newdist = curpathdist + deltadist;
             if (newdist < this.pathLength)
             {
-                return (pidx, newdist, false);
+                return (pidx, newdist, atEndOfPath:false);
             }
             var restdist = newdist - this.pathLength;
             if (continuationPaths.Count == 0)
             {
-                return (pidx, this.pathLength, true);
+                return (pidx, this.pathLength, atEndOfPath: true);
             }
             var newpath = continuationPaths[selcount % continuationPaths.Count];
+            if (loaded && preferedLoadedPath!=null)
+            {
+                newpath = preferedLoadedPath;
+            }
+            else if (!loaded && preferedUnloadedPath!=null)
+            {
+                newpath = preferedUnloadedPath;
+            }
             selcount++;
-            return (newpath.pidx, restdist, false);
+            return (newpath.pidx, restdist, atEndOfPath: false);
         }
 
         public void LinkToContinuationPath(MmPath contpath)
         {
             continuationPaths.Add(contpath);
+        }
+        public void SetPreferedLoadedPath(MmPath path)
+        {
+            preferedLoadedPath = path;
+        }
+        public void SetPreferedUnloadedPath(MmPath path)
+        {
+            preferedUnloadedPath = path;
         }
         public void AdjustEndPoint(Vector3 newendpoint)
         {

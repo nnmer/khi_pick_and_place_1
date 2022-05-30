@@ -12,12 +12,15 @@ namespace KhiDemo
 
     public enum MmMode {  None, Echo, Simulate }
 
+    public enum MmTableStyle {  MftDemo, Simple }
+
     public class MagneMotion : MonoBehaviour
     {
         public MnTable mmt;
         public GameObject robmodel;
         public MmBoxMode mmBoxMode = MmBoxMode.Fake;
         public MmMode mmMode = MmMode.None;
+        public MmTableStyle mmTableStyle = MmTableStyle.MftDemo;
         public GameObject mmtgo;
 
 
@@ -43,9 +46,17 @@ namespace KhiDemo
             mmt.Init(this);
 
             MmPathSeg.InitDicts();
-            mmt.MakeMsftDemoMagmo();
-            //mmt.MakeSimplePath();
 
+            switch (mmTableStyle)
+            {
+                default:
+                case MmTableStyle.MftDemo:
+                    mmt.MakeMsftDemoMagmo();
+                    break;
+                case MmTableStyle.Simple:
+                    mmt.MakeSimplePath();
+                    break;
+            }
 
             // Initialize Robot
             if (robmodel == null)
@@ -89,10 +100,10 @@ namespace KhiDemo
             {
                 default:
                 case MmMode.Echo:
-                    mmt.SetSledSpeeds( SledSpeedDistribution.fixedValue, 0);
+                    mmt.SetSledUpsSpeed( SledSpeedDistribution.fixedValue, 0);
                     break;
                 case MmMode.Simulate:
-                    mmt.SetSledSpeeds(SledSpeedDistribution.alternateHiLo, 2);
+                    mmt.SetSledUpsSpeed(SledSpeedDistribution.alternateHiLo, 0.25f);
                     break;
             }
         }

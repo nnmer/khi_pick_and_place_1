@@ -33,7 +33,7 @@ namespace KhiDemo
         // Start is called before the first frame update
         void Start()
         {
-            ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", SledChange);
+            ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", EchoSledChange);
         }
 
         public MmPath GetPath(int idx)
@@ -80,6 +80,7 @@ namespace KhiDemo
             var p2 = mmt.makePath("path2", p1.End());
             p2.MakeCircSeg("s", "ccw");
             p1.LinkToContinuationPath(p2);
+            p1.SetPreferedLoadedPath(p2);
 
             var p3 = mmt.makePath("path3", p2.End());
             p3.MakeLineSeg("n", 2);
@@ -99,6 +100,7 @@ namespace KhiDemo
             p5.MakeLineSeg("e", 8);
             p5.MakeLineSeg("e", 2);
             p1.LinkToContinuationPath(p5);
+            p1.SetPreferedUnloadedPath(p5);
 
             var p6 = mmt.makePath("path6", p5.End());
             p6.MakeLineSeg("e", 2);
@@ -148,7 +150,7 @@ namespace KhiDemo
 
         SledSpeedDistribution sledSpeedDistribution; 
 
-        public void SetSledSpeeds(SledSpeedDistribution sledSpeedDistribution, float sledspeed)
+        public void SetSledUpsSpeed(SledSpeedDistribution sledSpeedDistribution, float sledspeed)
         {
             this.sledSpeedDistribution = sledSpeedDistribution;
             switch (sledSpeedDistribution)
@@ -234,7 +236,8 @@ namespace KhiDemo
                             var pathdist = frac * p.pathLength;
                             var iid = sleds.Count + 1;
                             var sledid = $"{iid}";
-                            var sled = MakeSled(sledid, p.pidx, pathdist, loaded: true);
+                            var loaded = (i % 2 == 0);
+                            var sled = MakeSled(sledid, p.pidx, pathdist, loaded: loaded);
                             totsleds++;
                         }
                     }
@@ -307,12 +310,16 @@ namespace KhiDemo
         {
             foreach (var sled in sleds)
             {
+                sled.FindSledInFront();
+            }
+            foreach (var sled in sleds)
+            {
                 sled.AdvanceSledBySpeed();
             }
         }
 
 
-        void SledChange(MmSledMsg sledmsg)
+        void EchoSledChange(MmSledMsg sledmsg)
         {
             // Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
             var sledid = $"{sledmsg.cartid}";
@@ -328,7 +335,7 @@ namespace KhiDemo
             {
                 var sled = SledDict[sledid];
                 var oldstate = sled.GetLoadState();
-                sled.UpdateSled(pathid, position, loaded);
+                sled.EchoUpdateSled(pathid, position, loaded);
                 if (oldstate != loaded)
                 {
                     Debug.Log($"Sled {sledid} changed loaded state to {loaded}");
