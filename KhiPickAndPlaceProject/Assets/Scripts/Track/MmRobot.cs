@@ -71,8 +71,6 @@ namespace KhiDemo
             }
             return rv;
         }
-
-
         void Update()
         {
 

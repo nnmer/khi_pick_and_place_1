@@ -131,6 +131,47 @@ namespace KhiDemo
             }
         }
 
+        public enum TranferType {  SledToRob, RobToSled, TrayToRob, RobToTray }
+
+        public void SledTransferBox(TranferType tt, MmSled sled)
+        {
+            var rob = mmRobot;
+            switch (tt)
+            {
+                case TranferType.SledToRob:
+                    sled.SetLoadState(false);
+                    rob.ActivateRobBox(true);
+                    break;
+                case TranferType.RobToSled:
+                    sled.SetLoadState(true);
+                    rob.ActivateRobBox(false);
+                    break;
+                default:
+                    Debug.LogError("SledTransferBox - Wrong Function");
+                    break;
+            }
+        }
+
+        public void TrayTransferBox(TranferType tt, (int,int) key)
+        {
+            var rob = mmRobot;
+            switch (tt)
+            {
+                case TranferType.TrayToRob:
+                    mmtray.SetVal(key, false);
+                    rob.ActivateRobBox(true);
+                    break;
+                case TranferType.RobToTray:
+                    mmtray.SetVal(key, true);
+                    rob.ActivateRobBox(false); 
+                    break;
+                default:
+                    Debug.LogError("TrayTransferBox - Wrong Function");
+                    break;
+            }
+        }
+
+
         public void SimStep()
         {
             if (!simStep) return;
@@ -149,8 +190,7 @@ namespace KhiDemo
                                 Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {true} to load");
                                 return;
                             }
-                            s.SetLoadState(false);
-                            rob.ActivateRobBox(true);
+                            SledTransferBox(TranferType.SledToRob,s);
                         }
                         else
                         {
@@ -160,8 +200,7 @@ namespace KhiDemo
                                 Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {false} to unload");
                                 return;
                             }
-                            s.SetLoadState(true);
-                            rob.ActivateRobBox(false);
+                            SledTransferBox(TranferType.RobToSled,s);
                         }
                         break;
                     }
@@ -175,8 +214,7 @@ namespace KhiDemo
                                 Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {true} to unload");
                                 return;
                             }
-                            s.SetLoadState(false);
-                            rob.ActivateRobBox(true);
+                            SledTransferBox(TranferType.SledToRob, s);
                         }
                         else
                         {
@@ -188,8 +226,7 @@ namespace KhiDemo
                             }
                             if (found)
                             {
-                                mmtray.SetVal(key, true);
-                                rob.ActivateRobBox(false);
+                                TrayTransferBox(TranferType.RobToTray, key);
                             }
                         }
                         break;
@@ -204,8 +241,7 @@ namespace KhiDemo
                                 Debug.LogWarning($"{errhead}  - cound not find loaded tray slot to unload");
                                 return;
                             }
-                            mmtray.SetVal(key,false);
-                            rob.ActivateRobBox(true);
+                            TrayTransferBox(TranferType.TrayToRob, key);
                         }
                         else
                         {
@@ -215,15 +251,12 @@ namespace KhiDemo
                                 Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {false} to load");
                                 return;
                             }
-                            s.SetLoadState(true);
-                            rob.ActivateRobBox(true);
+                            SledTransferBox(TranferType.RobToSled, s);
                         }
                         break;
                     }
             }
-
         }
-
 
         MmSled.SledForm oldsledForm;
         void ChangeSledFormIfRequested()

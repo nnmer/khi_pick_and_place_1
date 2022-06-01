@@ -178,15 +178,20 @@ namespace KhiDemo
             {
                 for (var j = 0; j < ncol; j++)
                 {
-                    var bkey = (i, j);
-                    var oldstat = trayboxes[bkey].activeSelf;
-                    var newstat = loadState[bkey];
-                    if (oldstat != newstat)
-                    {
-                        magmo.mmRobot.ActivateRobBox(!newstat);
-                        trayboxes[bkey].SetActive(loadState[bkey]);
-                    }
+                    RealizeLoadStatusIj(i, j);
                 }
+            }
+        }
+
+        void RealizeLoadStatusIj(int i, int j)
+        {
+            var key = (i, j);
+            var oldstat = trayboxes[key].activeSelf;
+            var newstat = loadState[key];
+            if (oldstat != newstat)
+            {
+                SetVal(key, newstat);
+                trayboxes[key].SetActive(newstat);
             }
         }
 
@@ -201,8 +206,11 @@ namespace KhiDemo
                 //Debug.Log($"   oldstat:{oldstat} newstat:{newstat}");
                 if (oldstat != newstat)
                 {
-                    SetVal(traymsg.row, traymsg.col, traymsg.loaded != 0);
-                    RealizeLoadStatus();
+                    var key = (traymsg.row, traymsg.col);
+                    loadState[key] = newstat;
+                    RealizeLoadStatusIj(traymsg.row, traymsg.col);
+                    magmo.mmRobot.ActivateRobBox(!newstat);
+                    //RealizeLoadStatus();
                 }
             }
             else
