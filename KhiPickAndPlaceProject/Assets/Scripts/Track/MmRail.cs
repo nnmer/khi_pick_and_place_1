@@ -32,7 +32,7 @@ namespace KhiDemo
             rail.speed = 0;
             rail.mmt = mmt;
             rail.ConstructForm(railform);
-            railgo.transform.parent = mmt.mmtgo.transform;
+            railgo.transform.parent = mmt.pago.transform;
             return rail;
         }
 

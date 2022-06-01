@@ -124,29 +124,29 @@ namespace KhiDemo
                         go.transform.localScale = new Vector3(0.9f, 0.53f, 0.224f) * ska8;
                         go.name = $"tray";
 
-                        var gobx = UnityUt.CreateCube(formgo, "yellow", size: 1);
-                        gobx.name = $"box";
+                        var box = UnityUt.CreateCube(formgo, "yellow", size: 1);
+                        box.name = $"box";
                         // 7x5.4x4.3.5
-                        gobx.transform.position = new Vector3(0.0f, 0.0f, -0.16f) * ska8;
-                        gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f) * ska8;
-                        boxgo = gobx;
+                        box.transform.position = new Vector3(0.0f, 0.0f, -0.16f) * ska8;
+                        box.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f) * ska8;
+                        boxgo = box;
 
                         break;
                     }
                 case SledForm.Prefab:
                     {
-                        var prefab = (GameObject)Resources.Load("Prefabs/Sled");
-                        var go = Instantiate<GameObject>(prefab);
+                        var prefab = Resources.Load<GameObject>("Prefabs/Sled");
+                        var go = Instantiate(prefab);
                         go.name = $"tray";
                         // 6.5x11.0x2cm
                         go.transform.parent = formgo.transform;
                         go.transform.position = new Vector3(0.0f, 0.0f, 0.011f);
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
+                        var box = MmBox.ConstructBox(mmt.magmo,  sledid, BoxStatus.onSled );
 
-                        var gobx = MmBox.ConstructBox(mmt.magmo, sledid);
-                        gobx.name = "NewBox";
-                        gobx.transform.parent = formgo.transform;
-                        boxgo = gobx.gameObject;
+                        AttachBoxToSled(box);
+                        //box.transform.parent = formgo.transform;
+                        //boxgo = box.gameObject;
 
                         break;
                     }
@@ -155,7 +155,13 @@ namespace KhiDemo
             AddSledIdToSledForm();
 
             formgo.transform.SetParent(transform, worldPositionStays: false);
-            Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
+            //Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
+        }
+
+        void AttachBoxToSled(MmBox box)
+        {
+            box.transform.parent = formgo.transform;
+            boxgo = box.gameObject;
         }
 
         void AddSledIdToSledForm()
@@ -167,8 +173,8 @@ namespace KhiDemo
             var off2 = new Vector3(+0.27f, 0, -0.12f)*ska;
             var txt = $"{sledid}";
             var meth = UnityUt.FltTextImpl.TextPro;
-            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, ska, meth);
-            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, ska, meth);
+            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot1, off1, ska, meth, goname:"SledidTxt");
+            UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt, "yellow", rot2, off2, ska, meth, goname: "SledidTxt");
         }
 
         void AdjustSledOnPathDist(int pathnum, float pathdist)
@@ -196,14 +202,14 @@ namespace KhiDemo
             transform.SetAsFirstSibling();
         }
 
-        int last_pathnum;
-        float last_pathdist;
-        bool last_loaded;
-        float last_time;
-        static float max_speed = 0;
-        static float avg_speed = 0;
-        static float sum_speed = 0;
-        static int nspeed_calcs = 0;
+        //int last_pathnum;
+        //float last_pathdist;
+        //bool last_loaded;
+        //float last_time;
+        //static float max_speed = 0;
+        //static float avg_speed = 0;
+        //static float sum_speed = 0;
+        //static int nspeed_calcs = 0;
 
 
         public void EchoUpdateSled(int new_pathnum, float new_pathdist, bool new_loaded)
@@ -243,10 +249,10 @@ namespace KhiDemo
             //    }
             //}
 
-            last_pathnum = new_pathnum;
-            last_pathdist = new_pathdist;
-            last_loaded = new_loaded;
-            last_time = Time.time;
+            //last_pathnum = new_pathnum;
+            //last_pathdist = new_pathdist;
+            //last_loaded = new_loaded;
+            //last_time = Time.time;
         }
         const float sledMinGap = 8*0.10f;// 10 cm
         public float deltDistToMove;

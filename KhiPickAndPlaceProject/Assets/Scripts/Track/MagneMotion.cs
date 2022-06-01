@@ -10,7 +10,7 @@ namespace KhiDemo
 
     public enum MmSegForm { None, Straight, Curved }
 
-    public enum MmMode {  None, Echo, SimulateRailToRail, SimulateRailToTray }
+    public enum MmMode {  None, Echo, SimuRailToRail, SimRailToTray, SimTrayToRail}
 
     public enum MmTableStyle {  MftDemo, Simple }
 
@@ -33,6 +33,13 @@ namespace KhiDemo
         public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
         public MmBox.BoxForm boxForm = MmBox.BoxForm.Prefab;
 
+        [Header("Simulation")]
+        public bool simStep;
+        [Space(10)]
+        public bool reverseTrayRail;
+        public bool doubleSpeed;
+        public bool halfSpeed;
+
 
         public Dictionary<string, MmSled> SledDict = new Dictionary<string, MmSled>();
 
@@ -51,7 +58,7 @@ namespace KhiDemo
             {
                 default:
                 case MmTableStyle.MftDemo:
-                    mmt.MakeMsftDemoMagmo(mmMode);
+                    mmt.MakeMsftDemoMagmo();
                     break;
                 case MmTableStyle.Simple:
                     mmt.MakeSimplePath();
@@ -72,29 +79,151 @@ namespace KhiDemo
             {
                 mmt.AddSleds();
             }
-            SetMode(mmMode);
 
             mmtray = FindObjectOfType<MmTray>();
             if (mmtray != null)
             {
                 mmtray.Init(this);
             }
+            SetMode(mmMode);
         }
-
-        public void SetMode(MmMode mmMode)
+        public void SetMode(MmMode newMode)
         {
-            switch(mmMode)
+            switch(newMode)
             {
                 default:
                 case MmMode.Echo:
-                    mmt.SetSledUpsSpeed( SledSpeedDistribution.fixedValue, 0);
+                    mmBoxMode = MmBoxMode.Fake;
+                    mmtray.InitAllLoadstate(true); // doesn't really matter - all gets overwritten
+                    mmt.SetupSleds(SledLoadDistrib.alternateLoadedUnloaded, SledSpeedDistrib.fixedValue, 0);
                     break;
-                case MmMode.SimulateRailToRail:
-                case MmMode.SimulateRailToTray:
-                    mmt.SetSledUpsSpeed(SledSpeedDistribution.alternateHiLo, 0.25f);
+                case MmMode.SimuRailToRail:
+                    mmBoxMode = MmBoxMode.Real;
+                    mmtray.InitAllLoadstate(false);
+                    mmt.SetupSleds(SledLoadDistrib.alternateLoadedUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
+                    break;
+                case MmMode.SimRailToTray:
+                    mmBoxMode = MmBoxMode.Real;
+                    mmtray.InitAllLoadstate(false);
+                    mmt.SetupSleds(SledLoadDistrib.allLoaded, SledSpeedDistrib.alternateHiLo, 0.5f);
+                    break;
+                case MmMode.SimTrayToRail:
+                    mmBoxMode = MmBoxMode.Real;
+                    mmtray.InitAllLoadstate(true);
+                    mmt.SetupSleds(SledLoadDistrib.allUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
                     break;
             }
         }
+
+        public void ReverseTrayRail()
+        {
+            if (!reverseTrayRail) return;
+            reverseTrayRail = false;
+            if (mmMode == MmMode.SimRailToTray)
+            {
+                Debug.Log($"Reversing mode to {MmMode.SimTrayToRail}");
+                oldmmMode = mmMode = MmMode.SimTrayToRail;
+            }
+            else if (mmMode == MmMode.SimTrayToRail)
+            {
+                Debug.Log($"Reversing mode to {MmMode.SimRailToTray}");
+                oldmmMode = mmMode = MmMode.SimRailToTray;
+            }
+        }
+
+        public void SimStep()
+        {
+            if (!simStep) return;
+            simStep = false;
+            var errhead = $"MagneMotion.SimStep - {mmMode}";
+            var rob = mmRobot;
+            switch (mmMode)
+            {
+                case MmMode.SimuRailToRail:
+                    {
+                        if (!rob.loadState)
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: true);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {true} to load");
+                                return;
+                            }
+                            s.SetLoadState(false);
+                            rob.ActivateRobBox(true);
+                        }
+                        else
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: false);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {false} to unload");
+                                return;
+                            }
+                            s.SetLoadState(true);
+                            rob.ActivateRobBox(false);
+                        }
+                        break;
+                    }
+                case MmMode.SimRailToTray:
+                    {
+                        if (!rob.loadState)
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: true);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {true} to unload");
+                                return;
+                            }
+                            s.SetLoadState(false);
+                            rob.ActivateRobBox(true);
+                        }
+                        else
+                        {
+                            var (found, key) = mmtray.FindFirst(seekLoadState: false);
+                            if (!found)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find empty tray slot");
+                                return;
+                            }
+                            if (found)
+                            {
+                                mmtray.SetVal(key, true);
+                                rob.ActivateRobBox(false);
+                            }
+                        }
+                        break;
+                    }
+                case MmMode.SimTrayToRail:
+                    {
+                        if (!rob.loadState)
+                        {
+                            var (found, key) = mmtray.FindFirst(seekLoadState: true);
+                            if (!found)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find loaded tray slot to unload");
+                                return;
+                            }
+                            mmtray.SetVal(key,false);
+                            rob.ActivateRobBox(true);
+                        }
+                        else
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: false);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {false} to load");
+                                return;
+                            }
+                            s.SetLoadState(true);
+                            rob.ActivateRobBox(true);
+                        }
+                        break;
+                    }
+            }
+
+        }
+
 
         MmSled.SledForm oldsledForm;
         void ChangeSledFormIfRequested()
@@ -146,6 +275,20 @@ namespace KhiDemo
             }
         }
 
+        void AdjustSpeed()
+        {
+            if (doubleSpeed)
+            {
+                doubleSpeed = false;
+                mmt.AdjustSledSpeedFactor(2f);
+            }
+            if (halfSpeed)
+            {
+                halfSpeed = false;
+                mmt.AdjustSledSpeedFactor(0.5f);
+            }
+        }
+
         int updatecount = 0;
         // Update is called once per frame
         void Update()
@@ -153,6 +296,9 @@ namespace KhiDemo
             ChangeSledFormIfRequested();
             ChangeBoxFormIfRequested();
             ChangeModeIfRequested();
+            ReverseTrayRail();
+            AdjustSpeed();
+            SimStep();
             updatecount++;
         }
     }

@@ -249,7 +249,7 @@ namespace KhiDemo
                 pos *= mmt.UnitsToMeters;
             }
             startgo = UnityUt.CreateSphere(parent, "red", size: sz);
-            startgo.name = name;
+            startgo.name = $"Start-{name}";
             startgo.transform.position = pos;
             if (seggos)
             {

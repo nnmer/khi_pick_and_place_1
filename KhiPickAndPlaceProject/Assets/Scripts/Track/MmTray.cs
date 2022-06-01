@@ -18,8 +18,9 @@ namespace KhiDemo
 
         const int nrow = 3;
         const int ncol = 4;
-        Dictionary<(int, int), bool> loaded = new Dictionary<(int, int), bool>();
-        Dictionary<(int, int), GameObject> box = new Dictionary<(int, int), GameObject>();
+        Dictionary<(int, int), bool> loadState = new Dictionary<(int, int), bool>();
+        Dictionary<(int, int), GameObject> trayboxes = new Dictionary<(int, int), GameObject>();
+        Dictionary<(int, int), GameObject> trayslots = new Dictionary<(int, int), GameObject>();
 
         public MmTray()
         {
@@ -53,7 +54,7 @@ namespace KhiDemo
             this.mmt = magmo.mmt;
             // size in cm - 31.4, 28.9, 1.7
             CreateTray(gameObject.transform);
-            CreateBoxes();
+            CreateTraySlots();
         }
         void CreateTray(Transform parent)
         {
@@ -65,8 +66,9 @@ namespace KhiDemo
             mmtraygo.name = "mmtraygo";
             mmtraygo.transform.localScale = new Vector3(0.289f, 0.017f, 0.314f);
         }
-
-        void CreateBoxes()
+        float slotw;
+        float sloth;
+        void CreateTraySlots()
         {
             var rowdelt = 0.03f * 3;
             var coldelt = 0.022f * 3;
@@ -74,11 +76,14 @@ namespace KhiDemo
             var colmid = 0.003f;
             var colstar = coldelt * (((float)ncol - 1) / 2f);
             var rowpos = rowstar;
+            slotw = coldelt * 0.95f;
+            sloth = rowdelt * 0.95f;
             for (var i = 0; i < nrow; i++)
             {
                 var colpos = colstar;
                 for (var j = 0; j < ncol; j++)
                 {
+                    var key = (i, j);
                     // so the columns are not evenly distributed (sigh)
                     var colpos1 = colpos - colmid;
                     if (j < (ncol / 2))
@@ -86,25 +91,86 @@ namespace KhiDemo
                         colpos1 = colpos + colmid;
                     }
                     var pt = new Vector3(colpos1, 0.02f, rowpos);
-                    GameObject boxgo = null;
 
-                    var boxid = $"{i},{j}";
-                    var gobx = MmBox.ConstructBox(mmt.magmo, boxid);
-                    boxgo = gobx.gameObject;
-                    boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
+                    CreateTraySlot(key, pt);
 
-                    boxgo.name = $"box {i}-{j}";
-                    boxgo.transform.parent = null;
-                    boxgo.transform.position = pt;
-                    boxgo.transform.SetParent(mmtrayrep.transform, worldPositionStays: false);
-                    box[(i, j)] = boxgo;
-                    loaded[(i, j)] = true;
                     colpos -= coldelt;
                 }
                 rowpos -= rowdelt;
             }
+        }
+
+        void CreateTraySlot((int,int) key, Vector3 pt)
+        {
+            var slotgo = new GameObject($"slot:{key}");
+            trayslots[key] = slotgo;
+            slotgo.transform.position = pt;
+            slotgo.transform.SetParent(mmtrayrep.transform, worldPositionStays: false);
+
+            var slotformgo = UnityUt.CreateCube(null, "gray", size: 1);
+            slotformgo.transform.localScale = new Vector3(slotw, 0.005f, sloth);
+            slotformgo.transform.SetParent(slotgo.transform, worldPositionStays: false);
+
+        }
+
+        void DestroyBoxes()
+        {
+            for (var i = 0; i < nrow; i++)
+            {
+                for (var j = 0; j < ncol; j++)
+                {
+                    var key = (i, j);
+                    if (trayboxes.ContainsKey(key))
+                    {
+                        Destroy(trayboxes[key]);
+                        trayboxes[key] = null;
+                    }
+                }
+            }
+        }
+
+        void CreateBoxes()
+        {
+            for (var i = 0; i < nrow; i++)
+            {
+                for (var j = 0; j < ncol; j++)
+                {
+                    var key = (i, j);
+
+                    var boxid = $"{key}";
+                    var box = MmBox.ConstructBox(mmt.magmo, boxid, BoxStatus.onTray);
+                    AttachBoxToSlot(key, box);
+                    trayboxes[key] = box.gameObject;
+                    loadState[key] = true;
+                }
+            }
             RealizeLoadStatus();
         }
+
+        public void AttachBoxToSlot((int,int) key, MmBox box)
+        {
+            var slot = trayslots[key];
+            box.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            box.transform.parent = null;
+            box.transform.SetParent(slot.transform, worldPositionStays: false);
+        }
+
+
+        public void InitAllLoadstate(bool loaded)
+        {
+            DestroyBoxes();
+            CreateBoxes();
+            for (var i = 0; i < nrow; i++)
+            {
+                for (var j = 0; j < ncol; j++)
+                {
+                    var bkey = (i, j);
+                    loadState[bkey] = loaded;
+                    trayboxes[bkey].SetActive(loaded);
+                }
+            }
+        }
+
 
         void RealizeLoadStatus()
         {
@@ -113,12 +179,12 @@ namespace KhiDemo
                 for (var j = 0; j < ncol; j++)
                 {
                     var bkey = (i, j);
-                    var oldstat = box[bkey].activeSelf;
-                    var newstat = loaded[bkey];
+                    var oldstat = trayboxes[bkey].activeSelf;
+                    var newstat = loadState[bkey];
                     if (oldstat != newstat)
                     {
                         magmo.mmRobot.ActivateRobBox(!newstat);
-                        box[bkey].SetActive(loaded[bkey]);
+                        trayboxes[bkey].SetActive(loadState[bkey]);
                     }
                 }
             }
@@ -148,34 +214,41 @@ namespace KhiDemo
         bool GetVal(int i, int j)
         {
             var key = (i, j);
-            if (!loaded.ContainsKey(key)) return false;
-            var rv = loaded[key];
+            if (!loadState.ContainsKey(key)) return false;
+            var rv = loadState[key];
             return rv;
         }
 
-        void SetVal(int i, int j, bool newstat)
+        public void SetVal(int i, int j, bool newstat)
         {
-            var key = (i, j);
-            loaded[key] = newstat;
+            SetVal((i, j), newstat);
+        }
+        public void SetVal((int i, int j) key, bool newstat)
+        {
+            loadState[key] = newstat;
+            if (trayboxes.ContainsKey(key))
+            {
+                trayboxes[key].SetActive(newstat);
+            }
         }
         void InitVals()
         {
-            for (int i = 1; i < nrow; i++)
+            for (int i = 0; i < nrow; i++)
             {
-                for (int j = 1; j < ncol; j++)
+                for (int j = 0; j < ncol; j++)
                 {
-                    loaded[(i, j)] = false;
+                    loadState[(i, j)] = false;
                 }
             }
         }
 
-        (bool found,(int i,int j)) FindFirst(bool seekLoadState)
+        public (bool found,(int i,int j)) FindFirst(bool seekLoadState)
         {
-            for (int i = 1; i < nrow; i++)
+            for (int i = 0; i < nrow; i++)
             {
-                for (int j = 1; j < ncol; j++)
+                for (int j = 0; j < ncol; j++)
                 {
-                    if (loaded[(i, j)] == seekLoadState)
+                    if (loadState[(i, j)] == seekLoadState)
                     {
                         return (true,(i, j));
                     }

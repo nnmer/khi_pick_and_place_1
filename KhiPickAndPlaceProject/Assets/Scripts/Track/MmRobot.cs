@@ -9,7 +9,6 @@ namespace KhiDemo
         public bool loadState;
         public MagneMotion magmo;
         public Transform vgriptrans;
-        public bool transferBox;
         public GameObject boxgo;
 
         void Start()
@@ -33,6 +32,8 @@ namespace KhiDemo
             }
             var prefab = Resources.Load<GameObject>("Prefabs/Box1");
             boxgo = Object.Instantiate<GameObject>(prefab);
+            //var gbox = MmBox.ConstructBox(magmo, "rbx", BoxStatus.onRobot);
+            //boxgo = gbox.gameObject;
             boxgo.name = "RobBox";
             var ska = 1f;
             boxgo.transform.localScale = new Vector3(ska, ska, ska);
@@ -43,7 +44,7 @@ namespace KhiDemo
         }
         float lasttimeset = -99;
         float lockpause = 0.01f;
-        public bool ActivateRobBox(bool newstat)
+        public bool ActivateRobBoxOld(bool newstat)
         {
             var rv = false;
             if (boxgo != null)
@@ -59,32 +60,22 @@ namespace KhiDemo
             return rv;
         }
 
-        public void TransferBox()
+        public bool ActivateRobBox(bool newstat)
         {
-            switch (magmo.mmMode)
+            var rv = false;
+            if (boxgo != null)
             {
-                case MmMode.SimulateRailToRail:
-                    {
-                        var s = magmo.mmt.FindStoppedSled(!loadState);
-                        if (s == null)
-                        {
-                            Debug.LogError($"MmRobot.TransferBox - cound not find stoppedsled with loadState {!loadState}");
-                            return;
-                        }
-                        s.SetLoadState(loadState);
-                        ActivateRobBox(!loadState);
-                        break;
-                    }
+                rv = boxgo.activeSelf;
+                boxgo.SetActive(newstat);
+                loadState = newstat;
             }
+            return rv;
         }
+
 
         void Update()
         {
-            if (transferBox)
-            {
-                TransferBox();
-                transferBox = !transferBox;
-            }
+
         }
     }
 }

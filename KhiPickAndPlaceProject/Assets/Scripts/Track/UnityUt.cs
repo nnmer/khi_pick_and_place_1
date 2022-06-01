@@ -210,9 +210,9 @@ public class UnityUt : MonoBehaviour
     {
         
     }
-    public static void AddFltTextMeshGameObject(GameObject go, Vector3 pt, string text, string colorname, Vector3 rot, Vector3 off, float ska=1,FltTextImpl lfltTextImpl = FltTextImpl.TextPro, FltTextRotate rotmeth = FltTextRotate.Specified, bool wps =false)
+    public static void AddFltTextMeshGameObject(GameObject go, Vector3 pt, string text, string colorname, Vector3 rot, Vector3 off, float ska=1,FltTextImpl lfltTextImpl = FltTextImpl.TextPro, FltTextRotate rotmeth = FltTextRotate.Specified, bool wps =false, string goname="FltText")
     {
-        var ngo = new GameObject("FltText");
+        var ngo = new GameObject(goname);
         switch (rotmeth)
         {
             case FltTextRotate.Specified:

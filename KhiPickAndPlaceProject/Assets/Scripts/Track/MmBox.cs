@@ -5,36 +5,39 @@ using UnityEngine;
 
 namespace KhiDemo
 {
+    public enum BoxStatus { free, onTray, onSled, onRobot }
     public class MmBox : MonoBehaviour
     {
         MnTable mmt;
-        GameObject geomgo;
         GameObject formgo;
         public enum BoxForm { CubeBased, Prefab }
-        static float boxsize = 0.2f;
         BoxForm boxform;
-        string boxid1;
-        string boxid2;
-        int seqnum;
+        public string boxid1;
+        public string boxid2;
+        public int seqnum;
+        public BoxStatus boxStatus;
+
 
         static int clas_seqnum = 0;
 
 
-        public static MmBox ConstructBox(MagneMotion magmo, string boxid1)
+        public static MmBox ConstructBox(MagneMotion magmo, string boxid1, BoxStatus stat=BoxStatus.free)
         {
             var mmt = magmo.mmt;
-            var sname1 = $"sledid:{boxid1}";
-            var boxgeomgo = new GameObject(sname1);
+            clas_seqnum++;
+            var boxname = $"Box:{clas_seqnum}";
+            var boxgeomgo = new GameObject(boxname);
             boxgeomgo.transform.position = Vector3.zero;
             boxgeomgo.transform.rotation = Quaternion.identity;
             var box = boxgeomgo.AddComponent<MmBox>();
             var boxform = magmo.boxForm;
             box.mmt = mmt;
             box.boxid1 = boxid1;
-            clas_seqnum++;
+
             box.seqnum = clas_seqnum;
             box.boxid2 = $"{box.seqnum}";
             box.ConstructForm(boxform);
+            box.boxStatus = stat;
             boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
             return box;
             //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
@@ -118,9 +121,9 @@ namespace KhiDemo
                 var txt2 = $"{boxid2}";
                 var meth = UnityUt.FltTextImpl.TextPro;
                 var ska1 = 0.075f;
-                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt1, "black", rot1, off1, ska1, meth);
-                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt1, "black", rot2, off2, ska1, meth);
-                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt2, "black", rot3, off3, ska1, meth);
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt1, "black", rot1, off1, ska1, meth, goname: "BoxIdTxt1");
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt1, "black", rot2, off2, ska1, meth, goname: "BoxIdTxt1");
+                UnityUt.AddFltTextMeshGameObject(formgo, Vector3.zero, txt2, "black", rot3, off3, ska1, meth, goname: "BoxIdTxt2");
             }
         }
 

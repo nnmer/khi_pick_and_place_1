@@ -5,14 +5,15 @@ using Unity.Robotics.ROSTCPConnector;
 
 namespace KhiDemo
 {
-    public enum SledSpeedDistribution { fixedValue, alternateHiLo }
+    public enum SledSpeedDistrib { fixedValue, alternateHiLo }
+    public enum SledLoadDistrib { allLoaded, allUnloaded, alternateLoadedUnloaded }
 
     public class MnTable : MonoBehaviour
     {
         public MagneMotion magmo;
 
-        public MmBoxMode mmBoxMode = MmBoxMode.Fake;
         public GameObject mmtgo;
+        public GameObject pago;
         public string tableName = "TableName";
         public List<MmPath> paths = new List<MmPath>();
         public float UnitsToMeters = 0.125f;
@@ -58,29 +59,29 @@ namespace KhiDemo
             var (pt, ang) = path.GetPositionAndOrientation(pathdist);
             return (pt, ang);
         }
-        public void MakeMsftDemoMagmo(MmMode mode)
+        public void MakeMsftDemoMagmo()
         {
             Debug.Log("Making MsftDemoMagmo");
             tableName = "MsftDemoMagmo";
             var mmt = this;
             var ptstar = new Vector3(4, 0, 0);
-            var p1 = mmt.makePath("path1", ptstar);
+            var p1 = mmt.MakePath("path1", ptstar);
             p1.MakeLineSeg("w", 2);
             p1.MakeLineSeg("w", 8);
             p1.MakeLineSeg("w", 2);
             p1.MakeCircSeg("s", "cw");
             p1.MakeCircSeg("w", "cw");
 
-            var p2 = mmt.makePath("path2", p1.End());
+            var p2 = mmt.MakePath("path2", p1.End());
             p2.MakeCircSeg("s", "ccw");
             p1.LinkToContinuationPath(p2);
             p1.SetPreferedLoadedPath(p2);
 
-            var p3 = mmt.makePath("path3", p2.End());
+            var p3 = mmt.MakePath("path3", p2.End());
             p3.MakeLineSeg("n", 2);
             //p2.LinkToContinuationPath(p3);
 
-            var p4 = mmt.makePath("path4", p2.End());
+            var p4 = mmt.MakePath("path4", p2.End());
             p4.MakeCircSeg("w", "cw");
             p4.MakeLineSeg("e", 2);
             p4.MakeLineSeg("e", 8);
@@ -90,23 +91,20 @@ namespace KhiDemo
             p2.LinkToContinuationPath(p4);
             p4.SetLoadedStopPoint(5.0f);
 
-            var p5 = mmt.makePath("path5", p1.End());
+            var p5 = mmt.MakePath("path5", p1.End());
             p5.MakeLineSeg("e", 2);
             p5.MakeLineSeg("e", 8);
             p5.MakeLineSeg("e", 2);
             p1.LinkToContinuationPath(p5);
             p1.SetPreferedUnloadedPath(p5);
-            if (mode == MmMode.SimulateRailToTray)
-            {
-                p5.SetUnloadedStopPoint(6.0f);
-            }
+            p5.SetUnloadedStopPoint(6.0f);
 
-            var p6 = mmt.makePath("path6", p5.End());
+            var p6 = mmt.MakePath("path6", p5.End());
             p6.MakeLineSeg("e", 2);
             p6.MakeLineSeg("e", 2);
             p5.LinkToContinuationPath(p6);
 
-            var p7 = mmt.makePath("path7", p4.End());
+            var p7 = mmt.MakePath("path7", p4.End());
             p7.MakeCircSeg("n", "cw");
             p7.MakeCircSeg("e", "cw");
             p7.MakeLineSeg("w", 2);
@@ -115,7 +113,7 @@ namespace KhiDemo
             p6.LinkToContinuationPath(p7);
 
 
-            var p8 = mmt.makePath("path8", p7.End());
+            var p8 = mmt.MakePath("path8", p7.End());
             p8.MakeCircSeg("s", "cw");
             p8.MakeCircSeg("w", "cw");
             p7.LinkToContinuationPath(p1);
@@ -129,17 +127,17 @@ namespace KhiDemo
             tableName = "MsftDemoMagmo";
             var mmt = this;
             var ptstar = new Vector3(0, 0, 0);
-            var p1 = mmt.makePath("path1", ptstar);
+            var p1 = mmt.MakePath("path1", ptstar);
             p1.MakeLineSeg("n", 8);
 
-            var p2 = mmt.makePath("path2", p1.End());
+            var p2 = mmt.MakePath("path2", p1.End());
             p2.MakeCircSeg("w", "cw");
             p2.MakeLineSeg("e", 4);
             p2.MakeCircSeg("n", "cw");
             p2.MakeLineSeg("s", 8);
             p1.LinkToContinuationPath(p2);
 
-            var p3 = mmt.makePath("path3", p2.End());
+            var p3 = mmt.MakePath("path3", p2.End());
             p3.MakeCircSeg("e", "cw");
             p3.MakeLineSeg("w", 4);
             p3.MakeCircSeg("s", "cw");
@@ -147,34 +145,67 @@ namespace KhiDemo
             p3.LinkToContinuationPath(p1);
         }
 
-        SledSpeedDistribution sledSpeedDistribution; 
+        SledSpeedDistrib sledSpeedDistribution; 
 
-        public void SetSledUpsSpeed(SledSpeedDistribution sledSpeedDistribution, float sledspeed)
+        public void SetupSleds(SledLoadDistrib sledLoading, SledSpeedDistrib sledSpeedDist, float sledspeed)
         {
-            this.sledSpeedDistribution = sledSpeedDistribution;
-            switch (sledSpeedDistribution)
+            this.sledSpeedDistribution = sledSpeedDist;
+            switch (sledSpeedDist)
             {
-                case SledSpeedDistribution.fixedValue:
+                case SledSpeedDistrib.fixedValue:
                     foreach (var s in sleds)
                     {
                         s.SetSpeed(sledspeed);
                     }
                     break;
-                case SledSpeedDistribution.alternateHiLo:
+                case SledSpeedDistrib.alternateHiLo:
                     int i = 0;
                     foreach (var s in sleds)
                     {
                         float val = (i % 2 == 0) ? sledspeed : sledspeed/2;
-                        Debug.Log($"Set {s.sledid} speed to {val}");
+                        //Debug.Log($"Set {s.sledid} speed to {val}");
                         s.SetSpeed(val);
+                        i++;
+                    }
+                    break;
+            }
+            switch (sledLoading)
+            {
+                case SledLoadDistrib.allLoaded:
+                    foreach (var s in sleds)
+                    {
+                        s.SetLoadState(true);
+                    }
+                    break;
+                case SledLoadDistrib.allUnloaded:
+                    foreach (var s in sleds)
+                    {
+                        s.SetLoadState(false);
+                    }
+                    break;
+                case SledLoadDistrib.alternateLoadedUnloaded:
+                    var i = 0;
+                    foreach (var s in sleds)
+                    {
+                        bool val = (i % 2 == 0) ? true : false;
+                        s.SetLoadState(val);
                         i++;
                     }
                     break;
             }
         }
 
+        public void AdjustSledSpeedFactor(float fak)
+        {
+            foreach (var s in sleds)
+            {
+                var speed = s.sledUpsSpeed;
+                s.SetSpeed(speed*fak);
+            }
+        }
 
-        MmPath makePath(string name, Vector3 pt)
+
+        MmPath MakePath(string name, Vector3 pt)
         {
             var idx = paths.Count;
             var rv = new MmPath(magmo, idx, name, pt);
@@ -184,12 +215,14 @@ namespace KhiDemo
         public GameObject SetupGeometry(bool addPathMarkers, bool positionOnFloor)
         {
             mmtgo = new GameObject(tableName);
+            pago = new GameObject("pago");
+            pago.transform.SetParent(mmtgo.transform, worldPositionStays: false);
 
             if (addPathMarkers)
             {
                 foreach (var p in paths)
                 {
-                    p.AddPathRails(mmtgo, seggos: false, pathgos: true);
+                    p.AddPathRails(pago, seggos: false, pathgos: true);
                 }
             }
 
@@ -208,6 +241,7 @@ namespace KhiDemo
                     mmtgo.transform.position += new Vector3(0.2f, 0.2f, 0.77f);
                 }
             }
+
             return mmtgo;
         }
 
