@@ -19,6 +19,7 @@ namespace KhiDemo
         SledForm sledform;
         GameObject formgo;
         GameObject boxgo;
+        MmBox box;
         public bool loadState;
         public string sledid;
         public string sledInFront;
@@ -160,9 +161,19 @@ namespace KhiDemo
 
         void AttachBoxToSled(MmBox box)
         {
-            box.transform.parent = formgo.transform;
+            this.box = box;
             boxgo = box.gameObject;
+            box.transform.parent = formgo.transform;
         }
+
+        public MmBox DetachhBoxFromRobot()
+        {
+            var rv = box;
+            box = null;
+            boxgo = null;
+            return rv;
+        }
+
 
         void AddSledIdToSledForm()
         {

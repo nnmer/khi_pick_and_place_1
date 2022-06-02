@@ -19,7 +19,7 @@ namespace KhiDemo
         const int nrow = 3;
         const int ncol = 4;
         Dictionary<(int, int), bool> loadState = new Dictionary<(int, int), bool>();
-        Dictionary<(int, int), GameObject> trayboxes = new Dictionary<(int, int), GameObject>();
+        Dictionary<(int, int), MmBox> trayboxes = new Dictionary<(int, int), MmBox>();
         Dictionary<(int, int), GameObject> trayslots = new Dictionary<(int, int), GameObject>();
 
         public MmTray()
@@ -53,7 +53,7 @@ namespace KhiDemo
             this.magmo = magmo;
             this.mmt = magmo.mmt;
             // size in cm - 31.4, 28.9, 1.7
-            CreateTray(gameObject.transform);
+            CreateTray(transform);
             CreateTraySlots();
         }
         void CreateTray(Transform parent)
@@ -110,7 +110,6 @@ namespace KhiDemo
             var slotformgo = UnityUt.CreateCube(null, "gray", size: 1);
             slotformgo.transform.localScale = new Vector3(slotw, 0.005f, sloth);
             slotformgo.transform.SetParent(slotgo.transform, worldPositionStays: false);
-
         }
 
         void DestroyBoxes()
@@ -122,7 +121,7 @@ namespace KhiDemo
                     var key = (i, j);
                     if (trayboxes.ContainsKey(key))
                     {
-                        Destroy(trayboxes[key]);
+                        Destroy(trayboxes[key].gameObject);
                         trayboxes[key] = null;
                     }
                 }
@@ -140,7 +139,7 @@ namespace KhiDemo
                     var boxid = $"{key}";
                     var box = MmBox.ConstructBox(mmt.magmo, boxid, BoxStatus.onTray);
                     AttachBoxToSlot(key, box);
-                    trayboxes[key] = box.gameObject;
+                    trayboxes[key] = box;
                     loadState[key] = true;
                 }
             }
@@ -150,9 +149,16 @@ namespace KhiDemo
         public void AttachBoxToSlot((int,int) key, MmBox box)
         {
             var slot = trayslots[key];
-            box.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            box.transform.localRotation = Quaternion.Euler(90, 0, 0);
             box.transform.parent = null;
             box.transform.SetParent(slot.transform, worldPositionStays: false);
+        }
+
+        public MmBox DetachhBoxFromTray((int, int) key)
+        {
+            var rv = trayboxes[key];
+            trayboxes[key] = null;
+            return rv;
         }
 
 
@@ -166,7 +172,7 @@ namespace KhiDemo
                 {
                     var bkey = (i, j);
                     loadState[bkey] = loaded;
-                    trayboxes[bkey].SetActive(loaded);
+                    trayboxes[bkey].gameObject.SetActive(loaded);
                 }
             }
         }
@@ -186,12 +192,12 @@ namespace KhiDemo
         void RealizeLoadStatusIj(int i, int j)
         {
             var key = (i, j);
-            var oldstat = trayboxes[key].activeSelf;
+            var oldstat = trayboxes[key].gameObject.activeSelf;
             var newstat = loadState[key];
             if (oldstat != newstat)
             {
                 SetVal(key, newstat);
-                trayboxes[key].SetActive(newstat);
+                trayboxes[key].gameObject.SetActive(newstat);
             }
         }
 
@@ -236,7 +242,7 @@ namespace KhiDemo
             loadState[key] = newstat;
             if (trayboxes.ContainsKey(key))
             {
-                trayboxes[key].SetActive(newstat);
+                trayboxes[key].gameObject.SetActive(newstat);
             }
         }
         void InitVals()

@@ -74,7 +74,7 @@ namespace KhiDemo
 
 
             var mmgo = mmt.SetupGeometry(addPathMarkers: addPathMarkers, positionOnFloor: positionOnFloor);
-            mmgo.transform.SetParent(gameObject.transform, false);
+            mmgo.transform.SetParent(transform, false);
             if (addPathSledsOnStartup)
             {
                 mmt.AddSleds();

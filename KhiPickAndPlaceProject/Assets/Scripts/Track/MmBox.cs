@@ -38,7 +38,7 @@ namespace KhiDemo
             box.boxid2 = $"{box.seqnum}";
             box.ConstructForm(boxform);
             box.boxStatus = stat;
-            boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
+            //boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
             return box;
             //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
         }

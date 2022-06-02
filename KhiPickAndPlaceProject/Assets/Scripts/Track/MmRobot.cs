@@ -9,6 +9,7 @@ namespace KhiDemo
         public bool loadState;
         public MagneMotion magmo;
         public Transform vgriptrans;
+        public MmBox box;
         public GameObject boxgo;
 
         void Start()
@@ -20,27 +21,40 @@ namespace KhiDemo
             }
             var vacGripperName = "world/base_link/link1/link2/link3/link4/link5/link6/tool_link/gripper_base/Visuals/unnamed/RS007_Gripper_C_u";
             vgriptrans = transform.Find(vacGripperName);
-            AddBoxToRobot(vgriptrans);
+            AddBoxToRobot();
         }
 
-        public void AddBoxToRobot(Transform vgriptrans)
+        public void AddBoxToRobot()
         {
             if (vgriptrans == null)
             {
                 Debug.LogError("AddBoxToRobot - Robot is null");
                 return;
             }
-            var prefab = Resources.Load<GameObject>("Prefabs/Box1");
-            boxgo = Object.Instantiate<GameObject>(prefab);
-            //var gbox = MmBox.ConstructBox(magmo, "rbx", BoxStatus.onRobot);
-            //boxgo = gbox.gameObject;
-            boxgo.name = "RobBox";
-            var ska = 1f;
-            boxgo.transform.localScale = new Vector3(ska, ska, ska);
-            boxgo.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            var lbox = MmBox.ConstructBox(magmo, "rbx", BoxStatus.onRobot);
+            AttachBoxToRobot(lbox);
+            ActivateRobBox(false);
+        }
+        public void AttachBoxToRobot(MmBox box)
+        {
+            if (vgriptrans == null)
+            {
+                Debug.LogError("AttachBoxToRobot - Robot is null");
+                return;
+            }
+            this.box = box;
+            boxgo = box.gameObject;
+            boxgo.transform.parent = null;
+            boxgo.transform.localRotation = Quaternion.Euler(90, 0, 0);
             boxgo.transform.localPosition = new Vector3(0, -0.14f, 0);
             boxgo.transform.SetParent(vgriptrans, worldPositionStays: false);
-            ActivateRobBox(false);
+        }
+        public MmBox DetachhBoxFromRobot()
+        {
+            var rv = box;
+            box = null;
+            boxgo = null;
+            return rv;
         }
         float lasttimeset = -99;
         float lockpause = 0.01f;
