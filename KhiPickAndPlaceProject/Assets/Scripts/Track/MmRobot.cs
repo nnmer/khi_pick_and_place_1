@@ -21,7 +21,6 @@ namespace KhiDemo
             }
             var vacGripperName = "world/base_link/link1/link2/link3/link4/link5/link6/tool_link/gripper_base/Visuals/unnamed/RS007_Gripper_C_u";
             vgriptrans = transform.Find(vacGripperName);
-            AddBoxToRobot();
         }
 
         public void AddBoxToRobot()
@@ -42,38 +41,60 @@ namespace KhiDemo
                 Debug.LogError("AttachBoxToRobot - Robot is null");
                 return;
             }
+            if (box==null)
+            {
+                Debug.LogError("AttachBoxToRobot - Box is null");
+                return;
+            }
             this.box = box;
             boxgo = box.gameObject;
             boxgo.transform.parent = null;
             boxgo.transform.localRotation = Quaternion.Euler(90, 0, 0);
             boxgo.transform.localPosition = new Vector3(0, -0.14f, 0);
             boxgo.transform.SetParent(vgriptrans, worldPositionStays: false);
+            loadState = true;
         }
         public MmBox DetachhBoxFromRobot()
         {
             var rv = box;
             box = null;
             boxgo = null;
+            loadState = false;
             return rv;
         }
-        float lasttimeset = -99;
-        float lockpause = 0.01f;
-        public bool ActivateRobBoxOld(bool newstat)
+        //float lasttimeset = -99;
+        //float lockpause = 0.01f;
+        //public bool ActivateRobBoxOld(bool newstat)
+        //{
+        //    var rv = false;
+        //    if (boxgo != null)
+        //    {
+        //        if ((Time.time - lasttimeset) > lockpause)
+        //        {
+        //            rv = boxgo.activeSelf;
+        //            boxgo.SetActive(newstat);
+        //            loadState = newstat;
+        //            lasttimeset = Time.time;
+        //        }
+        //    }
+        //    return rv;
+        //}
+
+        public void InitRobotBoxState(bool startLoadState)
         {
-            var rv = false;
-            if (boxgo != null)
+            if (magmo.mmBoxMode== MmBoxMode.Fake)
             {
-                if ((Time.time - lasttimeset) > lockpause)
+                AddBoxToRobot();
+                ActivateRobBox(startLoadState);
+            }
+            else if (magmo.mmBoxMode == MmBoxMode.Real)
+            {
+                if( startLoadState)
                 {
-                    rv = boxgo.activeSelf;
-                    boxgo.SetActive(newstat);
-                    loadState = newstat;
-                    lasttimeset = Time.time;
+                    AddBoxToRobot();
                 }
             }
-            return rv;
         }
-
         public bool ActivateRobBox(bool newstat)
         {
             var rv = false;

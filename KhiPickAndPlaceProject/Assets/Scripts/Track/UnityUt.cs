@@ -380,7 +380,7 @@ public class UnityUt : MonoBehaviour
     }
 
 
-    static System.Random random = new System.Random(1234);
+    static System.Random random = new System.Random(12345);
 
     public static string GetRandomColorString()
     {

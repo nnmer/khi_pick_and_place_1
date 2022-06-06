@@ -149,15 +149,21 @@ namespace KhiDemo
         public void AttachBoxToSlot((int,int) key, MmBox box)
         {
             var slot = trayslots[key];
-            box.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            //box.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            //box.transform.parent = null;
             box.transform.parent = null;
+            box.transform.rotation = Quaternion.Euler(90, 0, 0);
+            box.transform.position = Vector3.zero;
             box.transform.SetParent(slot.transform, worldPositionStays: false);
+            trayboxes[key] = box;
+            loadState[key] = true;
         }
 
         public MmBox DetachhBoxFromTray((int, int) key)
         {
             var rv = trayboxes[key];
             trayboxes[key] = null;
+            loadState[key] = false;
             return rv;
         }
 

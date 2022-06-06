@@ -10,7 +10,8 @@ namespace KhiDemo
 
     public enum MmSegForm { None, Straight, Curved }
 
-    public enum MmMode {  None, Echo, SimuRailToRail, SimRailToTray, SimTrayToRail}
+    public enum MmMode {  None, Echo, SimuRailToRail, StartRailToTray, StartTrayToRail}
+    public enum MmSubMode { None, RailToTray, TrayToRail }
 
     public enum MmTableStyle {  MftDemo, Simple }
 
@@ -20,6 +21,7 @@ namespace KhiDemo
         public MmRobot mmRobot;
         public MmBoxMode mmBoxMode = MmBoxMode.Fake;
         public MmMode mmMode = MmMode.None;
+        public MmSubMode mmSubMode = MmSubMode.None;
         public MmTableStyle mmTableStyle = MmTableStyle.MftDemo;
         public GameObject mmtgo;
 
@@ -93,22 +95,30 @@ namespace KhiDemo
             {
                 default:
                 case MmMode.Echo:
+                    mmSubMode = MmSubMode.None;
                     mmBoxMode = MmBoxMode.Fake;
+                    mmRobot.InitRobotBoxState(true);
                     mmtray.InitAllLoadstate(true); // doesn't really matter - all gets overwritten
                     mmt.SetupSleds(SledLoadDistrib.alternateLoadedUnloaded, SledSpeedDistrib.fixedValue, 0);
                     break;
                 case MmMode.SimuRailToRail:
+                    mmSubMode = MmSubMode.None;
                     mmBoxMode = MmBoxMode.Real;
+                    mmRobot.InitRobotBoxState(false);
                     mmtray.InitAllLoadstate(false);
                     mmt.SetupSleds(SledLoadDistrib.alternateLoadedUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
                     break;
-                case MmMode.SimRailToTray:
+                case MmMode.StartRailToTray:
+                    mmSubMode = MmSubMode.RailToTray;
                     mmBoxMode = MmBoxMode.Real;
+                    mmRobot.InitRobotBoxState(false);
                     mmtray.InitAllLoadstate(false);
                     mmt.SetupSleds(SledLoadDistrib.allLoaded, SledSpeedDistrib.alternateHiLo, 0.5f);
                     break;
-                case MmMode.SimTrayToRail:
-                    mmBoxMode = MmBoxMode.Real;
+                case MmMode.StartTrayToRail:
+                    mmSubMode = MmSubMode.TrayToRail;
+                    mmBoxMode = MmBoxMode.Fake;
+                    mmRobot.InitRobotBoxState(false);
                     mmtray.InitAllLoadstate(true);
                     mmt.SetupSleds(SledLoadDistrib.allUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
                     break;
@@ -119,15 +129,15 @@ namespace KhiDemo
         {
             if (!reverseTrayRail) return;
             reverseTrayRail = false;
-            if (mmMode == MmMode.SimRailToTray)
+            if (mmSubMode == MmSubMode.RailToTray)
             {
-                Debug.Log($"Reversing mode to {MmMode.SimTrayToRail}");
-                oldmmMode = mmMode = MmMode.SimTrayToRail;
+                Debug.Log($"Reversing submode to {MmSubMode.TrayToRail}");
+                mmSubMode = MmSubMode.TrayToRail;
             }
-            else if (mmMode == MmMode.SimTrayToRail)
+            else if (mmSubMode == MmSubMode.TrayToRail)
             {
-                Debug.Log($"Reversing mode to {MmMode.SimRailToTray}");
-                oldmmMode = mmMode = MmMode.SimRailToTray;
+                Debug.Log($"Reversing submode to {MmSubMode.RailToTray}");
+                mmSubMode = MmSubMode.RailToTray;
             }
         }
 
@@ -139,12 +149,36 @@ namespace KhiDemo
             switch (tt)
             {
                 case TranferType.SledToRob:
-                    sled.SetLoadState(false);
-                    rob.ActivateRobBox(true);
+                    switch (mmBoxMode)
+                    {
+                        case MmBoxMode.Fake:
+                            sled.SetLoadState(false);
+                            rob.ActivateRobBox(true);
+                            break;
+                        case MmBoxMode.Real:
+                            var box = sled.DetachhBoxFromSled();
+                            if (box != null)
+                            {
+                                rob.AttachBoxToRobot(box);
+                            }
+                            break;
+                    }
                     break;
                 case TranferType.RobToSled:
-                    sled.SetLoadState(true);
-                    rob.ActivateRobBox(false);
+                    switch (mmBoxMode)
+                    {
+                        case MmBoxMode.Fake:
+                            sled.SetLoadState(true);
+                            rob.ActivateRobBox(false);
+                            break;
+                        case MmBoxMode.Real:
+                            var box = rob.DetachhBoxFromRobot();
+                            if (box != null)
+                            {
+                                sled.AttachBoxToSled(box);
+                            }
+                            break;
+                    }
                     break;
                 default:
                     Debug.LogError("SledTransferBox - Wrong Function");
@@ -158,12 +192,39 @@ namespace KhiDemo
             switch (tt)
             {
                 case TranferType.TrayToRob:
-                    mmtray.SetVal(key, false);
-                    rob.ActivateRobBox(true);
+
+                    switch (mmBoxMode)
+                    {
+                        case MmBoxMode.Fake:
+                            mmtray.SetVal(key, false);
+                            rob.ActivateRobBox(true);
+                            break;
+                        case MmBoxMode.Real:
+                            var box = mmtray.DetachhBoxFromTray(key);
+                            if (box != null)
+                            {
+                                rob.AttachBoxToRobot(box);
+                            }
+                            break;
+                    }
                     break;
                 case TranferType.RobToTray:
-                    mmtray.SetVal(key, true);
-                    rob.ActivateRobBox(false); 
+                    switch (mmBoxMode)
+                    {
+                        case MmBoxMode.Fake:
+                            mmtray.SetVal(key, true);
+                            rob.ActivateRobBox(false);
+                            break;
+                        case MmBoxMode.Real:
+                            var box = rob.DetachhBoxFromRobot();
+                            if (box != null)
+                            {
+                                mmtray.AttachBoxToSlot(key, box);
+                            }
+                            //mmtray.SetVal(key, true);
+                            //rob.ActivateRobBox(false);
+                            break;
+                    }
                     break;
                 default:
                     Debug.LogError("TrayTransferBox - Wrong Function");
@@ -171,7 +232,91 @@ namespace KhiDemo
             }
         }
 
-
+        public void SimStepOld()
+        {
+            if (!simStep) return;
+            simStep = false;
+            var errhead = $"MagneMotion.SimStep - {mmMode}";
+            var rob = mmRobot;
+            switch (mmMode)
+            {
+                case MmMode.SimuRailToRail:
+                    {
+                        if (!rob.loadState)
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: true);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {true} to load");
+                                return;
+                            }
+                            SledTransferBox(TranferType.SledToRob, s);
+                        }
+                        else
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: false);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {false} to unload");
+                                return;
+                            }
+                            SledTransferBox(TranferType.RobToSled, s);
+                        }
+                        break;
+                    }
+                case MmMode.StartRailToTray:
+                    {
+                        if (!rob.loadState)
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: true);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {true} to unload");
+                                return;
+                            }
+                            SledTransferBox(TranferType.SledToRob, s);
+                        }
+                        else
+                        {
+                            var (found, key) = mmtray.FindFirst(seekLoadState: false);
+                            if (!found)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find empty tray slot");
+                                return;
+                            }
+                            if (found)
+                            {
+                                TrayTransferBox(TranferType.RobToTray, key);
+                            }
+                        }
+                        break;
+                    }
+                case MmMode.StartTrayToRail:
+                    {
+                        if (!rob.loadState)
+                        {
+                            var (found, key) = mmtray.FindFirst(seekLoadState: true);
+                            if (!found)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find loaded tray slot to unload");
+                                return;
+                            }
+                            TrayTransferBox(TranferType.TrayToRob, key);
+                        }
+                        else
+                        {
+                            var s = mmt.FindStoppedSled(neededLoadState: false);
+                            if (s == null)
+                            {
+                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {false} to load");
+                                return;
+                            }
+                            SledTransferBox(TranferType.RobToSled, s);
+                        }
+                        break;
+                    }
+            }
+        }
         public void SimStep()
         {
             if (!simStep) return;
@@ -204,54 +349,62 @@ namespace KhiDemo
                         }
                         break;
                     }
-                case MmMode.SimRailToTray:
+                case MmMode.StartRailToTray:
+                case MmMode.StartTrayToRail:
                     {
-                        if (!rob.loadState)
+                        switch (mmSubMode)
                         {
-                            var s = mmt.FindStoppedSled(neededLoadState: true);
-                            if (s == null)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {true} to unload");
-                                return;
-                            }
-                            SledTransferBox(TranferType.SledToRob, s);
-                        }
-                        else
-                        {
-                            var (found, key) = mmtray.FindFirst(seekLoadState: false);
-                            if (!found)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find empty tray slot");
-                                return;
-                            }
-                            if (found)
-                            {
-                                TrayTransferBox(TranferType.RobToTray, key);
-                            }
-                        }
-                        break;
-                    }
-                case MmMode.SimTrayToRail:
-                    {
-                        if (!rob.loadState)
-                        {
-                            var (found, key) = mmtray.FindFirst(seekLoadState: true);
-                            if (!found)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find loaded tray slot to unload");
-                                return;
-                            }
-                            TrayTransferBox(TranferType.TrayToRob, key);
-                        }
-                        else
-                        {
-                            var s = mmt.FindStoppedSled(neededLoadState: false);
-                            if (s == null)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {false} to load");
-                                return;
-                            }
-                            SledTransferBox(TranferType.RobToSled, s);
+                            case MmSubMode.RailToTray:
+                                {
+                                    if (!rob.loadState)
+                                    {
+                                        var s = mmt.FindStoppedSled(neededLoadState: true);
+                                        if (s == null)
+                                        {
+                                            Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {true} to unload");
+                                            return;
+                                        }
+                                        SledTransferBox(TranferType.SledToRob, s);
+                                    }
+                                    else
+                                    {
+                                        var (found, key) = mmtray.FindFirst(seekLoadState: false);
+                                        if (!found)
+                                        {
+                                            Debug.LogWarning($"{errhead}  - cound not find empty tray slot");
+                                            return;
+                                        }
+                                        if (found)
+                                        {
+                                            TrayTransferBox(TranferType.RobToTray, key);
+                                        }
+                                    }
+                                    break;
+                                }
+                            case MmSubMode.TrayToRail:
+                                {
+                                    if (!rob.loadState)
+                                    {
+                                        var (found, key) = mmtray.FindFirst(seekLoadState: true);
+                                        if (!found)
+                                        {
+                                            Debug.LogWarning($"{errhead}  - cound not find loaded tray slot to unload");
+                                            return;
+                                        }
+                                        TrayTransferBox(TranferType.TrayToRob, key);
+                                    }
+                                    else
+                                    {
+                                        var s = mmt.FindStoppedSled(neededLoadState: false);
+                                        if (s == null)
+                                        {
+                                            Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {false} to load");
+                                            return;
+                                        }
+                                        SledTransferBox(TranferType.RobToSled, s);
+                                    }
+                                    break;
+                                }
                         }
                         break;
                     }

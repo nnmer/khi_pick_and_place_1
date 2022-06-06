@@ -80,14 +80,17 @@ namespace KhiDemo
             reqestedSledUpsSpeed = newspeed;
             sledUpsSpeed = newspeed;
         }
-        public void SetLoadState(bool newLoadState)
+        public void SetLoadState(bool newLoadState, bool cascadeToRobot=false)
         {
             if (newLoadState == loadState) return;
             loadState = newLoadState;
             if (boxgo != null)
             {
                 boxgo.SetActive(loadState);
-                magmo.mmRobot.ActivateRobBox(!loadState);
+                if (cascadeToRobot)
+                {
+                    magmo.mmRobot.ActivateRobBox(!loadState);
+                }
             }
         }
         public void DeleteStuff()
@@ -159,21 +162,30 @@ namespace KhiDemo
             //Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
         }
 
-        void AttachBoxToSled(MmBox box)
+        public void AttachBoxToSled(MmBox box)
         {
             this.box = box;
+            if (box==null)
+            {
+                Debug.LogError("AttachBoxToSled - tryied to attach null box");
+                return;
+            }
             boxgo = box.gameObject;
-            box.transform.parent = formgo.transform;
+            box.transform.parent = null;
+            box.transform.rotation = Quaternion.Euler(0, 0, 0);
+            box.transform.position = Vector3.zero;
+            box.transform.SetParent(formgo.transform, worldPositionStays:false );
+            loadState = true;
         }
 
-        public MmBox DetachhBoxFromRobot()
+        public MmBox DetachhBoxFromSled()
         {
             var rv = box;
             box = null;
             boxgo = null;
+            loadState = false;
             return rv;
         }
-
 
         void AddSledIdToSledForm()
         {
@@ -232,7 +244,7 @@ namespace KhiDemo
             this.visible = new_pathnum >= 0;
             this.formgo.SetActive(visible);
             if (new_pathnum < 0) return;
-            SetLoadState(new_loaded);
+            SetLoadState(new_loaded,cascadeToRobot:true);
             AdjustSledOnPathDist(new_pathnum, new_pathdist);
 
             //var (pt, ang) = mmt.GetPositionAndOrientation(new_pathnum, new_pathdist);

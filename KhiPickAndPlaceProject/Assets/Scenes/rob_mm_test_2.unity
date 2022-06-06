@@ -659,6 +659,7 @@ MonoBehaviour:
   loadState: 0
   magmo: {fileID: 0}
   vgriptrans: {fileID: 0}
+  box: {fileID: 0}
   boxgo: {fileID: 0}
 --- !u!1 &963194225
 GameObject:
@@ -1630,7 +1631,8 @@ MonoBehaviour:
   mmt: {fileID: 0}
   mmRobot: {fileID: 0}
   mmBoxMode: 0
-  mmMode: 1
+  mmMode: 3
+  mmSubMode: 0
   mmTableStyle: 0
   mmtgo: {fileID: 0}
   addPathMarkers: 1
