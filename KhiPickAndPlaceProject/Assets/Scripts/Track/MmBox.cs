@@ -17,6 +17,8 @@ namespace KhiDemo
         public int seqnum;
         public BoxStatus boxStatus;
 
+        static MmBox[] boxes = null;
+
 
         static int clas_seqnum = 0;
 
@@ -38,14 +40,51 @@ namespace KhiDemo
             box.boxid2 = $"{box.seqnum}";
             box.ConstructForm(boxform);
             box.boxStatus = stat;
+            boxes = null;
             //boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
             return box;
             //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
+        }
+
+        public static (int nFree,int nOnTray,int nOnRobot,int nOnSled) CountBoxStatus()
+        {
+            if (boxes == null)
+            {
+                boxes = FindObjectsOfType<MmBox>();
+            }
+            var nFree = 0;
+            var nOnTray = 0;
+            var nOnRobot = 0;
+            var nOnSled = 0;
+            foreach (var box in boxes)
+            {
+                switch(box.boxStatus)
+                {
+                    case BoxStatus.free:
+                        nFree++;
+                        break;
+                    case BoxStatus.onTray:
+                        nOnTray++;
+                        break;
+                    case BoxStatus.onRobot:
+                        nOnRobot++;
+                        break;
+                    case BoxStatus.onSled:
+                        nOnSled++;
+                        break;
+                }
+            }
+            return (nFree,nOnTray, nOnRobot, nOnSled);
         }
         // Start is called before the first frame update
         void Start()
         {
 
+        }
+
+        public void SetBoxStatus(BoxStatus newstat)
+        {
+            boxStatus = newstat;
         }
 
         public void ConstructForm(BoxForm boxform)

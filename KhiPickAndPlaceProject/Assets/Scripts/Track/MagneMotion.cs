@@ -200,7 +200,7 @@ namespace KhiDemo
                             rob.ActivateRobBox(true);
                             break;
                         case MmBoxMode.Real:
-                            var box = mmtray.DetachhBoxFromTray(key);
+                            var box = mmtray.DetachhBoxFromTraySlot(key);
                             if (box != null)
                             {
                                 rob.AttachBoxToRobot(box);
@@ -219,10 +219,8 @@ namespace KhiDemo
                             var box = rob.DetachhBoxFromRobot();
                             if (box != null)
                             {
-                                mmtray.AttachBoxToSlot(key, box);
+                                mmtray.AttachBoxToTraySlot(key, box);
                             }
-                            //mmtray.SetVal(key, true);
-                            //rob.ActivateRobBox(false);
                             break;
                     }
                     break;
@@ -232,91 +230,7 @@ namespace KhiDemo
             }
         }
 
-        public void SimStepOld()
-        {
-            if (!simStep) return;
-            simStep = false;
-            var errhead = $"MagneMotion.SimStep - {mmMode}";
-            var rob = mmRobot;
-            switch (mmMode)
-            {
-                case MmMode.SimuRailToRail:
-                    {
-                        if (!rob.loadState)
-                        {
-                            var s = mmt.FindStoppedSled(neededLoadState: true);
-                            if (s == null)
-                            {
-                                Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {true} to load");
-                                return;
-                            }
-                            SledTransferBox(TranferType.SledToRob, s);
-                        }
-                        else
-                        {
-                            var s = mmt.FindStoppedSled(neededLoadState: false);
-                            if (s == null)
-                            {
-                                Debug.LogWarning($"{errhead} - cound not find stoppedsled with loadState {false} to unload");
-                                return;
-                            }
-                            SledTransferBox(TranferType.RobToSled, s);
-                        }
-                        break;
-                    }
-                case MmMode.StartRailToTray:
-                    {
-                        if (!rob.loadState)
-                        {
-                            var s = mmt.FindStoppedSled(neededLoadState: true);
-                            if (s == null)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {true} to unload");
-                                return;
-                            }
-                            SledTransferBox(TranferType.SledToRob, s);
-                        }
-                        else
-                        {
-                            var (found, key) = mmtray.FindFirst(seekLoadState: false);
-                            if (!found)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find empty tray slot");
-                                return;
-                            }
-                            if (found)
-                            {
-                                TrayTransferBox(TranferType.RobToTray, key);
-                            }
-                        }
-                        break;
-                    }
-                case MmMode.StartTrayToRail:
-                    {
-                        if (!rob.loadState)
-                        {
-                            var (found, key) = mmtray.FindFirst(seekLoadState: true);
-                            if (!found)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find loaded tray slot to unload");
-                                return;
-                            }
-                            TrayTransferBox(TranferType.TrayToRob, key);
-                        }
-                        else
-                        {
-                            var s = mmt.FindStoppedSled(neededLoadState: false);
-                            if (s == null)
-                            {
-                                Debug.LogWarning($"{errhead}  - cound not find stoppedsled with loadState {false} to load");
-                                return;
-                            }
-                            SledTransferBox(TranferType.RobToSled, s);
-                        }
-                        break;
-                    }
-            }
-        }
+
         public void SimStep()
         {
             if (!simStep) return;
@@ -405,6 +319,18 @@ namespace KhiDemo
                                     }
                                     break;
                                 }
+                        }
+                        var (_, nTray, nRob, nSled) = MmBox.CountBoxStatus();
+                        Debug.Log($"CountBoxStatus nTray:{nTray} nRob:{nRob} nSled:{nSled}");
+                        if (mmSubMode== MmSubMode.RailToTray && nSled==0 && nRob==0)
+                        {
+                            mmSubMode = MmSubMode.TrayToRail;
+                            Debug.Log($"   Switched to {mmSubMode}");
+                        }
+                        else if (mmSubMode == MmSubMode.TrayToRail && nTray==0 && nRob==0)
+                        {
+                            mmSubMode = MmSubMode.RailToTray;
+                            Debug.Log($"   Switched to {mmSubMode}");
                         }
                         break;
                     }

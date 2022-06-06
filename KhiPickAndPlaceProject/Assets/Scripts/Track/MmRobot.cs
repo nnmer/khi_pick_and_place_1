@@ -53,6 +53,7 @@ namespace KhiDemo
             boxgo.transform.localPosition = new Vector3(0, -0.14f, 0);
             boxgo.transform.SetParent(vgriptrans, worldPositionStays: false);
             loadState = true;
+            box.SetBoxStatus(BoxStatus.onRobot);
         }
         public MmBox DetachhBoxFromRobot()
         {

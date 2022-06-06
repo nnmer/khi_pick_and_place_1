@@ -175,6 +175,7 @@ namespace KhiDemo
             box.transform.rotation = Quaternion.Euler(0, 0, 0);
             box.transform.position = Vector3.zero;
             box.transform.SetParent(formgo.transform, worldPositionStays:false );
+            box.SetBoxStatus(BoxStatus.onSled);
             loadState = true;
         }
 

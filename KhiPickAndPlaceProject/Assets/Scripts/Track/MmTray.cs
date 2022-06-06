@@ -138,7 +138,7 @@ namespace KhiDemo
 
                     var boxid = $"{key}";
                     var box = MmBox.ConstructBox(mmt.magmo, boxid, BoxStatus.onTray);
-                    AttachBoxToSlot(key, box);
+                    AttachBoxToTraySlot(key, box);
                     trayboxes[key] = box;
                     loadState[key] = true;
                 }
@@ -146,24 +146,25 @@ namespace KhiDemo
             RealizeLoadStatus();
         }
 
-        public void AttachBoxToSlot((int,int) key, MmBox box)
+        public void AttachBoxToTraySlot((int,int) slotkey, MmBox box)
         {
-            var slot = trayslots[key];
+            var slot = trayslots[slotkey];
             //box.transform.localRotation = Quaternion.Euler(90, 0, 0);
             //box.transform.parent = null;
             box.transform.parent = null;
             box.transform.rotation = Quaternion.Euler(90, 0, 0);
             box.transform.position = Vector3.zero;
             box.transform.SetParent(slot.transform, worldPositionStays: false);
-            trayboxes[key] = box;
-            loadState[key] = true;
+            trayboxes[slotkey] = box;
+            loadState[slotkey] = true;
+            box.SetBoxStatus(BoxStatus.onTray);
         }
 
-        public MmBox DetachhBoxFromTray((int, int) key)
+        public MmBox DetachhBoxFromTraySlot((int, int) slotkey)
         {
-            var rv = trayboxes[key];
-            trayboxes[key] = null;
-            loadState[key] = false;
+            var rv = trayboxes[slotkey];
+            trayboxes[slotkey] = null;
+            loadState[slotkey] = false;
             return rv;
         }
 
