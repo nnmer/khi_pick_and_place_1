@@ -83,12 +83,12 @@ namespace KhiDemo
 
         public void InitRobotBoxState(bool startLoadState)
         {
-            if (magmo.mmBoxMode== MmBoxMode.Fake)
+            if (magmo.mmctrl.mmBoxMode== MmBoxMode.Fake)
             {
                 AddBoxToRobot();
                 ActivateRobBox(startLoadState);
             }
-            else if (magmo.mmBoxMode == MmBoxMode.Real)
+            else if (magmo.mmctrl.mmBoxMode == MmBoxMode.Real)
             {
                 if( startLoadState)
                 {

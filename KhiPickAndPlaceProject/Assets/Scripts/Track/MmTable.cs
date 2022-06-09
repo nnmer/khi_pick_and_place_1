@@ -8,7 +8,7 @@ namespace KhiDemo
     public enum SledSpeedDistrib { fixedValue, alternateHiLo }
     public enum SledLoadDistrib { allLoaded, allUnloaded, alternateLoadedUnloaded }
 
-    public class MnTable : MonoBehaviour
+    public class MmTable : MonoBehaviour
     {
         public MagneMotion magmo;
 
@@ -193,6 +193,10 @@ namespace KhiDemo
                     }
                     break;
             }
+            foreach(var s in sleds)
+            {
+                s.SetNextPath();
+            }
         }
 
         public void AdjustSledSpeedFactor(float fak)
@@ -357,13 +361,16 @@ namespace KhiDemo
                 }
             }
         }
-        int updatecount = 0;
-        // Update is called once per frame
-        void Update()
+
+        public void SimStep()
         {
             DeleteSledsAsNeeded();
             AdvanceSledsBySpeed();
-            updatecount++;
         }
+
+        //// Update is called once per frame
+        //void Update()
+        //{
+        //}
     }
 }

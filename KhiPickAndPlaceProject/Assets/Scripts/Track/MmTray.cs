@@ -9,7 +9,7 @@ namespace KhiDemo
     public class MmTray : MonoBehaviour
     {
         MagneMotion magmo;
-        MnTable mmt;
+        MmTable mmt;
 
         public enum TrayBoxForm { Box, Prefab, BoxComp }
 

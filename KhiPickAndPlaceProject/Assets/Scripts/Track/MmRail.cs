@@ -6,7 +6,7 @@ namespace KhiDemo
 {
     public class MmRail : MonoBehaviour
     {
-        MnTable mmt;
+        MmTable mmt;
         public enum RailForm { Cigar, Box }
         static float sphrad = 0.2f;
         float speed;

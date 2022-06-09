@@ -205,7 +205,7 @@ namespace KhiDemo
         static float sphrad = 0.6f;
         [NonSerialized]
         MagneMotion magmo;
-        MnTable mmt;
+        MmTable mmt;
         GameObject startgo;
         public string name;
         Vector3 startpt;
@@ -271,7 +271,6 @@ namespace KhiDemo
                 }
             }
         }
-        int selcount = 0;
         public (int newpathidx, float newpathdist, bool atEndOfPath, bool stopped) AdvancePathdistInUnits(float curpathdist, float deltadist, bool loaded)
         {
             var newdist = curpathdist + deltadist;
@@ -294,23 +293,38 @@ namespace KhiDemo
                 return (pidx, newdist, atEndOfPath:false, stopped:false);
             }
             var restdist = newdist - this.pathLength;
+
             if (continuationPaths.Count == 0)
             {
                 return (pidx, this.pathLength, atEndOfPath: true, stopped: false);
             }
+            var nxpidx = FindContinuationPathIdx(loaded, alternateIfMultipleChoicesAvaliable: true);
 
+            return (nxpidx, restdist, atEndOfPath: false, stopped: false);
+        }
 
-            var newpath = continuationPaths[selcount % continuationPaths.Count];
-            if (loaded && preferedLoadedPath!=null)
+        int selcount = 0;
+        public int FindContinuationPathIdx(bool loaded,bool alternateIfMultipleChoicesAvaliable=true)
+        {
+            if (continuationPaths.Count == 0)
+            {
+                return -1;
+            }
+            var newpath = continuationPaths[0];
+            if (alternateIfMultipleChoicesAvaliable)
+            {
+                newpath = continuationPaths[selcount % continuationPaths.Count];
+                selcount++;
+            }
+            if (loaded && preferedLoadedPath != null)
             {
                 newpath = preferedLoadedPath;
             }
-            else if (!loaded && preferedUnloadedPath!=null)
+            else if (!loaded && preferedUnloadedPath != null)
             {
                 newpath = preferedUnloadedPath;
             }
-            selcount++;
-            return (newpath.pidx, restdist, atEndOfPath: false, stopped: false);
+            return newpath.pidx;          
         }
 
         public void LinkToContinuationPath(MmPath contpath)
@@ -399,5 +413,4 @@ namespace KhiDemo
             return (pt, ang);
         }
     }
-
 }

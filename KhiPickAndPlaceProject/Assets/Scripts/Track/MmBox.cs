@@ -8,9 +8,9 @@ namespace KhiDemo
     public enum BoxStatus { free, onTray, onSled, onRobot }
     public class MmBox : MonoBehaviour
     {
-        MnTable mmt;
+        MmTable mmt;
         GameObject formgo;
-        public enum BoxForm { CubeBased, Prefab }
+        public enum BoxForm { CubeBased, Prefab, PrefabWithSphere }
         BoxForm boxform;
         public string boxid1;
         public string boxid2;
@@ -110,6 +110,7 @@ namespace KhiDemo
                         gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.26f)*1f/8;
                         break;
                     }
+                case BoxForm.PrefabWithSphere:
                 case BoxForm.Prefab:
                     {
                         var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
@@ -120,14 +121,14 @@ namespace KhiDemo
                         go1.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*1f/8;
                         go1.transform.localRotation = Quaternion.Euler(180, 90, -90);
 
-                        var clr = UnityUt.GetRandomColorString();
-                        var gobx = UnityUt.CreateSphere(null, clr, size: 0.02f);
-                        gobx.name = "sphere";
-                        gobx.transform.position = new Vector3(0, 0.0164f, 0);
-                        gobx.transform.SetParent(go1.transform, worldPositionStays: false);
-
-                        //go1.transform.localScale = new Vector3(8, 8, 8);
-
+                        if (boxform == BoxForm.PrefabWithSphere)
+                        {
+                            var clr = UnityUt.GetRandomColorString();
+                            var gobx = UnityUt.CreateSphere(null, clr, size: 0.02f);
+                            gobx.name = "sphere";
+                            gobx.transform.position = new Vector3(0, 0.0164f, 0);
+                            gobx.transform.SetParent(go1.transform, worldPositionStays: false);
+                        }
                         break;
                     }
             }

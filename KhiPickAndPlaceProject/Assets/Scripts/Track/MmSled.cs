@@ -8,9 +8,10 @@ namespace KhiDemo
     public class MmSled : MonoBehaviour
     {
         MagneMotion magmo;
-        MnTable mmt;
+        MmTable mmt;
         public enum SledForm { BoxCubeBased, Prefab }
         public int pathnum;
+        public int nextpathnum;
         public float pathUnitDist;
         bool markedForDeletion = false;
         public float sledUpsSpeed;
@@ -45,17 +46,19 @@ namespace KhiDemo
             sled.sledUpsSpeed = 0;
             sled.reqestedSledUpsSpeed = 0;
             sled.pathnum = 0;
+            sled.nextpathnum = -1;
             sled.pathUnitDist = 0;
             sled.loadState = true;
             sled.visible = true;
             sled.stopped = false;
 
+
             sled.ConstructForm( sledform );
             sled.AdjustSledOnPathDist(pathnum, pathdist);
             sled.SetLoadState(loaded);
             sledgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
+            Debug.Log($"ConstructSled {sledid} pathnum:{pathnum} nextpathnum:{sled.nextpathnum} dist:{pathdist:f1}");
             return sled;
-            //Debug.Log($"ConstructSled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
         }
 
         // Start is called before the first frame update
@@ -73,6 +76,12 @@ namespace KhiDemo
         public bool GetLoadState()
         {
             return loadState;
+        }
+
+        public void SetNextPath()
+        {
+            var p = mmt.GetPath(pathnum);
+            nextpathnum = p.FindContinuationPathIdx(loadState, alternateIfMultipleChoicesAvaliable: false);
         }
 
         public void SetSpeed(float newspeed)
@@ -283,9 +292,9 @@ namespace KhiDemo
         public float maxDistToMove;
         public void AdvanceSledBySpeed()
         {
-            if (sledid=="7")
+            if (sledid=="6")
             {
-                sledid = "7";
+                sledid = "6";
             }
             if (pathnum >= 0)
             {
@@ -301,30 +310,66 @@ namespace KhiDemo
                 }
                 var path = mmt.GetPath(pathnum);
                 bool atEndOfPath;
+                int oldpath = pathnum;
                 (pathnum, pathUnitDist, atEndOfPath, stopped) = path.AdvancePathdistInUnits(pathUnitDist, deltDistToMove, loadState );
+                if (oldpath!= pathnum)
+                {
+                    // pathchanged
+                    var newpath = mmt.GetPath(pathnum);
+                    nextpathnum = newpath.FindContinuationPathIdx(loadState, alternateIfMultipleChoicesAvaliable: false);
+                    if (nextpathnum==pathnum)
+                    {
+                        Debug.LogWarning($"AdvancePathBySpped sledid:{sledid} nextpathnum {nextpathnum} cannot be equal to pathnum:{pathnum}");
+                    }
+                }
                 if (atEndOfPath)
                 {
                     this.MarkForDeletion();
                 }
                 else
-                AdjustSledOnPathDist(pathnum, pathUnitDist);
+                {
+                    AdjustSledOnPathDist(pathnum, pathUnitDist);
+                }
             }
         }
-
         public void FindSledInFront()
         {
             sledInFront = "";
             sledInFrontDist = float.MaxValue;
             if (pathnum >= 0)
             {
+                var p = mmt.GetPath(pathnum);
+                var pathTotalUnitDist = p.pathLength;
+                var lookForwardOnePath = nextpathnum>=0 && pathnum != nextpathnum;
+                if (!lookForwardOnePath)
+                {
+                    Debug.LogWarning($"Don't look foward sledid:{sledid} pidx:{pathnum}  time:{Time.time}");
+                }
                 foreach (var s in mmt.sleds)
                 {
+                    var db = sledid == "6" && s.sledid == "5";
                     if (s.pathnum==pathnum)
                     {
                         if (s.pathUnitDist>pathUnitDist)
                         {
                             var newdist = s.pathUnitDist - pathUnitDist;
                             if (newdist<sledInFrontDist)
+                            {
+                                sledInFront = s.sledid;
+                                sledInFrontDist = newdist;
+                            }
+                        }
+                    }
+                    if (lookForwardOnePath)
+                    {
+                        if (s.pathnum == nextpathnum)
+                        {
+                            var newdist = s.pathUnitDist + pathTotalUnitDist - pathUnitDist;
+                            if (db)
+                            {
+                                Debug.Log($"sid:{sledid:f1} pidx:{pathnum} pud:{pathUnitDist}   s.sid:{s.sledid} pidx:{s.pathnum} s.pud:{s.pathUnitDist:f1}  pathTotalUnitDist:{pathTotalUnitDist:f1} newdist:{newdist:f1}");
+                            }
+                            if (newdist < sledInFrontDist)
                             {
                                 sledInFront = s.sledid;
                                 sledInFrontDist = newdist;
