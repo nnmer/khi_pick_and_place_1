@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace KhiDemo
 {
-
+    public enum RobStatus { busy,idle }
     public class MmController : MonoBehaviour
     {
 
@@ -27,6 +27,13 @@ namespace KhiDemo
         public bool doubleSpeed;
         public bool halfSpeed;
 
+        float srobsec = 0.4f;
+        float lrobsec = 1.0f;
+
+        RobStatus robstatus;
+
+
+
 
         public void Init(MagneMotion magmo)
         {
@@ -34,6 +41,7 @@ namespace KhiDemo
             mmt = magmo.mmt;
             mmtray = magmo.mmtray;
             mmRobot = magmo.mmRobot;
+            robstatus = RobStatus.idle;
         }
         // Start is called before the first frame update
         void Start()
@@ -68,7 +76,7 @@ namespace KhiDemo
                     break;
                 case MmMode.StartTrayToRail:
                     mmSubMode = MmSubMode.TrayToRail;
-                    mmBoxMode = MmBoxMode.Fake;
+                    mmBoxMode = MmBoxMode.Real;
                     mmRobot.InitRobotBoxState(false);
                     mmtray.InitAllLoadstate(true);
                     mmt.SetupSleds(SledLoadDistrib.allUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
@@ -93,7 +101,89 @@ namespace KhiDemo
             }
         }
 
+        IEnumerator TransferBoxFromSledToRobot(MmSled sled,MmRobot rob)
+        {
+            yield return new WaitUntil(() => robstatus == RobStatus.idle);
+            robstatus = RobStatus.busy;
+            mmRobot.RealiseRobotPose(RobotPose.fcartup);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.fcartdn);
+            yield return new WaitForSeconds(lrobsec);
+            var box = sled.DetachhBoxFromSled();
+            if (box != null)
+            {
+                rob.AttachBoxToRobot(box);
+            }
+            mmRobot.RealiseRobotPose(RobotPose.fcartup);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.rest);
+            yield return new WaitForSeconds(lrobsec);
+            robstatus = RobStatus.idle;
+        }
+
+        IEnumerator TransferBoxFromRobotToSled(MmRobot rob, MmSled sled)
+        {
+            yield return new WaitUntil(() => robstatus == RobStatus.idle);
+            robstatus = RobStatus.busy;
+            mmRobot.RealiseRobotPose(RobotPose.ecartup);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.ecartdn);
+            yield return new WaitForSeconds(lrobsec);
+            var box = rob.DetachhBoxFromRobot();
+            if (box != null)
+            {
+                sled.AttachBoxToSled(box);
+            }
+            mmRobot.RealiseRobotPose(RobotPose.ecartup);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.rest);
+            yield return new WaitForSeconds(lrobsec);
+            robstatus = RobStatus.idle;
+        }
+
+        IEnumerator TransferBoxFromTrayToRobot((int,int) key, MmRobot rob)
+        {
+            yield return new WaitUntil(() => robstatus == RobStatus.idle);
+            robstatus = RobStatus.busy;
+            var (poseup, posedn) = mmRobot.GetPoses(key);
+            mmRobot.RealiseRobotPose(poseup);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(posedn);
+            yield return new WaitForSeconds(lrobsec);
+            var box = mmtray.DetachhBoxFromTraySlot(key);
+            if (box != null)
+            {
+                rob.AttachBoxToRobot(box);
+            }
+            mmRobot.RealiseRobotPose(poseup);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.rest);
+            yield return new WaitForSeconds(lrobsec);
+            robstatus = RobStatus.idle;
+        }
+
+        IEnumerator TransferBoxFromRobotToTray(MmRobot rob, (int, int) key )
+        {
+            yield return new WaitUntil(() => robstatus == RobStatus.idle);
+            robstatus = RobStatus.busy;
+            mmRobot.RealiseRobotPose(RobotPose.key00up);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.key00dn);
+            yield return new WaitForSeconds(lrobsec);
+            var box = rob.DetachhBoxFromRobot();
+            if (box != null)
+            {
+                mmtray.AttachBoxToTraySlot(key, box);
+            }
+            mmRobot.RealiseRobotPose(RobotPose.key00up);
+            yield return new WaitForSeconds(srobsec);
+            mmRobot.RealiseRobotPose(RobotPose.rest);
+            yield return new WaitForSeconds(lrobsec);
+            robstatus = RobStatus.idle;
+        }
+
         public enum TranferType { SledToRob, RobToSled, TrayToRob, RobToTray }
+
 
         public void SledTransferBox(TranferType tt, MmSled sled)
         {
@@ -108,11 +198,12 @@ namespace KhiDemo
                             rob.ActivateRobBox(true);
                             break;
                         case MmBoxMode.Real:
-                            var box = sled.DetachhBoxFromSled();
-                            if (box != null)
-                            {
-                                rob.AttachBoxToRobot(box);
-                            }
+                            StartCoroutine(TransferBoxFromSledToRobot(sled,rob));
+                            //var box = sled.DetachhBoxFromSled();
+                            //if (box != null)
+                            //{
+                            //    rob.AttachBoxToRobot(box);
+                            //}
                             break;
                     }
                     break;
@@ -124,11 +215,12 @@ namespace KhiDemo
                             rob.ActivateRobBox(false);
                             break;
                         case MmBoxMode.Real:
-                            var box = rob.DetachhBoxFromRobot();
-                            if (box != null)
-                            {
-                                sled.AttachBoxToSled(box);
-                            }
+                            StartCoroutine(TransferBoxFromRobotToSled(rob,sled));
+                            //var box = rob.DetachhBoxFromRobot();
+                            //if (box != null)
+                            //{
+                            //    sled.AttachBoxToSled(box);
+                            //}
                             break;
                     }
                     break;
@@ -152,11 +244,12 @@ namespace KhiDemo
                             rob.ActivateRobBox(true);
                             break;
                         case MmBoxMode.Real:
-                            var box = mmtray.DetachhBoxFromTraySlot(key);
-                            if (box != null)
-                            {
-                                rob.AttachBoxToRobot(box);
-                            }
+                            StartCoroutine(TransferBoxFromTrayToRobot(key, rob));
+                            //var box = mmtray.DetachhBoxFromTraySlot(key);
+                            //if (box != null)
+                            //{
+                            //    rob.AttachBoxToRobot(box);
+                            //}
                             break;
                     }
                     break;
@@ -168,11 +261,12 @@ namespace KhiDemo
                             rob.ActivateRobBox(false);
                             break;
                         case MmBoxMode.Real:
-                            var box = rob.DetachhBoxFromRobot();
-                            if (box != null)
-                            {
-                                mmtray.AttachBoxToTraySlot(key, box);
-                            }
+                            StartCoroutine(TransferBoxFromRobotToTray(rob,key));
+                            //var box = rob.DetachhBoxFromRobot();
+                            //if (box != null)
+                            //{
+                            //    mmtray.AttachBoxToTraySlot(key, box);
+                            //}
                             break;
                     }
                     break;

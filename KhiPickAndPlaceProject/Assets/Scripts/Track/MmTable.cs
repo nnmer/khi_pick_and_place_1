@@ -321,6 +321,11 @@ namespace KhiDemo
         }
         public void AdvanceSledsBySpeed()
         {
+            if (magmo.mmMode== MmMode.Echo)
+            {
+                // don't advance sled
+                return;
+            }
             foreach (var sled in sleds)
             {
                 sled.FindSledInFront();

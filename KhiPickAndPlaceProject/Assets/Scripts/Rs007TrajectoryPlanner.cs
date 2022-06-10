@@ -155,7 +155,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
         //OpenGripper();
     }
 
-    void PositionJoint(int idx, float joint)
+    public void PositionJoint(int idx, float joint)
     {
         Debug.Log($"   PositionJoint idx:{idx} to {joint:f1} degrees");
         if (0 <= idx && idx <= 5)
@@ -164,6 +164,15 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             joint1XDrive.target = joint;
             m_JointArticulationBodies[idx].xDrive = joint1XDrive;
         }
+    }
+
+    public float GetJointPosition(int idx)
+    {
+        if (0 <= idx && idx <= 5)
+        {
+            return m_JointArticulationBodies[idx].xDrive.target;
+        }
+        return 0;
     }
 
     void Rs007J1Change(RsJ1Msg j1msg)

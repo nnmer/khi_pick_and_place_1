@@ -292,10 +292,6 @@ namespace KhiDemo
         public float maxDistToMove;
         public void AdvanceSledBySpeed()
         {
-            if (sledid=="6")
-            {
-                sledid = "6";
-            }
             if (pathnum >= 0)
             {
                 deltDistToMove = 8*this.sledUpsSpeed * Time.deltaTime;
