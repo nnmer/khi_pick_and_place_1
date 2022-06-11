@@ -46,6 +46,7 @@ namespace KhiDemo
             //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
         }
 
+
         public static (int nFree,int nOnTray,int nOnRobot,int nOnSled) CountBoxStatus()
         {
             if (boxes == null)

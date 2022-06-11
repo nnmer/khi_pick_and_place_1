@@ -20,7 +20,7 @@ namespace KhiDemo
 
         public static void InitDicts()
         {
-            Debug.Log("InitDicts");
+            //Debug.Log("InitDicts");
             rot90 = new Dictionary<(string, string), string>();
             rot90[("cw", "s")] = "w";
             rot90[("cw", "w")] = "n";

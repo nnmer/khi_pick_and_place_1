@@ -22,12 +22,13 @@ namespace KhiDemo
         GameObject boxgo;
         MmBox box;
         public bool loadState;
+        public int sledidx;
         public string sledid;
         public string sledInFront;
         public float sledInFrontDist;
         public bool stopped;
 
-        public static MmSled ConstructSled(MagneMotion magmo, string sledid, int pathnum, float pathdist, bool loaded)
+        public static MmSled ConstructSled(MagneMotion magmo, int sledidx, string sledid, int pathnum, float pathdist, bool loaded)
         {
 
             var mmt = magmo.mmt;
@@ -39,6 +40,7 @@ namespace KhiDemo
             var sledform = magmo.sledForm;
 
             var sled = sledgo.AddComponent<MmSled>();
+            sled.sledidx = sledidx;
             sled.sledid = sledid;
             sled.magmo = magmo;
             sled.mmt = mmt;
@@ -57,7 +59,7 @@ namespace KhiDemo
             sled.AdjustSledOnPathDist(pathnum, pathdist);
             sled.SetLoadState(loaded);
             sledgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
-            Debug.Log($"ConstructSled {sledid} pathnum:{pathnum} nextpathnum:{sled.nextpathnum} dist:{pathdist:f1}");
+            //Debug.Log($"ConstructSled {sledid} pathnum:{pathnum} nextpathnum:{sled.nextpathnum} dist:{pathdist:f1}");
             return sled;
         }
 
@@ -235,20 +237,10 @@ namespace KhiDemo
             transform.SetAsFirstSibling();
         }
 
-        //int last_pathnum;
-        //float last_pathdist;
-        //bool last_loaded;
-        //float last_time;
-        //static float max_speed = 0;
-        //static float avg_speed = 0;
-        //static float sum_speed = 0;
-        //static int nspeed_calcs = 0;
-
-
         public void EchoUpdateSled(int new_pathnum, float new_pathdist, bool new_loaded)
         {
-            var msg = $"Updating {sledid} to path:{new_pathnum} pos:{new_pathdist:f2} loaded:{new_loaded}";
-            Debug.Log(msg);
+            //var msg = $"Updating {sledid} to path:{new_pathnum} pos:{new_pathdist:f2} loaded:{new_loaded}";
+            //Debug.Log(msg);
             this.pathnum = new_pathnum;
             this.pathUnitDist = new_pathdist;
             this.visible = new_pathnum >= 0;
@@ -257,35 +249,7 @@ namespace KhiDemo
             SetLoadState(new_loaded,cascadeToRobot:true);
             AdjustSledOnPathDist(new_pathnum, new_pathdist);
 
-            //var (pt, ang) = mmt.GetPositionAndOrientation(new_pathnum, new_pathdist);
-            //AdjustSledPositionAndOrientation(pt, ang);
-            // This doesn't work really, causes the sleds to move backwards too often which looks terrible
-            // Need to delete this
-            //if (last_pathnum == new_pathnum)
-            //{
-            //    var deltatime = Time.time - last_time;
-            //    if (mmt.interpolateOnSpeed && (deltatime > 0))
-            //    {
-            //        sledspeed = (new_pathdist - last_pathdist) / deltatime;
-            //        if (sledspeed < 0)
-            //        {
-            //            sledspeed = 0;
-            //        }
-            //        nspeed_calcs++;
-            //        sum_speed += sledspeed;
-            //        avg_speed = sum_speed / nspeed_calcs;
-            //        if (sledspeed > max_speed)
-            //        {
-            //            max_speed = sledspeed;
-            //        }
-            //        Debug.Log($"sled {this.sledid} sledspeed:{sledspeed:f3}  avg_speed:{avg_speed:f3} sum_speed:{sum_speed}   max_speed:{max_speed:f3} nspeed_calcs:{nspeed_calcs}");
-            //    }
-            //}
 
-            //last_pathnum = new_pathnum;
-            //last_pathdist = new_pathdist;
-            //last_loaded = new_loaded;
-            //last_time = Time.time;
         }
         const float sledMinGap = 8*0.10f;// 10 cm
         public float deltDistToMove;
@@ -343,7 +307,8 @@ namespace KhiDemo
                 }
                 foreach (var s in mmt.sleds)
                 {
-                    var db = sledid == "6" && s.sledid == "5";
+                    //var db = sledid == "6" && s.sledid == "5";
+                    var db = false;
                     if (s.pathnum==pathnum)
                     {
                         if (s.pathUnitDist>pathUnitDist)

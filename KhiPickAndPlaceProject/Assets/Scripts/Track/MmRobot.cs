@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using RsJ1Msg = RosMessageTypes.Rs007Control.Rs007Joints1Msg;
+using RsJ6Msg = RosMessageTypes.Rs007Control.Rs007Joints6Msg;
+using Unity.Robotics.ROSTCPConnector;
 
 namespace KhiDemo
 {
@@ -68,6 +71,46 @@ namespace KhiDemo
             var vacGripperName = "world/base_link/link1/link2/link3/link4/link5/link6/tool_link/gripper_base/Visuals/unnamed/RS007_Gripper_C_u";
             vgriptrans = transform.Find(vacGripperName);
             InitializePoses();
+
+            magmo.ros.Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
+            magmo.ros.Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
+            magmo.ros.RegisterPublisher<RsJ6Msg>("Rs007Joints6");
+        }
+
+        public void PublishJoints()
+        {
+            if (magmo.publishMovements)
+            {
+                var ang = GetRobotPosDouble();
+                var j6msg = new RsJ6Msg(ang);
+                magmo.ros.Publish("Rs007Joints6", j6msg);
+            }
+        }
+
+        void Rs007J1Change(RsJ1Msg j1msg)
+        {
+            if (magmo.echoMovements)
+            {
+                //Debug.Log($"RsJ1Msg:{j1msg.ToString()}");
+                var idx = j1msg.idx;
+                var joint = (float)j1msg.joint;
+                var planner = magmo.planner;
+
+                planner.PositionJoint(idx, joint);
+            }
+        }
+
+        void Rs007J6Change(RsJ6Msg j6msg)
+        {
+            if (magmo.echoMovements)
+            {
+                //Debug.Log($"RsJ6Msg:{j6msg.ToString()}");
+                var planner = magmo.planner;
+                for (int i = 0; i < 6; i++)
+                {
+                    planner.PositionJoint(i, (float)j6msg.joints[i]);
+                }
+            }
         }
 
         Dictionary<RobotPose, float []> poses;
@@ -102,30 +145,30 @@ namespace KhiDemo
 
             p1(RobotPose.key00up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
             p1(RobotPose.key00dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key01up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key01dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key02up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key02dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key03up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key03dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
+            p1(RobotPose.key01up, (-16.88, 16.142, -101.146, 0, -62.727, 106.877));
+            p1(RobotPose.key01dn, (-16.808, 19.303, -103.537, 0, -57.146, 106.813));
+            p1(RobotPose.key02up, (-20.924, 3.754, -115.647, -0.001, -60.607, 110.92));
+            p1(RobotPose.key02dn, (-20.921, 7.105, -118.181, -0.001, -54.702, 110.919));
+            p1(RobotPose.key03up, (-25.945, -6.875, -125.815, -0.001, -61.063, 115.944));
+            p1(RobotPose.key03dn, (-25.942, -1.839, -129.447, -0.001, -52.394, 115.943));
 
-            p1(RobotPose.key10up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key10dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key11up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key11dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key12up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key12dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key13up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key13dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
+            p1(RobotPose.key10up, (-3.833, 24.123, -90.829, 0, -65.057, 93.834));
+            p1(RobotPose.key10dn, (-3.839, 27.028, -93.268, 0, -59.685, 93.835));
+            p1(RobotPose.key11up, (-4.485, 16.308, -106.377, 0, -57.305, 94.482));
+            p1(RobotPose.key11dn, (-4.487, 17.444, -107.108, 0, -55.446, 94.486));
+            p1(RobotPose.key12up, (-5.674, 2.826, -121.133, 0, -56.032, 95.67));
+            p1(RobotPose.key12dn, (-5.677, 4.939, -122.452, 0, -52.61, 95.675));
+            p1(RobotPose.key13up, (-7.204, -11.615, -129.863, 0, -61.795, 97.205));
+            p1(RobotPose.key13dn, (-7.207, -7.853, -132.776, 0, -55.074, 97.205));
 
-            p1(RobotPose.key20up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key20dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key21up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key21dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key22up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key22dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
-            p1(RobotPose.key23up, (-14.864, 26.011, -87.161, 0, -66.826, 102.537));
-            p1(RobotPose.key23dn, (-14.48, 28.642, -89.821, 0, -61.519, 104.49));
+            p1(RobotPose.key20up, (7.072, 24.158, -89.905, 0, -65.933, 82.92));
+            p1(RobotPose.key20dn, (7.07, 27.478, -92.784, 0, -59.743, 82.929));
+            p1(RobotPose.key21up, (8.251, 16.929, -105.936, 0, -57.122, 81.753));
+            p1(RobotPose.key21dn, (8.249, 17.868, -106.538, 0, -55.594, 81.752));
+            p1(RobotPose.key22up, (8.251, 16.929, -105.936, 0, -57.122, 81.753));
+            p1(RobotPose.key22dn, (8.249, 17.868, -106.538, 0, -55.594, 81.752));
+            p1(RobotPose.key23up, (-7.204, -11.615, -129.863, 0, -61.795, 97.205));
+            p1(RobotPose.key23dn, (-7.207, -7.853, -132.776, 0, -55.074, 97.205));
 
             kez = new Dictionary<(int, int), (RobotPose,RobotPose)>();
             k1((0, 0), (RobotPose.key00up, RobotPose.key00dn));
@@ -229,6 +272,17 @@ namespace KhiDemo
         public float [] GetRobotPos()
         {
             var far = new List<float>();
+            var planner = magmo.planner;
+            for (int i = 0; i < 6; i++)
+            {
+                far.Add(planner.GetJointPosition(i));
+            }
+            return far.ToArray();
+        }
+
+        public double[] GetRobotPosDouble()
+        {
+            var far = new List<double>();
             var planner = magmo.planner;
             for (int i = 0; i < 6; i++)
             {

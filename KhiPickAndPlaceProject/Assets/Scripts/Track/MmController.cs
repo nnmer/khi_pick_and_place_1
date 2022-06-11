@@ -21,7 +21,7 @@ namespace KhiDemo
         MmTable mmt;
 
         [Header("Simulation")]
-        public bool demoStep;
+        public bool processStep;
         [Space(10)]
         public bool reverseTrayRail;
         public bool doubleSpeed;
@@ -30,10 +30,7 @@ namespace KhiDemo
         float srobsec = 0.4f;
         float lrobsec = 1.0f;
 
-        RobStatus robstatus;
-
-
-
+        public RobStatus robstatus;
 
         public void Init(MagneMotion magmo)
         {
@@ -56,30 +53,46 @@ namespace KhiDemo
                 case MmMode.Echo:
                     mmSubMode = MmSubMode.None;
                     mmBoxMode = MmBoxMode.Fake;
+                    magmo.boxForm = MmBox.BoxForm.Prefab;
+                    magmo.echoMovements = true;
+                    magmo.publishMovements = false;
                     mmRobot.InitRobotBoxState(true);
-                    mmtray.InitAllLoadstate(true); // doesn't really matter - all gets overwritten
+                    mmtray.InitAllLoadstate(true,nbox:12); // doesn't really matter - all gets overwritten
                     mmt.SetupSleds(SledLoadDistrib.alternateLoadedUnloaded, SledSpeedDistrib.fixedValue, 0);
+                    magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
                     break;
                 case MmMode.SimuRailToRail:
                     mmSubMode = MmSubMode.None;
                     mmBoxMode = MmBoxMode.Real;
+                    magmo.boxForm = MmBox.BoxForm.PrefabWithSphere;
+                    magmo.echoMovements = false;
+                    magmo.publishMovements = true;
                     mmRobot.InitRobotBoxState(false);
-                    mmtray.InitAllLoadstate(false);
+                    mmtray.InitAllLoadstate(false, nbox: 10);
                     mmt.SetupSleds(SledLoadDistrib.alternateLoadedUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
+                    magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
                     break;
                 case MmMode.StartRailToTray:
                     mmSubMode = MmSubMode.RailToTray;
                     mmBoxMode = MmBoxMode.Real;
+                    magmo.echoMovements = false;
+                    magmo.publishMovements = true;
+                    magmo.boxForm = MmBox.BoxForm.PrefabWithSphere;
                     mmRobot.InitRobotBoxState(false);
-                    mmtray.InitAllLoadstate(false);
+                    mmtray.InitAllLoadstate(false, nbox: 10);
                     mmt.SetupSleds(SledLoadDistrib.allLoaded, SledSpeedDistrib.alternateHiLo, 0.5f);
+                    magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
                     break;
                 case MmMode.StartTrayToRail:
                     mmSubMode = MmSubMode.TrayToRail;
                     mmBoxMode = MmBoxMode.Real;
+                    magmo.boxForm = MmBox.BoxForm.PrefabWithSphere;
+                    magmo.echoMovements = false;
+                    magmo.publishMovements = true;
                     mmRobot.InitRobotBoxState(false);
-                    mmtray.InitAllLoadstate(true);
+                    mmtray.InitAllLoadstate(true, nbox: 10);
                     mmt.SetupSleds(SledLoadDistrib.allUnloaded, SledSpeedDistrib.alternateHiLo, 0.5f);
+                    magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
                     break;
             }
         }
@@ -166,16 +179,17 @@ namespace KhiDemo
         {
             yield return new WaitUntil(() => robstatus == RobStatus.idle);
             robstatus = RobStatus.busy;
-            mmRobot.RealiseRobotPose(RobotPose.key00up);
+            var (poseup, posedn) = mmRobot.GetPoses(key);
+            mmRobot.RealiseRobotPose(poseup);
             yield return new WaitForSeconds(srobsec);
-            mmRobot.RealiseRobotPose(RobotPose.key00dn);
+            mmRobot.RealiseRobotPose(posedn);
             yield return new WaitForSeconds(lrobsec);
             var box = rob.DetachhBoxFromRobot();
             if (box != null)
             {
                 mmtray.AttachBoxToTraySlot(key, box);
             }
-            mmRobot.RealiseRobotPose(RobotPose.key00up);
+            mmRobot.RealiseRobotPose(poseup);
             yield return new WaitForSeconds(srobsec);
             mmRobot.RealiseRobotPose(RobotPose.rest);
             yield return new WaitForSeconds(lrobsec);
@@ -276,11 +290,58 @@ namespace KhiDemo
             }
         }
 
-
-        public void DemoStep()
+        public bool CheckIfOkayForNextProcessStep()
         {
-            if (!demoStep) return;
-            demoStep = false;
+            if (robstatus!= RobStatus.idle)
+            {
+                return false;
+            }
+            var (nloadestopped, nunloadedstopped) = mmt.CountStoppedSleds();
+            var (_, nTray, nRob, nSled) = MmBox.CountBoxStatus();
+            //Debug.Log($"CountBoxStatus nTray:{nTray} nRob:{nRob} nSled:{nSled}");
+            if (mmSubMode == MmSubMode.RailToTray && nSled == 0 && nRob == 0)
+            {
+                mmSubMode = MmSubMode.TrayToRail;
+                //Debug.Log($"   Switched to {mmSubMode}");
+            }
+            else if (mmSubMode == MmSubMode.TrayToRail && nTray == 0 && nRob == 0)
+            {
+                mmSubMode = MmSubMode.RailToTray;
+                //Debug.Log($"   Switched to {mmSubMode}");
+            }
+            switch (mmMode)
+            {
+                case MmMode.SimuRailToRail:
+                    {
+                        var rv = (nloadestopped > 0 && nunloadedstopped > 0);
+                        return rv;
+                    }
+                case MmMode.StartRailToTray:
+                case MmMode.StartTrayToRail:
+                    {
+
+                        switch (mmSubMode)
+                        {
+                            case MmSubMode.RailToTray:
+                                var rv1 = nloadestopped > 0 || nRob > 0;
+                                return rv1;
+                            case MmSubMode.TrayToRail:
+                                var rv2 = nunloadedstopped > 0 && (nTray+nRob)>0;
+                                return rv2;
+                        }
+                    }
+                    break;
+            }
+            return false;
+        }
+
+        public void ProcessStep()
+        {
+            //if (!processStep) return;
+            //processStep = false;
+            if (!CheckIfOkayForNextProcessStep()) return;
+            //Debug.Log($"ProcessStep mode:{mmMode}");
+
             var errhead = $"MagneMotion.demoStep - {mmMode}";
             var rob = mmRobot;
             switch (mmMode)
@@ -366,18 +427,6 @@ namespace KhiDemo
                                     break;
                                 }
                         }
-                        var (_, nTray, nRob, nSled) = MmBox.CountBoxStatus();
-                        Debug.Log($"CountBoxStatus nTray:{nTray} nRob:{nRob} nSled:{nSled}");
-                        if (mmSubMode == MmSubMode.RailToTray && nSled == 0 && nRob == 0)
-                        {
-                            mmSubMode = MmSubMode.TrayToRail;
-                            Debug.Log($"   Switched to {mmSubMode}");
-                        }
-                        else if (mmSubMode == MmSubMode.TrayToRail && nTray == 0 && nRob == 0)
-                        {
-                            mmSubMode = MmSubMode.RailToTray;
-                            Debug.Log($"   Switched to {mmSubMode}");
-                        }
                         break;
                     }
             }
@@ -398,7 +447,7 @@ namespace KhiDemo
         }
 
 
-        public void SimStep()
+        public void PhysicsStep()
         {
             AdjustSpeed();
             ReverseTrayRail();
@@ -408,7 +457,7 @@ namespace KhiDemo
         // Update is called once per frame
         void Update()
         {
-            DemoStep();
+            ProcessStep();
         }
     }
 }

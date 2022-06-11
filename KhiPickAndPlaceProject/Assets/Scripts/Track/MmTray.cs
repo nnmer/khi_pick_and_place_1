@@ -45,17 +45,37 @@ namespace KhiDemo
 
         void Start()
         {
-            ROSConnection.GetOrCreateInstance().Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
         }
 
         public void Init(MagneMotion magmo)
         {
             this.magmo = magmo;
             this.mmt = magmo.mmt;
+            magmo.ros.Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
+            magmo.ros.RegisterPublisher<MmTray1Msg>("Rs007Tray1");
             // size in cm - 31.4, 28.9, 1.7
             CreateTray(transform);
             CreateTraySlots();
         }
+
+        public void PublishTray()
+        {
+            if (magmo.publishMovements)
+            {
+                for (var i = 0; i < nrow; i++)
+                {
+                    for (var j = 0; j < ncol; j++)
+                    {
+                        var key = (i, j);
+                        var loaded = loadState[key] ? 1 : 0;
+                        var t1msg = new MmTray1Msg(i,j,loaded);
+                        magmo.ros.Publish("Rs007Tray1", t1msg);
+                    }
+                }
+            }
+        }
+
+
         void CreateTray(Transform parent)
         {
             mmtrayrep = new GameObject("mmtrayrep");
@@ -71,9 +91,11 @@ namespace KhiDemo
         void CreateTraySlots()
         {
             var rowdelt = 0.03f * 3;
+            //var coldelt = 0.022f * 3;
             var coldelt = 0.022f * 3;
             var rowstar = rowdelt * (((float)nrow - 1) / 2f);
-            var colmid = 0.003f;
+            //var colmid = 0.003f;
+            var colmid = 0.014f;
             var colstar = coldelt * (((float)ncol - 1) / 2f);
             var rowpos = rowstar;
             slotw = coldelt * 0.95f;
@@ -91,8 +113,8 @@ namespace KhiDemo
                         colpos1 = colpos + colmid;
                     }
                     var pt = new Vector3(colpos1, 0.02f, rowpos);
-
                     CreateTraySlot(key, pt);
+
 
                     colpos -= coldelt;
                 }
@@ -110,6 +132,14 @@ namespace KhiDemo
             var slotformgo = UnityUt.CreateCube(null, "gray", size: 1);
             slotformgo.transform.localScale = new Vector3(slotw, 0.005f, sloth);
             slotformgo.transform.SetParent(slotgo.transform, worldPositionStays: false);
+
+            var gobx = UnityUt.CreateSphere(null, "red", size: 0.01f);
+            gobx.name = "sphere";
+            gobx.transform.position = new Vector3(0, 0.0164f, 0);
+            gobx.transform.SetParent(slotformgo.transform, worldPositionStays: false);
+            var sz = 0.01f;
+            gobx.transform.localScale = new Vector3(sz/slotw, sz/0.005f, sz/sloth);
+
         }
 
         void DestroyBoxes()
@@ -128,22 +158,30 @@ namespace KhiDemo
             }
         }
 
-        void CreateBoxes()
+        void CreateBoxes(int nbox)
         {
+            var created = 0;
             for (var i = 0; i < nrow; i++)
             {
                 for (var j = 0; j < ncol; j++)
                 {
                     var key = (i, j);
-
-                    var boxid = $"{key}";
-                    var box = MmBox.ConstructBox(mmt.magmo, boxid, BoxStatus.onTray);
-                    AttachBoxToTraySlot(key, box);
-                    trayboxes[key] = box;
-                    loadState[key] = true;
+                    if (created < nbox)
+                    {
+                        var boxid = $"{key}";
+                        var box = MmBox.ConstructBox(mmt.magmo, boxid, BoxStatus.onTray);
+                        AttachBoxToTraySlot(key, box);
+                        trayboxes[key] = box;
+                        loadState[key] = true;
+                        created++;
+                    }
+                    else
+                    {
+                        trayboxes[key] = null;
+                        loadState[key] = false;
+                    }
                 }
             }
-            RealizeLoadStatus();
         }
 
         public void AttachBoxToTraySlot((int,int) slotkey, MmBox box)
@@ -169,32 +207,25 @@ namespace KhiDemo
         }
 
 
-        public void InitAllLoadstate(bool loaded)
+        public void InitAllLoadstate(bool loaded,int nbox=12)
         {
             DestroyBoxes();
-            CreateBoxes();
+            CreateBoxes(nbox);
             for (var i = 0; i < nrow; i++)
             {
                 for (var j = 0; j < ncol; j++)
                 {
                     var bkey = (i, j);
-                    loadState[bkey] = loaded;
-                    trayboxes[bkey].gameObject.SetActive(loaded);
+                    if (trayboxes[bkey] != null)
+                    {
+                        loadState[bkey] = loaded;
+                        trayboxes[bkey].gameObject.SetActive(loaded);
+                    }
                 }
             }
         }
 
 
-        void RealizeLoadStatus()
-        {
-            for (var i = 0; i < nrow; i++)
-            {
-                for (var j = 0; j < ncol; j++)
-                {
-                    RealizeLoadStatusIj(i, j);
-                }
-            }
-        }
 
         void RealizeLoadStatusIj(int i, int j)
         {
@@ -210,25 +241,28 @@ namespace KhiDemo
 
         void Tray1Change(MmTray1Msg traymsg)
         {
-            //Debug.Log($"Received ROS message on topic Rs007Tray1:{traymsg.ToString()}");
-            var (ok, msg) = CheckIndexes(traymsg.row, traymsg.col, "Tray1Change");
-            if (ok)
+            if (magmo.echoMovements)
             {
-                var oldstat = GetVal(traymsg.row, traymsg.col);
-                var newstat = traymsg.loaded != 0;
-                //Debug.Log($"   oldstat:{oldstat} newstat:{newstat}");
-                if (oldstat != newstat)
+                //Debug.Log($"Received ROS message on topic Rs007Tray1:{traymsg.ToString()}");
+                var (ok, msg) = CheckIndexes(traymsg.row, traymsg.col, "Tray1Change");
+                if (ok)
                 {
-                    var key = (traymsg.row, traymsg.col);
-                    loadState[key] = newstat;
-                    RealizeLoadStatusIj(traymsg.row, traymsg.col);
-                    magmo.mmRobot.ActivateRobBox(!newstat);
-                    //RealizeLoadStatus();
+                    var oldstat = GetVal(traymsg.row, traymsg.col);
+                    var newstat = traymsg.loaded != 0;
+                    //Debug.Log($"   oldstat:{oldstat} newstat:{newstat}");
+                    if (oldstat != newstat)
+                    {
+                        var key = (traymsg.row, traymsg.col);
+                        loadState[key] = newstat;
+                        RealizeLoadStatusIj(traymsg.row, traymsg.col);
+                        magmo.mmRobot.ActivateRobBox(!newstat);
+                        //RealizeLoadStatus();
+                    }
                 }
-            }
-            else
-            {
-                Debug.LogError(msg);
+                else
+                {
+                    Debug.LogError(msg);
+                }
             }
         }
 

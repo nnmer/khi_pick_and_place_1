@@ -45,8 +45,6 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     Vector3 m_PickPoseOffset = Vector3.up * 0.1f;
     Vector3 m_PlacePoseOffset = Vector3.up * 0.15f;
 
-    // offsets to make it more flexible for position changing
-    Vector3 m_robotOffset = Vector3.zero;
 
     // Articulation Bodies
     ArticulationBody[] m_JointArticulationBodies;
@@ -65,6 +63,9 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     ROSConnection m_Ros;
     public Transform vgriptrans;
 
+    public bool echoMovements = true;
+    public bool publishMovements = false;
+
     /// <summary>
     ///     Find all robot joints in Awake() and add them to the jointArticulationBodies array.
     ///     Find left and right finger joints and assign them to their respective articulation body objects.
@@ -82,9 +83,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         if (m_RobotModel != null)
         {
-            m_robotOffset = m_RobotModel.transform.position;
             Debug.Log($"Robot name:{m_RobotModel.name}");
-            Debug.Log($"Robot offset:{m_robotOffset:f3}");
         }
 
         var linkName = string.Empty;
@@ -116,7 +115,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
 
         if (vgriptrans != null)
         {
-            Debug.Log($"Vacuum Gripper found gameObject.name:{vgriptrans.name}");
+            //Debug.Log($"Vacuum Gripper found gameObject.name:{vgriptrans.name}");
             gripperType = GripperType.Vacuum;
             m_VacGripper = vgriptrans.gameObject;
             //m_PickPoseOffset = Vector3.up * 0.1865f;
@@ -147,17 +146,17 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
             Debug.LogError("No Gripper found");
             gripperType = GripperType.None;
         }
-        ROSConnection.GetOrCreateInstance().Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
-        ROSConnection.GetOrCreateInstance().Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
+        //ROSConnection.GetOrCreateInstance().Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
+        //ROSConnection.GetOrCreateInstance().Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
 
 
-        Debug.Log("Finished Rs007TrajectoryPlanner Start");
+        //Debug.Log("Finished Rs007TrajectoryPlanner Start");
         //OpenGripper();
     }
 
     public void PositionJoint(int idx, float joint)
     {
-        Debug.Log($"   PositionJoint idx:{idx} to {joint:f1} degrees");
+        //Debug.Log($"   PositionJoint idx:{idx} to {joint:f1} degrees");
         if (0 <= idx && idx <= 5)
         {
             var joint1XDrive = m_JointArticulationBodies[idx].xDrive;

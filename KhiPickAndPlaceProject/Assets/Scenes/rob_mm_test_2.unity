@@ -484,7 +484,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 626133819}
   m_LocalRotation: {x: 0.000000030908623, y: -0.7071068, z: 0.7071068, w: -0.000000030908623}
-  m_LocalPosition: {x: -0.20000012, y: 0.71100014, z: -0.04699993}
+  m_LocalPosition: {x: -0.19000001, y: 0.71100014, z: -0.04699993}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2109811894}
@@ -1217,6 +1217,8 @@ MonoBehaviour:
   m_TargetPlacement: {fileID: 451371862}
   posePauseSecs: 0
   vgriptrans: {fileID: 0}
+  echoMovements: 1
+  publishMovements: 0
 --- !u!114 &1801130477
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1666,8 +1668,12 @@ MonoBehaviour:
   positionOnFloor: 0
   mmRobot: {fileID: 0}
   mmtray: {fileID: 626133821}
+  ros: {fileID: 0}
   planner: {fileID: 0}
   sledForm: 1
   boxForm: 2
-  mmMode: 1
+  mmMode: 2
   stopSimulation: 0
+  echoMovements: 1
+  publishMovements: 0
+  publishInc: 0.05

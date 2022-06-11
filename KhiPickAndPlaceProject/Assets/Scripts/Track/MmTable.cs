@@ -32,7 +32,22 @@ namespace KhiDemo
         // Start is called before the first frame update
         void Start()
         {
-            ROSConnection.GetOrCreateInstance().Subscribe<MmSledMsg>("Rs007Sleds", EchoSledChange);
+            magmo.ros.Subscribe<MmSledMsg>("Rs007Sleds", EchoSledChange);
+            magmo.ros.RegisterPublisher<MmSledMsg>("Rs007Sleds");
+        }
+
+        public void PublishSleds()
+        {
+            if (magmo.publishMovements)
+            {
+                //Debug.Log("PublishSleds");
+                foreach (var s in sleds)
+                {
+                    //Debug.Log($"   sled:{s.sledidx}");
+                    var sledmsg = new MmSledMsg(s.loadState, s.pathUnitDist, s.pathnum, s.sledidx);
+                    magmo.ros.Publish("Rs007Sleds", sledmsg);
+                }
+            }
         }
 
         public MmPath GetPath(int idx)
@@ -61,7 +76,7 @@ namespace KhiDemo
         }
         public void MakeMsftDemoMagmo()
         {
-            Debug.Log("Making MsftDemoMagmo");
+            //Debug.Log("Making MsftDemoMagmo");
             tableName = "MsftDemoMagmo";
             var mmt = this;
             var ptstar = new Vector3(4, 0, 0);
@@ -249,9 +264,9 @@ namespace KhiDemo
             return mmtgo;
         }
 
-        public MmSled MakeSled(string sledid, int pathnum, float pathdist, bool loaded)
+        public MmSled MakeSled(int sledidx, string sledid, int pathnum, float pathdist, bool loaded)
         {
-            var sled = MmSled.ConstructSled(magmo, sledid, pathnum, pathdist, loaded);
+            var sled = MmSled.ConstructSled(magmo, sledidx, sledid, pathnum, pathdist, loaded);
             this.sleds.Add(sled);
             this.SledDict[sledid] = sled;
             return sled;
@@ -267,14 +282,14 @@ namespace KhiDemo
                     var nsleds = (int)p.pathLength / 3.0f;
                     for (int i = 0; i < nsleds; i++)
                     {
-                        if (totsleds <= 10) // only create 10
+                        if (totsleds < 10) // only create 10
                         {
                             var frac = i * 1.0f / nsleds;
                             var pathdist = frac * p.pathLength;
                             var iid = sleds.Count + 1;
                             var sledid = $"{iid}";
                             var loaded = (i % 2 == 0);
-                            var sled = MakeSled(sledid, p.pidx, pathdist, loaded: loaded);
+                            var sled = MakeSled(iid,sledid, p.pidx, pathdist, loaded: loaded);
                             totsleds++;
                         }
                     }
@@ -282,7 +297,28 @@ namespace KhiDemo
             }
         }
 
-        public MmSled FindStoppedSled(bool neededLoadState)
+        public (int nloadedstopped, int nunloadedstopped) CountStoppedSleds()
+        {
+            var nloadedstopped = 0;
+            var nunloadedstopped = 0;
+            foreach (var s in sleds)
+            {
+                if (s.stopped)
+                {
+                    if (s.loadState)
+                    {
+                        nloadedstopped++;
+                    }
+                    else
+                    {
+                        nunloadedstopped++;
+                    }
+                }
+            }
+            return (nloadedstopped, nunloadedstopped);
+        }
+
+            public MmSled FindStoppedSled(bool neededLoadState)
         {
             foreach(var s in sleds)
             {
@@ -337,45 +373,43 @@ namespace KhiDemo
         }
         void EchoSledChange(MmSledMsg sledmsg)
         {
-            // Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
-            var sledid = $"{sledmsg.cartid}";
-            var loaded = sledmsg.loaded;
-            var pathid = sledmsg.pathid - 1;
-            var position = (float)sledmsg.position / UnitsToMeters;
-            if (sledmsg.pathid < 0)
+            if (magmo.echoMovements)
             {
-                Debug.LogWarning($"Bad pathid detected {sledmsg.pathid} on cartid:{sledmsg.cartid}");
-                return;
-            }
-            if (SledDict.ContainsKey(sledid))
-            {
-                var sled = SledDict[sledid];
-                var oldstate = sled.GetLoadState();
-                sled.EchoUpdateSled(pathid, position, loaded);
-                if (oldstate != loaded)
+                // Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
+                var sledid = $"{sledmsg.cartid}";
+                var loaded = sledmsg.loaded;
+                var pathid = sledmsg.pathid - 1;
+                var position = (float)sledmsg.position / UnitsToMeters;
+                if (sledmsg.pathid < 0)
                 {
-                    Debug.Log($"Sled {sledid} changed loaded state to {loaded}");
+                    Debug.LogWarning($"Bad pathid detected {sledmsg.pathid} on cartid:{sledmsg.cartid}");
+                    return;
                 }
-            }
-            else
-            {
-                //Debug.Log($"making sled:{sledid}");
-                if (pathid >= 0)
+                if (SledDict.ContainsKey(sledid))
                 {
-                    MakeSled(sledid, pathid, position, loaded);
+                    var sled = SledDict[sledid];
+                    var oldstate = sled.GetLoadState();
+                    sled.EchoUpdateSled(pathid, position, loaded);
+                    //if (oldstate != loaded)
+                    //{
+                    //    Debug.Log($"Sled {sledid} changed loaded state to {loaded}");
+                    //}
+                }
+                else
+                {
+                    //Debug.Log($"making sled:{sledid}");
+                    if (pathid >= 0)
+                    {
+                        MakeSled(sledmsg.cartid, sledid, pathid, position, loaded);
+                    }
                 }
             }
         }
 
-        public void SimStep()
+        public void PhysicsStep()
         {
             DeleteSledsAsNeeded();
             AdvanceSledsBySpeed();
         }
-
-        //// Update is called once per frame
-        //void Update()
-        //{
-        //}
     }
 }

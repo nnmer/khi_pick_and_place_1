@@ -31,6 +31,7 @@ namespace KhiDemo
 
         public MmRobot mmRobot = null;
         public MmTray mmtray = null;
+        public ROSConnection ros = null;
         public Rs007TrajectoryPlanner planner = null;
         public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
         public MmBox.BoxForm boxForm = MmBox.BoxForm.Prefab;
@@ -39,13 +40,21 @@ namespace KhiDemo
 
         public bool stopSimulation = false;
 
+        public bool echoMovements = true;
+        public bool publishMovements = false;
+        public float publishInterval = 1f;
+
+
+
+        private void Awake()
+        {
+            // we need this before any ros-dependent component starts
+            ros = ROSConnection.GetOrCreateInstance(); 
+        }
         // Start is called before the first frame update
         void Start()
         {
             planner = GameObject.FindObjectOfType<Rs007TrajectoryPlanner>();
-
-
-
 
             mmtgo = new GameObject("MmTable");
             mmt = mmtgo.AddComponent<MmTable>();
@@ -155,15 +164,24 @@ namespace KhiDemo
             updatecount++;
         }
 
-        public void SimStep()
+        float lastPub = 0;
+
+        public void PhysicsStep()
         {
             //var fps = 1 / Time.deltaTime;
             //Debug.Log($"MagneMotion Simstep time:{Time.time:f3} deltatime:{Time.deltaTime:f3} fps:{fps:f2}");
 
             if (!stopSimulation)
             {
-                mmctrl.SimStep();
-                mmt.SimStep();
+                mmctrl.PhysicsStep();
+                mmt.PhysicsStep();
+            }
+            if (publishMovements && Time.time-lastPub>this.publishInterval)
+            {
+                lastPub = Time.time;
+                mmRobot.PublishJoints();
+                mmtray.PublishTray();
+                mmt.PublishSleds();
             }
         }
 
@@ -171,7 +189,7 @@ namespace KhiDemo
         // Update is called once per frame
         void FixedUpdate()
         {
-            SimStep();
+            PhysicsStep();
             fupdatecount++;
         }
 

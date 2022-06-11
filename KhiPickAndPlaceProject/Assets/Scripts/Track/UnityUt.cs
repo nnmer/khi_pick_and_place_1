@@ -384,15 +384,9 @@ public class UnityUt : MonoBehaviour
 
     public static string GetRandomColorString()
     {
-        var i = random.Next(4);
-        switch (i)
-        {
-            default:
-            case 0: return "red";
-            case 1: return "green";
-            case 2: return "blue";
-            case 3: return "black";
-        }
+        string[] rancolors = { "red", "green", "blue", "yellow", "purple", "cyan", "pink", "black", "orange" };
+        var i = random.Next(rancolors.Length);
+        return rancolors[i];
     }
 
 }
