@@ -8,7 +8,10 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Tests/PlayMode/PlayModeTestScenes/TargetPlacementTest.unity
     guid: 3d328f38f71b71e47bb8d96869012ffe
-  - enabled: 1
+  - enabled: 0
     path: Assets/Tests/PlayMode/PlayModeTestScenes/TargetPlacementTest.unity
     guid: 3d328f38f71b71e47bb8d96869012ffe
+  - enabled: 1
+    path: Assets/Scenes/khisimapp0.unity
+    guid: e5252b9cf0e81894da4e200a4d6e7729
   m_configObjects: {}

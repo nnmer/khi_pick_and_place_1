@@ -160,9 +160,26 @@ namespace KhiDemo
             p3.LinkToContinuationPath(p1);
         }
 
-        SledSpeedDistrib sledSpeedDistribution; 
+        public void Clear()
+        {
+            foreach (var sled in sleds)
+            {
+                if (sled.loadState)
+                {
+                    var box = sled.DetachhBoxFromSled();
+                    if (box != null)
+                    {
+                        box.destroyedOnClear = true;
+                        Destroy(box.gameObject);
+                    }
+                    sled.loadState = false;
+                }
+            }
+        }
 
-        public void SetupSleds(SledLoadDistrib sledLoading, SledSpeedDistrib sledSpeedDist, float sledspeed)
+        SledSpeedDistrib sledSpeedDistribution;
+
+        public void SetupSledSpeeds(SledSpeedDistrib sledSpeedDist, float sledspeed)
         {
             this.sledSpeedDistribution = sledSpeedDist;
             switch (sledSpeedDist)
@@ -177,13 +194,16 @@ namespace KhiDemo
                     int i = 0;
                     foreach (var s in sleds)
                     {
-                        float val = (i % 2 == 0) ? sledspeed : sledspeed/2;
+                        float val = (i % 2 == 0) ? sledspeed : sledspeed / 2;
                         //Debug.Log($"Set {s.sledid} speed to {val}");
                         s.SetSpeed(val);
                         i++;
                     }
                     break;
             }
+        }
+        public void SetupSledLoads(SledLoadDistrib sledLoading, bool usePools = false)
+        { 
             switch (sledLoading)
             {
                 case SledLoadDistrib.allLoaded:
@@ -297,6 +317,19 @@ namespace KhiDemo
             }
         }
 
+        public int CountLoadedSleds()
+        {
+            var rv = 0;
+            foreach (var s in sleds)
+            {
+                if (s.loadState)
+                {
+                    rv++;
+                }
+            }
+            return rv;
+        }
+
         public (int nloadedstopped, int nunloadedstopped) CountStoppedSleds()
         {
             var nloadedstopped = 0;
@@ -318,7 +351,7 @@ namespace KhiDemo
             return (nloadedstopped, nunloadedstopped);
         }
 
-            public MmSled FindStoppedSled(bool neededLoadState)
+        public MmSled FindStoppedSled(bool neededLoadState)
         {
             foreach(var s in sleds)
             {

@@ -75,6 +75,11 @@ namespace KhiDemo
             }
         }
 
+        public void Clear()
+        {
+            DestroyBoxes();
+        }
+
 
         void CreateTray(Transform parent)
         {
@@ -151,9 +156,18 @@ namespace KhiDemo
                     var key = (i, j);
                     if (trayboxes.ContainsKey(key))
                     {
-                        Destroy(trayboxes[key].gameObject);
+                        if (trayboxes[key] != null)
+                        {
+                            trayboxes[key].destroyedOnClear = true;
+                            Destroy(trayboxes[key].gameObject);
+                        }
                         trayboxes[key] = null;
                     }
+                    else
+                    {
+                        trayboxes[key] = null;
+                    }
+                    loadState[key] = false;
                 }
             }
         }
@@ -200,15 +214,17 @@ namespace KhiDemo
 
         public MmBox DetachhBoxFromTraySlot((int, int) slotkey)
         {
-            var rv = trayboxes[slotkey];
+            var box = trayboxes[slotkey];
             trayboxes[slotkey] = null;
             loadState[slotkey] = false;
-            return rv;
+            box.SetBoxStatus(BoxStatus.free);
+            return box;
         }
 
 
-        public void InitAllLoadstate(bool loaded,int nbox=12)
+        public void InitAllLoadstate(int nbox=12, bool usePools = false)
         {
+            Debug.Log($"InitAllLoadStatenbox:{nbox}");
             DestroyBoxes();
             CreateBoxes(nbox);
             for (var i = 0; i < nrow; i++)
@@ -218,14 +234,29 @@ namespace KhiDemo
                     var bkey = (i, j);
                     if (trayboxes[bkey] != null)
                     {
-                        loadState[bkey] = loaded;
-                        trayboxes[bkey].gameObject.SetActive(loaded);
+                        loadState[bkey] = true;
+                        trayboxes[bkey].gameObject.SetActive(true);
                     }
                 }
             }
         }
 
-
+        public int CountLoaded()
+        {
+            var rv = 0;
+            for (var i = 0; i < nrow; i++)
+            {
+                for (var j = 0; j < ncol; j++)
+                {
+                    var bkey = (i, j);
+                    if (loadState[bkey])
+                    {
+                        rv++;
+                    }
+                }
+            }
+            return rv;
+        }
 
         void RealizeLoadStatusIj(int i, int j)
         {

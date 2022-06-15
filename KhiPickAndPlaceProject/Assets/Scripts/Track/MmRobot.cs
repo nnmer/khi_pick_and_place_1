@@ -46,7 +46,7 @@ namespace KhiDemo
     }
 
     public enum RobotPose { 
-        zero, deg10, rest, key, ecartup,ecartdn, fcartup, fcartdn, 
+        zero, deg10, rest, restr2r, key, ecartup,ecartdn, fcartup, fcartdn, 
         key00up, key00dn, key01up, key01dn, key02up, key02dn, key03up, key03dn,
         key10up, key10dn, key11up, key11dn, key12up, key12dn, key13up, key13dn,
         key20up, key20dn, key21up, key21dn, key22up, key22dn, key23up, key23dn,
@@ -77,6 +77,18 @@ namespace KhiDemo
             magmo.ros.RegisterPublisher<RsJ6Msg>("Rs007Joints6");
         }
 
+        public void Clear()
+        {
+            if (box!=null)
+            {
+                box.destroyedOnClear = true;
+                Destroy(box.gameObject);
+                box = null;
+            }
+            loadState = false;
+        }
+
+
         public void PublishJoints()
         {
             if (magmo.publishMovements)
@@ -98,6 +110,12 @@ namespace KhiDemo
 
                 planner.PositionJoint(idx, joint);
             }
+        }
+
+
+        public bool IsLoaded()
+        {
+            return loadState;
         }
 
         void Rs007J6Change(RsJ6Msg j6msg)
@@ -128,6 +146,19 @@ namespace KhiDemo
         public (RobotPose rpup,RobotPose rpdn) GetPoses((int,int) key)
         {
             return kez[key];
+        }
+
+        public float[] InterpolatePoses(RobotPose p1, RobotPose p2,float lamb)
+        {
+            var a1 = poses[p1];
+            var a2 = poses[p1];
+            var res = new List<float>();
+            for (int i=0; i<a1.Length; i++)
+            {
+                var val = lamb*(a2[i]-a1[i]) + a1[i];
+                res.Add(val);
+            }
+            return res.ToArray();
         }
         public void InitializePoses()
         {
@@ -169,6 +200,12 @@ namespace KhiDemo
             p1(RobotPose.key22dn, (8.249, 17.868, -106.538, 0, -55.594, 81.752));
             p1(RobotPose.key23up, (-7.204, -11.615, -129.863, 0, -61.795, 97.205));
             p1(RobotPose.key23dn, (-7.207, -7.853, -132.776, 0, -55.074, 97.205));
+
+            //p1(RobotPose.restr2r, (-21.7, 55.862, -39.473, -0.008, -84.678, 13.565));
+            var a = InterpolatePoses(RobotPose.fcartup, RobotPose.ecartup, 0.5f);
+            p1(RobotPose.restr2r, (a[0], a[1], a[2], a[3], a[4], a[5]));
+
+
 
             kez = new Dictionary<(int, int), (RobotPose,RobotPose)>();
             k1((0, 0), (RobotPose.key00up, RobotPose.key00dn));
@@ -220,14 +257,18 @@ namespace KhiDemo
         }
         public MmBox DetachhBoxFromRobot()
         {
-            var rv = box;
+            var oldbox = box;
+            if (oldbox != null)
+            {
+                oldbox.SetBoxStatus(BoxStatus.free);
+            }
             box = null;
             loadState = false;
-            return rv;
+            return oldbox;
         }
 
 
-        public void InitRobotBoxState(bool startLoadState)
+        public void InitRobotBoxState(bool startLoadState, bool usePools=false)
         {
             if (magmo.mmctrl.mmBoxMode== MmBoxMode.Fake)
             {

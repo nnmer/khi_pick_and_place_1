@@ -1672,8 +1672,8 @@ MonoBehaviour:
   planner: {fileID: 0}
   sledForm: 1
   boxForm: 2
-  mmMode: 1
+  mmMode: 3
   stopSimulation: 0
   echoMovements: 1
   publishMovements: 0
-  publishInterval: 0.1
+  publishInterval: 1

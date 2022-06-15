@@ -1,13 +1,20 @@
 <launch>
 
   <arg name="tcp_ip" default="0.0.0.0"/>
-  <arg name="tcp_port" default="10000"/>
+  <arg name="tcp_port" default="10005"/>
+  <arg name="tcp_port_1" default="10004"/>
 
   <node name="server_endpoint" pkg="ros_tcp_endpoint" type="default_server_endpoint.py" args="--wait" output="screen" respawn="true">
                 <param name="tcp_ip" type="string" value="$(arg tcp_ip)"/>
                 <param name="tcp_port" type="int" value="$(arg tcp_port)"/>
   </node>
-  <node name="mover" pkg="rs007_control" type="mover1.py" args="--wait" output="screen"/>
+
+  <node name="server_endpoint_1" pkg="ros_tcp_endpoint" type="default_server_endpoint.py" args="--wait" output="screen" respawn="true">
+                <param name="tcp_ip" type="string" value="$(arg tcp_ip)"/>
+                <param name="tcp_port" type="int" value="$(arg tcp_port_1)"/>
+  </node>
+
+  <node name="mover" pkg="rs007_control" type="mover.py" args="--wait" output="screen"/>
   <node name="trajectory_subscriber" pkg="rs007_control" type="trajectory_subscriber.py" args="--wait" output="screen"/>  
   
   <!-- We do not have a robot connected, so publish fake joint states -->
@@ -15,10 +22,11 @@
     <!-- <param name="/use_gui" value="$(arg use_gui)"/> -->
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
   </node>
- 
+  
    <node name="robrelay" pkg="rs007_control" type="robrelay.py" args="--wait" output="screen" respawn="true">
                 <param name="zmq_port" type="int" value="$(arg zmq_port)"/>
-  </node>
+  </node> 
+
         
   <!-- robot state publisher -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />  

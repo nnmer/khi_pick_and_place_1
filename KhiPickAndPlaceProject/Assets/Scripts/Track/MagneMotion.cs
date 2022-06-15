@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using MmSledMsg = RosMessageTypes.Rs007Control.MagneMotionSledMsg;
 using Unity.Robotics.ROSTCPConnector;
 
@@ -13,7 +16,7 @@ namespace KhiDemo
 
     public enum MmTableStyle {  MftDemo, Simple }
 
-    public enum MmMode { None, Echo, SimuRailToRail, StartRailToTray, StartTrayToRail }
+    public enum MmMode { None, EchoNew, SimNew, Echo, SimuRailToRail, StartRailToTray, StartTrayToRail }
     public enum MmSubMode { None, RailToTray, TrayToRail }
 
     public class MagneMotion : MonoBehaviour
@@ -42,14 +45,15 @@ namespace KhiDemo
 
         public bool echoMovements = true;
         public bool publishMovements = false;
-        public float publishInterval = 1f;
+        public float publishInterval = 0.1f;
 
 
 
         private void Awake()
         {
             // we need this before any ros-dependent component starts
-            ros = ROSConnection.GetOrCreateInstance(); 
+            ros = ROSConnection.GetOrCreateInstance();
+
         }
         // Start is called before the first frame update
         void Start()
@@ -60,7 +64,10 @@ namespace KhiDemo
             mmt = mmtgo.AddComponent<MmTable>();
             mmt.Init(this);
 
+            MmBox.AllocatePools(this);
+
             MmPathSeg.InitDicts();
+
 
             switch (mmTableStyle)
             {
@@ -154,15 +161,7 @@ namespace KhiDemo
         }
 
 
-        int updatecount = 0;
-        // Update is called once per frame
-        void Update()
-        {
-            ChangeSledFormIfRequested();
-            ChangeBoxFormIfRequested();
-            ChangeModeIfRequested();
-            updatecount++;
-        }
+
 
         float lastPub = 0;
 
@@ -185,6 +184,109 @@ namespace KhiDemo
             }
         }
 
+        public void Quit()
+        {
+            Application.Quit();
+#if UNITY_EDITOR
+            EditorApplication.ExecuteMenuItem("Edit/Play");// this makes the editor quit playing
+#endif
+        }
+
+
+        float ctrlChitTime = 0;
+        float ctrlMhitTime = 0;
+        float ctrlQhitTime = 0;
+        float ctrlShitTime = 0;
+        float ctrlDhitTime = 0;
+        float ctrlEhitTime = 0;
+        float ctrlThitTime = 0;
+        float ctrlLhitTime = 0;
+        float ctrlFhitTime = 0;
+        float ctrlRhitTime = 0;
+        float F5hitTime = 0;
+        float F6hitTime = 0;
+        float F10hitTime = 0;
+        public void KeyProcessing()
+        {
+            var ctrlhit = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            if (ctrlhit && Input.GetKeyDown(KeyCode.Q))
+            {
+                Debug.Log("Hit Ctrl-Q");
+                if ((Time.time - ctrlQhitTime) < 1)
+                {
+                    Debug.Log("Hit it twice so quitting: Application.Quit()");
+                    Quit();
+                }
+                // CTRL + Q - 
+                ctrlQhitTime = Time.time;
+            }
+            if (((Time.time - F5hitTime) > 0.5) && Input.GetKeyDown(KeyCode.F5))
+            {
+                Debug.Log("F5 - Request Total Refresh");
+            }
+            if (((Time.time - F6hitTime) > 0.5) && Input.GetKeyDown(KeyCode.F6))
+            {
+                Debug.Log("F6 - Request Go Refresh");
+            }
+            if (((Time.time - F10hitTime) > 1) && Input.GetKeyDown(KeyCode.F10))
+            {
+                Debug.Log("F10 - Options");
+                // uiman.optpan.TogglePanelState();
+                //this.RequestRefresh("F5 hit", totalrefresh: true);
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.C))
+            {
+                Debug.Log("Hit Ctrl-C - interrupting");
+                // CTRL + C
+                ctrlChitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.D))
+            {
+                Debug.Log("Hit LCtrl-D");
+                ctrlDhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.E))
+            {
+                Debug.Log("Hit LCtrl-E");
+                mmctrl.SetMode(MmMode.Echo,clear:true);
+
+                ctrlEhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.T))
+            {
+                Debug.Log("Hit LCtrl-T");
+                mmctrl.SetMode(MmMode.StartTrayToRail, clear: true);
+                ctrlEhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.L))
+            {
+                Debug.Log("Hit LCtrl-:");
+                mmctrl.SetMode(MmMode.SimuRailToRail, clear: true);
+                ctrlLhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.R))
+            {
+                Debug.Log("Hit LCtrl-R");
+                mmctrl.DoReverseTrayRail();
+                ctrlEhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.F))
+            {
+                Debug.Log("Hit LCtrl-F");
+                mmt.AdjustSledSpeedFactor(2);
+                mmctrl.AdjustRobotSpeedFactor(2);
+                ctrlFhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.S))
+            {
+                Debug.Log("Hit LCtrl-S");
+                mmt.AdjustSledSpeedFactor(0.5f);
+                mmctrl.AdjustRobotSpeedFactor(0.5f);
+                ctrlShitTime = Time.time;
+            }
+        }
+
+
         int fupdatecount = 0;
         // Update is called once per frame
         void FixedUpdate()
@@ -193,5 +295,15 @@ namespace KhiDemo
             fupdatecount++;
         }
 
+        int updatecount = 0;
+        // Update is called once per frame
+        void Update()
+        {
+            KeyProcessing();
+            ChangeSledFormIfRequested();
+            ChangeBoxFormIfRequested();
+            ChangeModeIfRequested();
+            updatecount++;
+        }
     }
 }

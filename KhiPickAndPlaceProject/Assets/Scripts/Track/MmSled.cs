@@ -95,6 +95,11 @@ namespace KhiDemo
         {
             if (newLoadState == loadState) return;
             loadState = newLoadState;
+            //if (magmo.mmctrl.mmBoxMode == MmBoxMode.Real && newLoadState && boxgo == null)
+            //{
+            //    box = MmBox.ConstructBox(magmo, sledid, stat: BoxStatus.onSled);
+            //    boxgo = box.gameObject;
+            //}
             if (boxgo != null)
             {
                 boxgo.SetActive(loadState);
@@ -104,6 +109,9 @@ namespace KhiDemo
                 }
             }
         }
+
+
+
         public void DeleteStuff()
         {
             var parentgo = formgo.transform.parent.gameObject;
@@ -192,11 +200,15 @@ namespace KhiDemo
 
         public MmBox DetachhBoxFromSled()
         {
-            var rv = box;
+            var oldbox = box;
+            if (oldbox != null)
+            {
+                oldbox.SetBoxStatus(BoxStatus.free);
+            }
             box = null;
             boxgo = null;
             loadState = false;
-            return rv;
+            return oldbox;
         }
 
         void AddSledIdToSledForm()

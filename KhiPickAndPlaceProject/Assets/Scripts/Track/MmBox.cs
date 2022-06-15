@@ -5,23 +5,48 @@ using UnityEngine;
 
 namespace KhiDemo
 {
+    public enum PoolStatus { notInPool, fakePool, realPool }
     public enum BoxStatus { free, onTray, onSled, onRobot }
     public class MmBox : MonoBehaviour
     {
         MmTable mmt;
         GameObject formgo;
-        public enum BoxForm { CubeBased, Prefab, PrefabWithSphere }
+        public enum BoxForm { CubeBased, Prefab, PrefabWithMarkerCube }
         BoxForm boxform;
         public string boxid1;
         public string boxid2;
         public int seqnum;
         public BoxStatus boxStatus;
+        public bool destroyedOnClear;
+        public PoolStatus poolStatus;
 
         static MmBox[] boxes = null;
 
 
         static int clas_seqnum = 0;
 
+        static List<MmBox> fakePool;
+        static List<MmBox> realPool;
+
+        public static void AllocatePools(MagneMotion magmo)
+        {
+            fakePool = new List<MmBox>();
+            var nfakePool = 12 + 1 + 10;
+            for(int  i=0; i<nfakePool; i++)
+            {
+                var boxid = $"f{i}";
+                var box = MmBox.ConstructBox(magmo, boxid);
+                box.poolStatus = PoolStatus.fakePool;
+            }
+            realPool = new List<MmBox>();
+            var nrealPool = 10;
+            for (int i = 0; i < nrealPool; i++)
+            {
+                var boxid = $"r{i}";
+                var box = MmBox.ConstructBox(magmo, boxid);
+                box.poolStatus = PoolStatus.realPool;
+            }
+        }
 
         public static MmBox ConstructBox(MagneMotion magmo, string boxid1, BoxStatus stat=BoxStatus.free)
         {
@@ -35,6 +60,7 @@ namespace KhiDemo
             var boxform = magmo.boxForm;
             box.mmt = mmt;
             box.boxid1 = boxid1;
+            box.poolStatus = PoolStatus.notInPool;
 
             box.seqnum = clas_seqnum;
             box.boxid2 = $"{box.seqnum}";
@@ -46,6 +72,10 @@ namespace KhiDemo
             //Debug.Log($"makesled pathnum:{pathnum} dist:{pathdist:f1} pt:{sledgeomgo.transform.position:f1}");
         }
 
+        public static void Clear()
+        {
+            boxes = null;
+        }
 
         public static (int nFree,int nOnTray,int nOnRobot,int nOnSled) CountBoxStatus()
         {
@@ -59,20 +89,23 @@ namespace KhiDemo
             var nOnSled = 0;
             foreach (var box in boxes)
             {
-                switch(box.boxStatus)
+                if (!box.destroyedOnClear)
                 {
-                    case BoxStatus.free:
-                        nFree++;
-                        break;
-                    case BoxStatus.onTray:
-                        nOnTray++;
-                        break;
-                    case BoxStatus.onRobot:
-                        nOnRobot++;
-                        break;
-                    case BoxStatus.onSled:
-                        nOnSled++;
-                        break;
+                    switch (box.boxStatus)
+                    {
+                        case BoxStatus.free:
+                            nFree++;
+                            break;
+                        case BoxStatus.onTray:
+                            nOnTray++;
+                            break;
+                        case BoxStatus.onRobot:
+                            nOnRobot++;
+                            break;
+                        case BoxStatus.onSled:
+                            nOnSled++;
+                            break;
+                    }
                 }
             }
             return (nFree,nOnTray, nOnRobot, nOnSled);
@@ -111,7 +144,7 @@ namespace KhiDemo
                         gobx.transform.localScale = new Vector3(0.43f, 0.56f, 0.26f)*1f/8;
                         break;
                     }
-                case BoxForm.PrefabWithSphere:
+                case BoxForm.PrefabWithMarkerCube:
                 case BoxForm.Prefab:
                     {
                         var prefab1 = (GameObject)Resources.Load("Prefabs/Box1");
@@ -122,10 +155,10 @@ namespace KhiDemo
                         go1.transform.position = new Vector3(0.0f, 0.0f, -0.16f)*1f/8;
                         go1.transform.localRotation = Quaternion.Euler(180, 90, -90);
 
-                        if (boxform == BoxForm.PrefabWithSphere)
+                        if (boxform == BoxForm.PrefabWithMarkerCube)
                         {
-                            var clr = UnityUt.GetRandomColorString();
-                            var gobx = UnityUt.CreateSphere(null, clr, size: 0.02f);
+                            var clr = UnityUt.GetSequentialColorString();
+                            var gobx = UnityUt.CreateCube(null, clr, size: 0.02f);
                             gobx.name = "sphere";
                             gobx.transform.position = new Vector3(0, 0.0164f, 0);
                             gobx.transform.SetParent(go1.transform, worldPositionStays: false);

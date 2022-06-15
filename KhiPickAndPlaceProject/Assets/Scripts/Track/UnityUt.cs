@@ -389,4 +389,12 @@ public class UnityUt : MonoBehaviour
         return rancolors[i];
     }
 
+    static int seqnum = 0;
+    public static string GetSequentialColorString()
+    {
+        string[] seqcolors = { "red", "green", "blue", "yellow", "purple", "cyan", "pink", "indigo", "orange", "lilac", "black", "darkgreen" };
+        var i = seqnum++ % seqcolors.Length;
+        return seqcolors[i];
+    }
+
 }

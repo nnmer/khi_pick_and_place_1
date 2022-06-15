@@ -5,7 +5,7 @@
 
   <node name="server_endpoint" pkg="ros_tcp_endpoint" type="default_server_endpoint.py" args="--wait" output="screen" respawn="true">
                 <param name="tcp_ip" type="string" value="$(arg tcp_ip)"/>
-         make       <param name="tcp_port" type="int" value="$(arg tcp_port)"/>
+                <param name="tcp_port" type="int" value="$(arg tcp_port)"/>
   </node>
   <node name="mover" pkg="rs007_control" type="mover.py" args="--wait" output="screen"/>
   <node name="trajectory_subscriber" pkg="rs007_control" type="trajectory_subscriber.py" args="--wait" output="screen"/>  
@@ -15,7 +15,11 @@
     <!-- <param name="/use_gui" value="$(arg use_gui)"/> -->
     <rosparam param="/source_list">[/move_group/fake_controller_joint_states]</rosparam>
   </node>
- 
+  
+   <node name="robrelay" pkg="rs007_control" type="robrelay.py" args="--wait" output="screen" respawn="true">
+                <param name="zmq_port" type="int" value="$(arg zmq_port)"/>
+  </node> 
+
         
   <!-- robot state publisher -->
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" />  
