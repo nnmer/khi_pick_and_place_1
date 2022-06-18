@@ -9,14 +9,14 @@ using Unity.Robotics.ROSTCPConnector;
 namespace KhiDemo
 {
 
-    public enum MmBoxMode { Fake, Real }
+    public enum MmBoxMode { RealPooled, FakePooled }
 
     public enum MmSegForm { None, Straight, Curved }
 
 
     public enum MmTableStyle {  MftDemo, Simple }
 
-    public enum MmMode { None, EchoNew, SimNew, Echo, SimuRailToRail, StartRailToTray, StartTrayToRail }
+    public enum MmMode { None, Echo, SimuRailToRail, StartRailToTray, StartTrayToRail }
     public enum MmSubMode { None, RailToTray, TrayToRail }
 
     public class MagneMotion : MonoBehaviour
@@ -47,14 +47,32 @@ namespace KhiDemo
         public bool publishMovements = false;
         public float publishInterval = 0.1f;
 
+        public List<string> errorMessages;
+        public List<string> warningMessages;
+
 
 
         private void Awake()
         {
+            errorMessages = new List<string>();
+            warningMessages = new List<string>();
             // we need this before any ros-dependent component starts
             ros = ROSConnection.GetOrCreateInstance();
 
         }
+
+        public void ErrMsg(string msg)
+        {
+            errorMessages.Add(msg);
+            Debug.LogError(msg);
+        }
+
+        public void WarnMsg(string msg)
+        {
+            errorMessages.Add(msg);
+            Debug.LogWarning(msg);
+        }
+
         // Start is called before the first frame update
         void Start()
         {
@@ -84,7 +102,7 @@ namespace KhiDemo
             mmRobot = FindObjectOfType<MmRobot>();
             if (mmRobot==null)
             {
-                Debug.LogError("Robmodel not set in Magnemotion table");
+                ErrMsg("Robmodel not set in Magnemotion table");
             }
 
 
@@ -105,7 +123,7 @@ namespace KhiDemo
             mmtctrlgo = new GameObject("MmCtrl");
             mmctrl = mmtctrlgo.AddComponent<MmController>();
             mmctrl.Init(this);
-            mmctrl.SetMode(mmMode);
+            mmctrl.SetMode(mmMode,clear:false); // first call should not try and clear
         }
 
 
@@ -122,7 +140,7 @@ namespace KhiDemo
                 var sleds = FindObjectsOfType<MmSled>();
                 foreach (var sled in sleds)
                 {
-                    sled.ConstructForm(sledForm);
+                    sled.ConstructSledForm(sledForm,addBox:false);
                 }
                 oldsledForm = sledForm;
             }
@@ -146,19 +164,19 @@ namespace KhiDemo
             }
         }
 
-        MmMode oldmmMode;
-        void ChangeModeIfRequested()
-        {
-            if (updatecount == 0)
-            {
-                oldmmMode = mmMode;
-            }
-            if (oldmmMode != mmMode)
-            {
-                mmctrl.SetMode(mmMode);
-                oldmmMode = mmMode;
-            }
-        }
+        //MmMode oldmmMode;
+        //void ChangeModeIfRequested()
+        //{
+        //    if (updatecount == 0)
+        //    {
+        //        oldmmMode = mmMode;
+        //    }
+        //    if (oldmmMode != mmMode)
+        //    {
+        //        mmctrl.SetMode(mmMode);
+        //        oldmmMode = mmMode;
+        //    }
+        //}
 
 
 
@@ -243,7 +261,13 @@ namespace KhiDemo
             if (ctrlhit && Input.GetKeyDown(KeyCode.D))
             {
                 Debug.Log("Hit LCtrl-D");
+                stopSimulation = !stopSimulation;
                 ctrlDhitTime = Time.time;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.H))
+            {
+                Debug.Log("Hit LCtrl-H");
+                showHelpText  = !showHelpText;
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.E))
             {
@@ -255,13 +279,23 @@ namespace KhiDemo
             if (ctrlhit && Input.GetKeyDown(KeyCode.T))
             {
                 Debug.Log("Hit LCtrl-T");
-                mmctrl.SetMode(MmMode.StartTrayToRail, clear: true);
+                var traycount = mmtray.CountLoaded();
+                if (traycount > 0)
+                {
+                    mmctrl.SetModeFast(MmMode.StartTrayToRail);
+                }
+                else
+                {
+                    mmctrl.SetModeFast(MmMode.StartRailToTray);
+                }
+                //mmctrl.SetMode(MmMode.StartTrayToRail, clear: true);
                 ctrlEhitTime = Time.time;
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.L))
             {
-                Debug.Log("Hit LCtrl-:");
-                mmctrl.SetMode(MmMode.SimuRailToRail, clear: true);
+                Debug.Log("Hit LCtrl-L");
+                mmctrl.SetModeFast(MmMode.SimuRailToRail);
+                //mmctrl.SetMode(MmMode.SimuRailToRail, clear: true);
                 ctrlLhitTime = Time.time;
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.R))
@@ -302,8 +336,44 @@ namespace KhiDemo
             KeyProcessing();
             ChangeSledFormIfRequested();
             ChangeBoxFormIfRequested();
-            ChangeModeIfRequested();
+            //ChangeModeIfRequested();
             updatecount++;
         }
+
+        bool showHelpText=true;
+
+        public void OnGUI()
+        {
+            if (showHelpText)
+            {
+                GUIStyle centeredStyle = GUI.skin.GetStyle("Label");
+                centeredStyle.alignment = TextAnchor.UpperCenter;
+                var x = Screen.width / 2 - 200;
+                var y = 10;
+                var w = 400;
+                var h = 20;
+
+                GUI.Label(new Rect(x, y, w, h), "Help Text", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-E Echo Mode", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-L RailToRail Mode", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-T TrayToRail Mode", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-R Reverse TrayRail", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-F Speed up", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-S Slow down", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-D Toggle Stop Simulation", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-H Toggle Help Screen", centeredStyle);
+                y += 20;
+                GUI.Label(new Rect(x, y, w, h), "Ctrl-Q Ctrl-Q Quit Application", centeredStyle);
+            }
+        }
+
     }
 }

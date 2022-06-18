@@ -11,11 +11,14 @@ namespace KhiDemo
     {
         MmTable mmt;
         GameObject formgo;
+        static GameObject fakePoolRoot;
+        static GameObject realPoolRoot;
         public enum BoxForm { CubeBased, Prefab, PrefabWithMarkerCube }
         BoxForm boxform;
         public string boxid1;
         public string boxid2;
         public int seqnum;
+        public BoxStatus lastStatus;
         public BoxStatus boxStatus;
         public bool destroyedOnClear;
         public PoolStatus poolStatus;
@@ -25,46 +28,106 @@ namespace KhiDemo
 
         static int clas_seqnum = 0;
 
+        static MagneMotion magmo;
+
         static List<MmBox> fakePool;
         static List<MmBox> realPool;
 
+        public static List<MmBox> GetCurrentPool()
+        {
+            switch (magmo.mmctrl.mmBoxMode)
+            {
+                default:
+                case MmBoxMode.FakePooled:
+                    return fakePool;
+                case MmBoxMode.RealPooled:
+                    return realPool;
+            }
+        }
+
         public static void AllocatePools(MagneMotion magmo)
         {
+            fakePoolRoot = new GameObject("FakePoolRoot");
             fakePool = new List<MmBox>();
             var nfakePool = 12 + 1 + 10;
-            for(int  i=0; i<nfakePool; i++)
+            for (int i = 0; i < nfakePool; i++)
             {
                 var boxid = $"f{i}";
-                var box = MmBox.ConstructBox(magmo, boxid);
+                var box = MmBox.ConstructBox(magmo, BoxForm.Prefab, boxid);
                 box.poolStatus = PoolStatus.fakePool;
+                box.transform.SetParent(fakePoolRoot.transform, worldPositionStays: false);
+                fakePool.Add(box);
             }
+            realPoolRoot = new GameObject("RealPoolRoot");
             realPool = new List<MmBox>();
             var nrealPool = 10;
             for (int i = 0; i < nrealPool; i++)
             {
                 var boxid = $"r{i}";
-                var box = MmBox.ConstructBox(magmo, boxid);
+                var box = MmBox.ConstructBox(magmo, BoxForm.PrefabWithMarkerCube, boxid);
                 box.poolStatus = PoolStatus.realPool;
+                box.transform.SetParent(realPoolRoot.transform, worldPositionStays: false);
+                realPool.Add(box);
             }
         }
 
-        public static MmBox ConstructBox(MagneMotion magmo, string boxid1, BoxStatus stat=BoxStatus.free)
+        public static void ReturnToPool(MmBox box)
+        {
+            if (box == null)
+            {
+                magmo.ErrMsg($"Trying to return null box pool");
+                return;
+            }
+            switch (box.poolStatus)
+            {
+                case PoolStatus.realPool:
+                    box.lastStatus = box.boxStatus;
+                    box.boxStatus = BoxStatus.free;
+                    box.transform.SetParent(realPoolRoot.transform, worldPositionStays: false);
+                    break;
+                case PoolStatus.fakePool:
+                    box.lastStatus = box.boxStatus;
+                    box.boxStatus = BoxStatus.free;
+                    box.transform.SetParent(fakePoolRoot.transform, worldPositionStays: false);
+                    break;
+                default:
+                    magmo.ErrMsg($"Trying to return non-pooled box to pool");
+                    break;
+            }
+        }
+
+        public static MmBox GetFreePooledBox(BoxStatus newBoxStatus)
+        {
+            var pool = GetCurrentPool();
+            foreach (var bx in pool)
+            {
+                if (bx.boxStatus == BoxStatus.free)
+                {
+                    bx.lastStatus = bx.boxStatus;
+                    bx.boxStatus = newBoxStatus;
+                    return bx;
+                }
+            }
+            return null;
+        }
+
+        public static MmBox ConstructBox(MagneMotion magmo, BoxForm boxform, string boxid1, BoxStatus stat=BoxStatus.free)
         {
             var mmt = magmo.mmt;
             clas_seqnum++;
-            var boxname = $"Box:{clas_seqnum}";
+            var boxname = $"Box-{clas_seqnum:D2}";
             var boxgeomgo = new GameObject(boxname);
             boxgeomgo.transform.position = Vector3.zero;
             boxgeomgo.transform.rotation = Quaternion.identity;
             var box = boxgeomgo.AddComponent<MmBox>();
-            var boxform = magmo.boxForm;
             box.mmt = mmt;
             box.boxid1 = boxid1;
             box.poolStatus = PoolStatus.notInPool;
 
             box.seqnum = clas_seqnum;
-            box.boxid2 = $"{box.seqnum}";
+            box.boxid2 = $"{box.seqnum:D2}";
             box.ConstructForm(boxform);
+            box.lastStatus = BoxStatus.free;
             box.boxStatus = stat;
             boxes = null;
             //boxgeomgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
@@ -74,27 +137,47 @@ namespace KhiDemo
 
         public static void Clear()
         {
+            // clean up boxes that may have been in a limbo state when changed the mode
+            // this is easier than yielding until the robot is no longer busy
+            // it won't happen often but it can happen
+            // all boxes in both pools should be free
+            boxes = FindObjectsOfType<MmBox>();
+            var mode = magmo.mmctrl.mmBoxMode;
+            foreach (var box in boxes)
+            {
+                if (box.boxStatus!= BoxStatus.free)
+                {
+                    Debug.LogWarning($"ClearBoxes - BoxMode:{mode} dropped box {box.boxid1} has boxStatus:{box.boxStatus} poolStatus:{box.poolStatus} resetting to free ");
+                    box.boxStatus = BoxStatus.free;
+                }
+            }
             boxes = null;
         }
 
-        public static (int nFree,int nOnTray,int nOnRobot,int nOnSled) CountBoxStatus()
+        public static (int nFreeReal, int nFreeFake,int nOnTray,int nOnRobot,int nOnSled) CountBoxStatus()
         {
             if (boxes == null)
             {
                 boxes = FindObjectsOfType<MmBox>();
             }
-            var nFree = 0;
+            var nFreeReal = 0;
+            var nFreeFake = 0;
             var nOnTray = 0;
             var nOnRobot = 0;
             var nOnSled = 0;
-            foreach (var box in boxes)
-            {
-                if (!box.destroyedOnClear)
+                foreach (var box in boxes)
                 {
                     switch (box.boxStatus)
                     {
                         case BoxStatus.free:
-                            nFree++;
+                            if (box.poolStatus == PoolStatus.fakePool)
+                            {
+                                nFreeFake++;
+                            }
+                            else
+                            {
+                                nFreeReal++;
+                            }
                             break;
                         case BoxStatus.onTray:
                             nOnTray++;
@@ -107,10 +190,13 @@ namespace KhiDemo
                             break;
                     }
                 }
-            }
-            return (nFree,nOnTray, nOnRobot, nOnSled);
+            return (nFreeFake,nFreeReal,nOnTray, nOnRobot, nOnSled);
         }
         // Start is called before the first frame update
+        void Awake()
+        {
+            magmo = FindObjectOfType<MagneMotion>();
+        }
         void Start()
         {
 
@@ -118,6 +204,7 @@ namespace KhiDemo
 
         public void SetBoxStatus(BoxStatus newstat)
         {
+            lastStatus = boxStatus;
             boxStatus = newstat;
         }
 

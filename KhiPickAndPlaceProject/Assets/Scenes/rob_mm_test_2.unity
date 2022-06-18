@@ -1673,7 +1673,7 @@ MonoBehaviour:
   sledForm: 1
   boxForm: 2
   mmMode: 1
-  stopSimulation: 0
+  stopSimulation: 1
   echoMovements: 1
   publishMovements: 0
   publishInterval: 0.1

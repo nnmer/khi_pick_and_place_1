@@ -20,7 +20,7 @@ namespace KhiDemo
         SledForm sledform;
         GameObject formgo;
         GameObject boxgo;
-        MmBox box;
+        public MmBox box;
         public bool loadState;
         public int sledidx;
         public string sledid;
@@ -28,7 +28,7 @@ namespace KhiDemo
         public float sledInFrontDist;
         public bool stopped;
 
-        public static MmSled ConstructSled(MagneMotion magmo, int sledidx, string sledid, int pathnum, float pathdist, bool loaded)
+        public static MmSled ConstructSled(MagneMotion magmo, int sledidx, string sledid, int pathnum, float pathdist, bool loaded, bool addbox=false)
         {
 
             var mmt = magmo.mmt;
@@ -54,11 +54,10 @@ namespace KhiDemo
             sled.visible = true;
             sled.stopped = false;
 
-
-            sled.ConstructForm( sledform );
+            sled.ConstructSledForm( sledform, addbox);
             sled.AdjustSledOnPathDist(pathnum, pathdist);
             sled.SetLoadState(loaded);
-            sledgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: true);
+            sledgo.transform.SetParent(mmt.mmtgo.transform, worldPositionStays: false);
             //Debug.Log($"ConstructSled {sledid} pathnum:{pathnum} nextpathnum:{sled.nextpathnum} dist:{pathdist:f1}");
             return sled;
         }
@@ -111,6 +110,27 @@ namespace KhiDemo
         }
 
 
+        public void AssignedPooledBox(bool newLoadState)
+        {
+            if (newLoadState)
+            {
+                box = MmBox.GetFreePooledBox(BoxStatus.onSled);
+                if (box != null)
+                {
+                    AttachBoxToSled(box);
+                }
+                else
+                {
+                    DetachhBoxFromSled();
+                    magmo.WarnMsg($"Out of boxes in AssignedPooledBox");
+                }
+            }
+            else
+            {
+                DetachhBoxFromSled();
+            }
+        }
+
 
         public void DeleteStuff()
         {
@@ -118,7 +138,7 @@ namespace KhiDemo
             Destroy(gameObject);
         }
 
-        public void ConstructForm(SledForm sledform)
+        public void ConstructSledForm(SledForm sledform,bool addBox)
         {
             // This should have no parameters with changeable state except for the form
             // This ensures we can update the form without disturbing the other logic and state that the sled has, like position and loadstate
@@ -147,12 +167,17 @@ namespace KhiDemo
                         go.transform.localScale = new Vector3(0.9f, 0.53f, 0.224f) * ska8;
                         go.name = $"tray";
 
-                        var box = UnityUt.CreateCube(formgo, "yellow", size: 1);
-                        box.name = $"box";
-                        // 7x5.4x4.3.5
-                        box.transform.position = new Vector3(0.0f, 0.0f, -0.16f) * ska8;
-                        box.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f) * ska8;
-                        boxgo = box;
+                        if (addBox)
+                        {
+                            //var box = UnityUt.CreateCube(formgo, "yellow", size: 1);
+                            //box.name = $"box";
+                            //// 7x5.4x4.3.5
+                            //box.transform.position = new Vector3(0.0f, 0.0f, -0.16f) * ska8;
+                            //box.transform.localScale = new Vector3(0.43f, 0.56f, 0.27f) * ska8;
+                            //boxgo = box;
+                            var box = MmBox.ConstructBox(mmt.magmo, mmt.magmo.boxForm, sledid, BoxStatus.onSled);
+                            AttachBoxToSled(box);
+                        }
 
                         break;
                     }
@@ -165,11 +190,12 @@ namespace KhiDemo
                         go.transform.parent = formgo.transform;
                         go.transform.position = new Vector3(0.0f, 0.0f, 0.011f);
                         go.transform.localRotation = Quaternion.Euler(180, 90, -90);
-                        var box = MmBox.ConstructBox(mmt.magmo,  sledid, BoxStatus.onSled );
 
-                        AttachBoxToSled(box);
-                        //box.transform.parent = formgo.transform;
-                        //boxgo = box.gameObject;
+                        if (addBox)
+                        {
+                            var box = MmBox.ConstructBox(mmt.magmo, mmt.magmo.boxForm, sledid, BoxStatus.onSled );
+                            AttachBoxToSled(box);
+                        }
 
                         break;
                     }
@@ -178,6 +204,7 @@ namespace KhiDemo
             AddSledIdToSledForm();
 
             formgo.transform.SetParent(transform, worldPositionStays: false);
+
             //Debug.Log($"ConstructSledForm sledForm:{sledform} id:{sledid}");
         }
 
@@ -186,7 +213,7 @@ namespace KhiDemo
             this.box = box;
             if (box==null)
             {
-                Debug.LogError("AttachBoxToSled - tryied to attach null box");
+                magmo.ErrMsg("AttachBoxToSled - tryied to attach null box");
                 return;
             }
             boxgo = box.gameObject;
@@ -229,7 +256,6 @@ namespace KhiDemo
             this.pathnum = pathnum;
             this.pathUnitDist = pathdist;
 
-
             var (pt, ang) = mmt.GetPositionAndOrientation(pathnum, pathdist);
             AdjustSledPositionAndOrientation(pt, ang);
 
@@ -260,9 +286,8 @@ namespace KhiDemo
             if (new_pathnum < 0) return;
             SetLoadState(new_loaded,cascadeToRobot:true);
             AdjustSledOnPathDist(new_pathnum, new_pathdist);
-
-
         }
+
         const float sledMinGap = 8*0.10f;// 10 cm
         public float deltDistToMove;
         public float maxDistToMove;
@@ -291,7 +316,7 @@ namespace KhiDemo
                     nextpathnum = newpath.FindContinuationPathIdx(loadState, alternateIfMultipleChoicesAvaliable: false);
                     if (nextpathnum==pathnum)
                     {
-                        Debug.LogWarning($"AdvancePathBySpped sledid:{sledid} nextpathnum {nextpathnum} cannot be equal to pathnum:{pathnum}");
+                        magmo.WarnMsg($"AdvancePathBySpped sledid:{sledid} nextpathnum {nextpathnum} cannot be equal to pathnum:{pathnum}");
                     }
                 }
                 if (atEndOfPath)
@@ -304,6 +329,31 @@ namespace KhiDemo
                 }
             }
         }
+        public bool CheckConsistency()
+        {
+            if (magmo.mmctrl.mmBoxMode == MmBoxMode.RealPooled)
+            {
+                if (loadState && box == null)
+                {
+                    magmo.ErrMsg($"Sled:{sledid} has loadstate:{loadState} and box == null");
+                    return false;
+                }
+                if (!loadState && box != null)
+                {
+                    magmo.ErrMsg($"Sled:{sledid} has loadstate:{loadState} and box is not null");
+                    return false;
+                }
+            }
+            if (magmo.mmctrl.mmBoxMode == MmBoxMode.FakePooled)
+            {
+                if (box == null)
+                {
+                    magmo.ErrMsg($"Sled:{sledid} has null box in FakeMode");
+                    return false;
+                }
+            }
+            return true;
+        }
         public void FindSledInFront()
         {
             sledInFront = "";
@@ -315,7 +365,7 @@ namespace KhiDemo
                 var lookForwardOnePath = nextpathnum>=0 && pathnum != nextpathnum;
                 if (!lookForwardOnePath)
                 {
-                    Debug.LogWarning($"Don't look foward sledid:{sledid} pidx:{pathnum}  time:{Time.time}");
+                    magmo.WarnMsg($"Don't look foward sledid:{sledid} pidx:{pathnum}  time:{Time.time}");
                 }
                 foreach (var s in mmt.sleds)
                 {
@@ -335,7 +385,8 @@ namespace KhiDemo
                     }
                     if (lookForwardOnePath)
                     {
-                        if (s.pathnum == nextpathnum)
+                        //if (s.pathnum == nextpathnum)
+                        if (p.continuationPathIdx.Contains(s.pathnum))
                         {
                             var newdist = s.pathUnitDist + pathTotalUnitDist - pathUnitDist;
                             if (db)
@@ -353,20 +404,20 @@ namespace KhiDemo
             }
         }
 
-        void SyncLoadState()
-        {
-            if (boxgo!=null)
-            {
-                boxgo.SetActive(loadState);
-            }
-        }
-        int updatecount = 0;
+        //void SyncLoadState()
+        //{
+        //    if (boxgo!=null)
+        //    {
+        //        boxgo.SetActive(loadState);
+        //    }
+        //}
+        //int updatecount = 0;
         // Update is called once per frame
 
-        void Update()
-        {
-            SyncLoadState();
-            updatecount++;
-        }
+        // void Update()
+        //{
+        //    SyncLoadState();
+        //    updatecount++;
+        //}
     }
 }

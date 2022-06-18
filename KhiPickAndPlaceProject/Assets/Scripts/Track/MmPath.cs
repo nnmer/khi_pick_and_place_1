@@ -65,12 +65,12 @@ namespace KhiDemo
         {
             if (inform != MmSegForm.Straight)
             {
-                Debug.LogError("Straight Form called incorrectly");
+                path.magmo.ErrMsg("Straight Form called incorrectly");
                 return;
             }
             if (!direction.Contains(direction))
             {
-                Debug.LogError($"Bad MmPathSeg parameter - direction:{direction}");
+                path.magmo.ErrMsg($"Bad MmPathSeg parameter - direction:{direction}");
                 return;
             }
             this.name = name;
@@ -88,18 +88,18 @@ namespace KhiDemo
         {
             if (inform != MmSegForm.Curved)
             {
-                Debug.LogError("Straight Form called incorrectly");
+                path.magmo.ErrMsg("Straight Form called incorrectly");
                 return;
             }
 
             if (!compassPoints.Contains(startCompassPt))
             {
-                Debug.LogError($"Bad MmPathSeg parameter - startCompassPt:{startCompassPt}");
+                path.magmo.ErrMsg($"Bad MmPathSeg parameter - startCompassPt:{startCompassPt}");
                 return;
             }
             if (!compassDirections.Contains(rotdir))
             {
-                Debug.LogError($"Bad MmPathSeg parameter - rotdir:{rotdir}");
+                path.magmo.ErrMsg($"Bad MmPathSeg parameter - rotdir:{rotdir}");
                 return;
             }
             this.name = name;
@@ -204,7 +204,7 @@ namespace KhiDemo
     {
         static float sphrad = 0.6f;
         [NonSerialized]
-        MagneMotion magmo;
+        public MagneMotion magmo;
         MmTable mmt;
         GameObject startgo;
         public string name;
@@ -215,6 +215,7 @@ namespace KhiDemo
         public List<MmPathSeg> segs = new List<MmPathSeg>();
         [NonSerialized]
         public List<MmPath> continuationPaths = new List<MmPath>();
+        public List<int> continuationPathIdx = new List<int>();
         public MmPath preferedLoadedPath = null;
         public MmPath preferedUnloadedPath = null;
         public float loadedStopPoint;
@@ -271,6 +272,9 @@ namespace KhiDemo
                 }
             }
         }
+
+
+
         public (int newpathidx, float newpathdist, bool atEndOfPath, bool stopped) AdvancePathdistInUnits(float curpathdist, float deltadist, bool loaded)
         {
             var newdist = curpathdist + deltadist;
@@ -330,6 +334,7 @@ namespace KhiDemo
         public void LinkToContinuationPath(MmPath contpath)
         {
             continuationPaths.Add(contpath);
+            continuationPathIdx.Add(contpath.pidx);
         }
         public void SetPreferedLoadedPath(MmPath path)
         {
@@ -375,12 +380,12 @@ namespace KhiDemo
             //Debug.Log($"Pathidx:{pidx} pathdist:{pathdist:f2}");
             if (segs.Count <= 0)
             {
-                Debug.LogError($"no segs defined for path {name}");
+                magmo.ErrMsg($"no segs defined for path {name}");
                 return (Vector3.zero, 0);
             }
             if (this.pathLength < pathdist)
             {
-                Debug.LogWarning($"GetPositionAndOrientation - path {name} - pathdist requested ({pathdist:f4}) is bigger than pathlength {pathLength:f4}");
+                magmo.WarnMsg($"GetPositionAndOrientation - path {name} - pathdist requested ({pathdist:f4}) is bigger than pathlength {pathLength:f4}");
                 var eang = segs[segs.Count - 1].eang;
                 return (endpt, eang);
             }

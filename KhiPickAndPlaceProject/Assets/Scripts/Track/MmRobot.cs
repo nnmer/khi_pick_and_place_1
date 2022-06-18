@@ -66,7 +66,7 @@ namespace KhiDemo
             magmo = FindObjectOfType<MagneMotion>();
             if (magmo==null)
             {
-                Debug.LogError($"MmRobot counld not find object of type MagneMotion");
+                magmo.ErrMsg($"MmRobot counld not find object of type MagneMotion");
             }
             var vacGripperName = "world/base_link/link1/link2/link3/link4/link5/link6/tool_link/gripper_base/Visuals/unnamed/RS007_Gripper_C_u";
             vgriptrans = transform.Find(vacGripperName);
@@ -79,10 +79,9 @@ namespace KhiDemo
 
         public void Clear()
         {
-            if (box!=null)
+            if (box != null)
             {
-                box.destroyedOnClear = true;
-                Destroy(box.gameObject);
+                MmBox.ReturnToPool(box);
                 box = null;
             }
             loadState = false;
@@ -228,23 +227,30 @@ namespace KhiDemo
         {
             if (vgriptrans == null)
             {
-                Debug.LogError("AddBoxToRobot - Robot is null");
+                magmo.ErrMsg("AddBoxToRobot - Robot is null");
                 return;
             }
-            var lbox = MmBox.ConstructBox(magmo, "rbx", BoxStatus.onRobot);
-            AttachBoxToRobot(lbox);
-            ActivateRobBox(false);
+            switch (magmo.mmctrl.mmBoxMode)
+            {
+                case MmBoxMode.FakePooled:
+                    {
+                        var lbox = MmBox.GetFreePooledBox(BoxStatus.onRobot);
+                        AttachBoxToRobot(lbox);
+                        ActivateRobBox(false);
+                        break;
+                    }
+            }
         }
         public void AttachBoxToRobot(MmBox box)
         {
             if (vgriptrans == null)
             {
-                Debug.LogError("AttachBoxToRobot - Robot is null");
+                magmo.ErrMsg("AttachBoxToRobot - Robot is null");
                 return;
             }
             if (box==null)
             {
-                Debug.LogError("AttachBoxToRobot - Box is null");
+                magmo.ErrMsg("AttachBoxToRobot - Box is null");
                 return;
             }
             this.box = box;
@@ -268,14 +274,14 @@ namespace KhiDemo
         }
 
 
-        public void InitRobotBoxState(bool startLoadState, bool usePools=false)
+        public void InitRobotBoxState(bool startLoadState)
         {
-            if (magmo.mmctrl.mmBoxMode== MmBoxMode.Fake)
+            if (magmo.mmctrl.mmBoxMode == MmBoxMode.FakePooled)
             {
                 AddBoxToRobot();
                 ActivateRobBox(startLoadState);
             }
-            else if (magmo.mmctrl.mmBoxMode == MmBoxMode.Real)
+            else if (magmo.mmctrl.mmBoxMode == MmBoxMode.RealPooled)
             {
                 if( startLoadState)
                 {
@@ -299,7 +305,7 @@ namespace KhiDemo
         {
             if (!poses.ContainsKey(pose))
             {
-                Debug.LogError($"MmRobot.AssumpPose pose {pose} not assigned");
+                magmo.ErrMsg($"MmRobot.AssumpPose pose {pose} not assigned");
                 return;
             }
             var angles = poses[pose];

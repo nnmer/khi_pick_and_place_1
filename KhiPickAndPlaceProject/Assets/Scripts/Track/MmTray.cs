@@ -77,9 +77,14 @@ namespace KhiDemo
 
         public void Clear()
         {
-            DestroyBoxes();
+            switch (magmo.mmctrl.mmBoxMode)
+            {
+                case MmBoxMode.RealPooled:
+                case MmBoxMode.FakePooled:
+                    ReturnBoxesToPool();
+                    break;
+            }
         }
-
 
         void CreateTray(Transform parent)
         {
@@ -147,7 +152,8 @@ namespace KhiDemo
 
         }
 
-        void DestroyBoxes()
+
+        void ReturnBoxesToPool()
         {
             for (var i = 0; i < nrow; i++)
             {
@@ -158,8 +164,7 @@ namespace KhiDemo
                     {
                         if (trayboxes[key] != null)
                         {
-                            trayboxes[key].destroyedOnClear = true;
-                            Destroy(trayboxes[key].gameObject);
+                            MmBox.ReturnToPool(trayboxes[key]);
                         }
                         trayboxes[key] = null;
                     }
@@ -172,22 +177,28 @@ namespace KhiDemo
             }
         }
 
-        void CreateBoxes(int nbox)
+
+
+        void GetBoxesFromPool(int nbox)
         {
-            var created = 0;
+            
+            var ncreated = 0;
             for (var i = 0; i < nrow; i++)
             {
                 for (var j = 0; j < ncol; j++)
                 {
                     var key = (i, j);
-                    if (created < nbox)
+                    if (ncreated < nbox)
                     {
                         var boxid = $"{key}";
-                        var box = MmBox.ConstructBox(mmt.magmo, boxid, BoxStatus.onTray);
-                        AttachBoxToTraySlot(key, box);
-                        trayboxes[key] = box;
-                        loadState[key] = true;
-                        created++;
+                        var box = MmBox.GetFreePooledBox( BoxStatus.onTray);
+                        if (box != null)
+                        {
+                            AttachBoxToTraySlot(key, box);
+                            trayboxes[key] = box;
+                            loadState[key] = true;
+                            ncreated++;
+                        }
                     }
                     else
                     {
@@ -195,6 +206,10 @@ namespace KhiDemo
                         loadState[key] = false;
                     }
                 }
+            }
+            if (ncreated != nbox)
+            {
+                magmo.WarnMsg($"MnTray.GetBoxesFromBool didn't create enough boxes requested:{nbox} created:{ncreated}");
             }
         }
 
@@ -217,27 +232,78 @@ namespace KhiDemo
             var box = trayboxes[slotkey];
             trayboxes[slotkey] = null;
             loadState[slotkey] = false;
-            box.SetBoxStatus(BoxStatus.free);
+            if (box == null)
+            {
+                magmo.ErrMsg($"Trying to detach null box from Trayslot:{slotkey}");
+            }
+            else
+            {
+                box.SetBoxStatus(BoxStatus.free);
+            }
             return box;
         }
 
-
-        public void InitAllLoadstate(int nbox=12, bool usePools = false)
+        public bool CheckTraySlotConsistency((int,int) key)
         {
-            Debug.Log($"InitAllLoadStatenbox:{nbox}");
-            DestroyBoxes();
-            CreateBoxes(nbox);
+            var mode = magmo.mmctrl.mmBoxMode;
+            var ls = loadState[key];
+            switch (mode)
+            {
+                case MmBoxMode.FakePooled:
+                    if (trayboxes[key] != null)
+                    {
+                        magmo.ErrMsg($"Trayslot{key} inconsistent loadstate:{ls} but traybox is null - mode:{mode}");
+                        return false;
+                    }
+                    break;
+                case MmBoxMode.RealPooled:
+                    if (ls)
+                    {
+                        if (trayboxes[key] == null)
+                        {
+                            magmo.ErrMsg($"Trayslot{key} inconsistent loadstate:{ls} but traybox is null - mode:{mode}");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if (trayboxes[key] != null)
+                        {
+                            magmo.ErrMsg($"Trayslot{key} inconsistent ltraybox is not null for fake mode - mode:{mode}");
+                            return false;
+                        }
+                    }
+                    break;
+            }
+            return true;
+        }
+
+        public bool CheckConsistency()
+        {
+            var rv = true;
             for (var i = 0; i < nrow; i++)
             {
                 for (var j = 0; j < ncol; j++)
                 {
                     var bkey = (i, j);
-                    if (trayboxes[bkey] != null)
-                    {
-                        loadState[bkey] = true;
-                        trayboxes[bkey].gameObject.SetActive(true);
-                    }
+                    rv = rv && CheckTraySlotConsistency(bkey);
                 }
+            }
+            return rv;
+        }
+
+
+        public void InitAllLoadstate(int nbox = 12)
+        {
+            //Debug.Log($"InitAllLoadStatenbox:{nbox}");
+            switch (magmo.mmctrl.mmBoxMode)
+            {
+                case MmBoxMode.RealPooled:
+                case MmBoxMode.FakePooled:
+                    {
+                        GetBoxesFromPool(nbox);
+                        break;
+                    }
             }
         }
 
@@ -292,7 +358,7 @@ namespace KhiDemo
                 }
                 else
                 {
-                    Debug.LogError(msg);
+                    magmo.ErrMsg(msg);
                 }
             }
         }

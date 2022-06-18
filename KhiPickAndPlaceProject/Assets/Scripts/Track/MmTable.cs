@@ -54,12 +54,12 @@ namespace KhiDemo
         {
             if (idx < 0)
             {
-                Debug.LogError("GetPath - path idx<0");
+                magmo.ErrMsg("GetPath - path idx<0");
                 return null;
             }
             if (idx >= paths.Count)
             {
-                Debug.LogError("GetPath - path idx exceeds count");
+                magmo.ErrMsg("GetPath - path idx exceeds count");
                 return null;
             }
             return paths[idx];
@@ -162,19 +162,37 @@ namespace KhiDemo
 
         public void Clear()
         {
-            foreach (var sled in sleds)
+            switch (magmo.mmctrl.mmBoxMode)
             {
-                if (sled.loadState)
-                {
-                    var box = sled.DetachhBoxFromSled();
-                    if (box != null)
+                case MmBoxMode.FakePooled:
+                case MmBoxMode.RealPooled:
                     {
-                        box.destroyedOnClear = true;
-                        Destroy(box.gameObject);
+                        foreach (var sled in sleds)
+                        {
+                            if (sled.loadState)
+                            {
+                                if (sled.box==null)
+                                {
+                                    magmo.ErrMsg($"Unexpected null box");
+                                }
+                                var box = sled.DetachhBoxFromSled();
+                                MmBox.ReturnToPool(box);
+                                sled.loadState = false;
+                            }
+                        }
                     }
-                    sled.loadState = false;
-                }
+                    break;
             }
+        }
+
+        public bool CheckConsistency()
+        {
+            var rv = true;
+            foreach( var s in sleds)
+            {
+                rv = rv && s.CheckConsistency();
+            }
+            return rv;
         }
 
         SledSpeedDistrib sledSpeedDistribution;
@@ -191,44 +209,53 @@ namespace KhiDemo
                     }
                     break;
                 case SledSpeedDistrib.alternateHiLo:
-                    int i = 0;
+                    int id = 0;
                     foreach (var s in sleds)
                     {
-                        float val = (i % 2 == 0) ? sledspeed : sledspeed / 2;
+                        float val = (id % 2 == 0) ? sledspeed : sledspeed / 2;
                         //Debug.Log($"Set {s.sledid} speed to {val}");
                         s.SetSpeed(val);
-                        i++;
+                        id++;
                     }
                     break;
             }
         }
-        public void SetupSledLoads(SledLoadDistrib sledLoading, bool usePools = false)
-        { 
-            switch (sledLoading)
+        public void SetupSledLoads(SledLoadDistrib sledLoading)
+        {
+            switch (magmo.mmctrl.mmBoxMode)
             {
-                case SledLoadDistrib.allLoaded:
-                    foreach (var s in sleds)
+                case MmBoxMode.FakePooled:
+                case MmBoxMode.RealPooled:
                     {
-                        s.SetLoadState(true);
-                    }
-                    break;
-                case SledLoadDistrib.allUnloaded:
-                    foreach (var s in sleds)
-                    {
-                        s.SetLoadState(false);
-                    }
-                    break;
-                case SledLoadDistrib.alternateLoadedUnloaded:
-                    var i = 0;
-                    foreach (var s in sleds)
-                    {
-                        bool val = (i % 2 == 0) ? true : false;
-                        s.SetLoadState(val);
-                        i++;
+                        switch (sledLoading)
+                        {
+                            case SledLoadDistrib.allLoaded:
+                                foreach (var s in sleds)
+                                {
+                                    s.AssignedPooledBox(true);
+                                }
+                                break;
+                            case SledLoadDistrib.allUnloaded:
+                                foreach (var s in sleds)
+                                {
+                                    s.AssignedPooledBox(false);
+                                }
+                                break;
+                            case SledLoadDistrib.alternateLoadedUnloaded:
+                                var id = 0;
+                                foreach (var s in sleds)
+                                {
+                                    bool val = (id % 2 == 0) ? true : false;
+                                    s.AssignedPooledBox(val);
+                                    //Debug.Log($"Assigned {s.sledid} to loadstate:{val}");
+                                    id++;
+                                }
+                                break;
+                        }
                     }
                     break;
             }
-            foreach(var s in sleds)
+            foreach (var s in sleds)
             {
                 s.SetNextPath();
             }
@@ -284,9 +311,9 @@ namespace KhiDemo
             return mmtgo;
         }
 
-        public MmSled MakeSled(int sledidx, string sledid, int pathnum, float pathdist, bool loaded)
+        public MmSled MakeSled(int sledidx, string sledid, int pathnum, float pathdist, bool loaded, bool addbox)
         {
-            var sled = MmSled.ConstructSled(magmo, sledidx, sledid, pathnum, pathdist, loaded);
+            var sled = MmSled.ConstructSled(magmo, sledidx, sledid, pathnum, pathdist, loaded, addbox);
             this.sleds.Add(sled);
             this.SledDict[sledid] = sled;
             return sled;
@@ -309,7 +336,7 @@ namespace KhiDemo
                             var iid = sleds.Count + 1;
                             var sledid = $"{iid}";
                             var loaded = (i % 2 == 0);
-                            var sled = MakeSled(iid,sledid, p.pidx, pathdist, loaded: loaded);
+                            var sled = MakeSled(iid,sledid, p.pidx, pathdist, loaded: loaded, addbox:false);
                             totsleds++;
                         }
                     }
@@ -390,7 +417,7 @@ namespace KhiDemo
         }
         public void AdvanceSledsBySpeed()
         {
-            if (magmo.mmMode== MmMode.Echo)
+            if (magmo.mmMode== MmMode.Echo )
             {
                 // don't advance sled
                 return;
@@ -415,7 +442,7 @@ namespace KhiDemo
                 var position = (float)sledmsg.position / UnitsToMeters;
                 if (sledmsg.pathid < 0)
                 {
-                    Debug.LogWarning($"Bad pathid detected {sledmsg.pathid} on cartid:{sledmsg.cartid}");
+                    magmo.WarnMsg($"Bad pathid detected {sledmsg.pathid} on cartid:{sledmsg.cartid}");
                     return;
                 }
                 if (SledDict.ContainsKey(sledid))
@@ -433,7 +460,7 @@ namespace KhiDemo
                     //Debug.Log($"making sled:{sledid}");
                     if (pathid >= 0)
                     {
-                        MakeSled(sledmsg.cartid, sledid, pathid, position, loaded);
+                        MakeSled(sledmsg.cartid, sledid, pathid, position, loaded, addbox:true);
                     }
                 }
             }
