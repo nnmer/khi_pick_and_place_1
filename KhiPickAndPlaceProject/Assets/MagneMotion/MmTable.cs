@@ -62,7 +62,8 @@ namespace KhiDemo
                     var id = s.sledidx;
                     var loaded = s.loadState ? "true" : "false";
                     var pathidx = s.pathnum + 1;
-                    var smsg = $"\"{id}\":{{\"Loaded\":{loaded},\"Position\":{s.pathUnitDist},\"PathId\":{pathidx},\"CartId\":{id}}}";
+                    var pos = s.pathUnitDist / 8f;
+                    var smsg = $"\"{id}\":{{\"Loaded\":{loaded},\"Position\":{pos},\"PathId\":{pathidx},\"CartId\":{id}}}";
                     if (ndone<ntodo)
                     {
                         msg += smsg+",";
