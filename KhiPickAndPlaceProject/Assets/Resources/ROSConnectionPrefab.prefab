@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_RosIPAddress: localhost
-  m_RosPort: 10005
+  m_RosPort: 10004
   m_ConnectOnStart: 1
   m_KeepaliveTime: 1
   m_NetworkTimeoutSeconds: 2
