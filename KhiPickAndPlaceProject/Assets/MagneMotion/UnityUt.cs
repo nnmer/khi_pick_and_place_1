@@ -397,4 +397,172 @@ public class UnityUt : MonoBehaviour
         return seqcolors[i];
     }
 
+    #region args
+    static List<string> cookedArgs = null;
+
+    public static void InitArgs()
+    {
+        if (cookedArgs == null)
+        {
+            cookedArgs = new List<string>(System.Environment.GetCommandLineArgs());
+        }
+    }
+    public static void AddArgs(string parmselector = "")
+    {
+        InitArgs();
+        switch (parmselector)
+        {
+            case "test":
+                {
+                    AddArgs(new string[] { "-testb", "newarg2", "-tests", "hiya", "-testi", "3", "-testf", "3.14", "-testd", "1.234567890123", "-scene", "msftb19focused", "riggins", "-fly", "-run", "-nopipes" });
+                    break;
+                }
+            case "testjnykickoff":
+                {
+                    AddArgs(new string[] { "-jny", "BlueTina" });
+                    break;
+                }
+        }
+    }
+    public static void AddArgs(string[] parms)
+    {
+        InitArgs();
+        cookedArgs.AddRange(parms);
+    }
+
+    public static List<string> GetArgs()
+    {
+        InitArgs();
+        return cookedArgs;
+    }
+
+    public static bool ParmBool(string parm)
+    {
+        var args = GetArgs();
+        foreach (var s in args)
+        {
+            if (s == parm) return true;
+        }
+        return false;
+    }
+    public static (bool, string) ParmString(string parm, string def = "")
+    {
+        var args = GetArgs();
+        var stringrv = def;
+        var hit = false;
+        foreach (var s in args)
+        {
+            if (hit)
+            {
+                stringrv = s;
+                break;
+            }
+            if (s == parm) hit = true;
+        }
+        return (hit, stringrv);
+    }
+    public static double ParseDouble(string s, double defval)
+    {
+        var ok = double.TryParse(s, out double res);
+        if (!ok)
+        {
+            return defval;
+        }
+        return res;
+    }
+    public static int ParseInt(string s, int defval)
+    {
+        var ok = int.TryParse(s, out int res);
+        if (!ok)
+        {
+            return defval;
+        }
+        return res;
+    }
+    public static (bool, int) ParmInt(string parm, int def = 0)
+    {
+        var args = GetArgs();
+        var numrv = def;
+        var stringrv = "";
+        var hit = false;
+        foreach (var s in args)
+        {
+            if (hit)
+            {
+                stringrv = s;
+                break;
+            }
+            if (s == parm) hit = true;
+        }
+        if (hit && stringrv != "")
+        {
+            numrv = ParseInt(stringrv, def);
+        }
+        return (hit, numrv);
+    }
+    public static (bool, float) ParmFloat(string parm, float def = 0)
+    {
+        var args = GetArgs();
+        var numrv = def;
+        var stringrv = "";
+        var hit = false;
+        foreach (var s in args)
+        {
+            if (hit)
+            {
+                stringrv = s;
+                break;
+            }
+            if (s == parm) hit = true;
+        }
+        if (hit && stringrv != "")
+        {
+            numrv = (float)ParseDouble(stringrv, def);
+        }
+        return (hit, numrv);
+    }
+    public static (bool, double) ParmDouble(string parm, double def = 0)
+    {
+        var args = GetArgs();
+        var numrv = def;
+        var stringrv = "";
+        var hit = false;
+        foreach (var s in args)
+        {
+            if (hit)
+            {
+                stringrv = s;
+                break;
+            }
+            if (s == parm) hit = true;
+        }
+        if (hit && stringrv != "")
+        {
+            numrv = ParseDouble(stringrv, def);
+        }
+        return (hit, numrv);
+    }
+
+    public void TestParms()
+    {
+        var testb = ParmBool("-testb");
+        UnityEngine.Assertions.Assert.IsTrue(testb);
+
+        var testb1 = ParmBool("testb");
+        UnityEngine.Assertions.Assert.IsFalse(testb1);
+        var (tests, testsv) = ParmString("-tests");
+        UnityEngine.Assertions.Assert.IsTrue(tests);
+
+        var (tests1, testsv1) = ParmString("-tests1");
+        var (testi, testiv) = ParmInt("-testi");
+        var (testi1, testiv1) = ParmInt("-testi1", -1);
+        var (testf, testfv) = ParmFloat("-testf");
+        var (testf1, testfv1) = ParmFloat("-testf1", -2);
+        var (testd, testdv) = ParmDouble("-testd");
+        var (testd1, testdv1) = ParmDouble("-testd1", -3);
+    }
+    #endregion
+
+
+
 }

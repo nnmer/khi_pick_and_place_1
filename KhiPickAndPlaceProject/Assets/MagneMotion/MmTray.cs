@@ -51,8 +51,8 @@ namespace KhiDemo
         {
             this.magmo = magmo;
             this.mmt = magmo.mmt;
-            magmo.ros.Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
-            magmo.ros.RegisterPublisher<MmTray1Msg>("Rs007Tray1");
+            magmo.rosconnection.Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
+            magmo.rosconnection.RegisterPublisher<MmTray1Msg>("Rs007Tray1");
             // size in cm - 31.4, 28.9, 1.7
             CreateTray(transform);
             CreateTraySlots();
@@ -69,7 +69,7 @@ namespace KhiDemo
                         var key = (i, j);
                         var loaded = loadState[key] ? 1 : 0;
                         var t1msg = new MmTray1Msg(i,j,loaded);
-                        magmo.ros.Publish("Rs007Tray1", t1msg);
+                        magmo.rosconnection.Publish("Rs007Tray1", t1msg);
                     }
                 }
             }

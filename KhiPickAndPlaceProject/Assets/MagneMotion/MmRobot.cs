@@ -72,9 +72,9 @@ namespace KhiDemo
             vgriptrans = transform.Find(vacGripperName);
             InitializePoses();
 
-            magmo.ros.Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
-            magmo.ros.Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
-            magmo.ros.RegisterPublisher<RsJ6Msg>("Rs007Joints6");
+            magmo.rosconnection.Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
+            magmo.rosconnection.Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
+            magmo.rosconnection.RegisterPublisher<RsJ6Msg>("Rs007Joints6");
         }
 
         public void Clear()
@@ -94,7 +94,7 @@ namespace KhiDemo
             {
                 var ang = GetRobotPosDouble();
                 var j6msg = new RsJ6Msg(ang);
-                magmo.ros.Publish("Rs007Joints6", j6msg);
+                magmo.rosconnection.Publish("Rs007Joints6", j6msg);
             }
         }
 

@@ -32,8 +32,8 @@ namespace KhiDemo
         // Start is called before the first frame update
         void Start()
         {
-            magmo.ros.Subscribe<MmSledMsg>("Rs007Sleds", EchoSledChange);
-            magmo.ros.RegisterPublisher<MmSledMsg>("Rs007Sleds");
+            magmo.rosconnection.Subscribe<MmSledMsg>("Rs007Sleds", EchoSledChange);
+            magmo.rosconnection.RegisterPublisher<MmSledMsg>("Rs007Sleds");
         }
 
         public void PublishSleds()
@@ -45,7 +45,7 @@ namespace KhiDemo
                 {
                     //Debug.Log($"   sled:{s.sledidx}");
                     var sledmsg = new MmSledMsg(s.loadState, s.pathUnitDist, s.pathnum, s.sledidx);
-                    magmo.ros.Publish("Rs007Sleds", sledmsg);
+                    magmo.rosconnection.Publish("Rs007Sleds", sledmsg);
                 }
             }
         }
