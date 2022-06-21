@@ -32,20 +32,24 @@ namespace KhiDemo
         // Start is called before the first frame update
         void Start()
         {
+            //magmo.rosconnection.RegisterPublisher<MmSledMsg>("Rs007Sleds");
+        }
+
+        public void SubscribeToRos()
+        {
             magmo.rosconnection.Subscribe<MmSledMsg>("Rs007Sleds", EchoSledChange);
-            magmo.rosconnection.RegisterPublisher<MmSledMsg>("Rs007Sleds");
         }
 
         public void PublishSleds()
         {
-            if (magmo.publishMovements)
+            if (magmo.publishMovementsRos)
             {
                 //Debug.Log("PublishSleds");
                 foreach (var s in sleds)
                 {
                     //Debug.Log($"   sled:{s.sledidx}");
                     var sledmsg = new MmSledMsg(s.loadState, s.pathUnitDist, s.pathnum, s.sledidx);
-                    magmo.rosconnection.Publish("Rs007Sleds", sledmsg);
+                    //magmo.rosconnection.Publish("Rs007Sleds", sledmsg);
                 }
             }
         }
@@ -461,7 +465,7 @@ namespace KhiDemo
         }
         void EchoSledChange(MmSledMsg sledmsg)
         {
-            if (magmo.echoMovements)
+            if (magmo.echoMovementsRos)
             {
                 // Debug.Log($"Received ROS message on topic Rs007Sleds:{sledmsg.ToString()}");
                 var sledid = $"{sledmsg.cartid}";

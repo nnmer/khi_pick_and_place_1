@@ -72,9 +72,13 @@ namespace KhiDemo
             vgriptrans = transform.Find(vacGripperName);
             InitializePoses();
 
+            //magmo.rosconnection.RegisterPublisher<RsJ6Msg>("Rs007Joints6");
+        }
+
+        public void SubcribeToRos()
+        {
             magmo.rosconnection.Subscribe<RsJ1Msg>("Rs007Joints1", Rs007J1Change);
             magmo.rosconnection.Subscribe<RsJ6Msg>("Rs007Joints6", Rs007J6Change);
-            magmo.rosconnection.RegisterPublisher<RsJ6Msg>("Rs007Joints6");
         }
 
         public void Clear()
@@ -90,11 +94,11 @@ namespace KhiDemo
 
         public void PublishJoints()
         {
-            if (magmo.publishMovements)
+            if (magmo.publishMovementsRos)
             {
                 var ang = GetRobotPosDouble();
                 var j6msg = new RsJ6Msg(ang);
-                magmo.rosconnection.Publish("Rs007Joints6", j6msg);
+                //magmo.rosconnection.Publish("Rs007Joints6", j6msg);
             }
         }
 
@@ -110,7 +114,7 @@ namespace KhiDemo
 
         void Rs007J1Change(RsJ1Msg j1msg)
         {
-            if (magmo.echoMovements)
+            if (magmo.echoMovementsRos)
             {
                 //Debug.Log($"RsJ1Msg:{j1msg.ToString()}");
                 var idx = j1msg.idx;
@@ -129,7 +133,7 @@ namespace KhiDemo
 
         void Rs007J6Change(RsJ6Msg j6msg)
         {
-            if (magmo.echoMovements)
+            if (magmo.echoMovementsRos)
             {
                 //Debug.Log($"RsJ6Msg:{j6msg.ToString()}");
                 var planner = magmo.planner;

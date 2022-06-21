@@ -44,15 +44,17 @@ namespace KhiDemo
 
         public bool stopSimulation = false;
 
-        public bool echoMovements = true;
+        public bool echoMovementsRos = true;
         public bool publishMovementsZmq = false;
         public float publishIntervalZmq = 0.1f;
-        public bool publishMovements = false;
+        public bool publishMovementsRos = false;
         public float publishInterval = 0.1f;
 
         public ROSConnection rosconnection = null;
+        public bool rosactivated = false;
         public string roshost = "localhost";
         public int rosport = 10005;
+        public bool zmqactivated = false;
         public string zmqhost = "localhost";
         public int zmqport = 10006;
 
@@ -64,25 +66,23 @@ namespace KhiDemo
 
         private void Awake()
         {
-            UnityUt.AddArgs(new string [] { "--roshost","localhost","BlueTina","--mode","echo" });
+            rosconnection = ROSConnection.GetOrCreateInstance();
+            rosconnection.ShowHud = false;
+            rosconnection.ConnectOnStart = false;
+
+            // UnityUt.AddArgs(new string [] { "--roshost","localhost","BlueTina","--mode","echo" });
 
             messages = new List<(InfoType intyp, DateTime time, string msg)>();
 
             GetNetworkParms();
-            RosSetup();
-            ZmqSetup();
-
             GetOtherParms();
             // ZmqSendString("Hello world");
         }
 
 
-        public void RosSetup()
-        {
-            rosconnection = ROSConnection.GetOrCreateInstance();
-            InfoMsg($"Opening ROS connection {roshost}:{rosport}");
-            rosconnection.Connect(roshost, rosport);
-        }
+
+
+
 
         public void GetNetworkParms()
         {
@@ -140,10 +140,36 @@ namespace KhiDemo
             }
         }
 
+        public void CheckNetworkActivation()
+        {
+            if (echoMovementsRos && !rosactivated)
+            {
+                RosSetup();
+            }
+            if (publishMovementsZmq && !zmqactivated)
+            {
+                ZmqSetup();
+            }
+        }
+
+        public void RosSetup()
+        {
+            //rosconnection = ROSConnection.GetOrCreateInstance();
+            rosconnection.ShowHud = true;
+            rosconnection.InitializeHUD();
+            InfoMsg($"Opening ROS connection {roshost}:{rosport}");
+            rosconnection.Connect(roshost, rosport);
+            rosconnection.ShowHud = true;
+            mmRobot.SubcribeToRos();
+            mmtray.SubscribeToRos();
+            mmt.SubscribeToRos();
+            rosactivated = true;
+        }
 
         public void RosTeardown()
         {
             rosconnection.Disconnect();
+            rosactivated = false;
         }
 
         RequestSocket socket;
@@ -153,6 +179,7 @@ namespace KhiDemo
             AsyncIO.ForceDotNet.Force();
             socket = new RequestSocket();
             socket.Connect($"tcp://{zmqhost}:{zmqport}");
+            zmqactivated = true;
         }
 
         public void ZmqTeardown()
@@ -160,6 +187,7 @@ namespace KhiDemo
             InfoMsg("Tearing down zmq");
             NetMQConfig.Cleanup(block:false);
             socket = null;
+            zmqactivated = false;
         }
 
         public void ZmqSendString(string str)
@@ -295,7 +323,7 @@ namespace KhiDemo
                 mmctrl.PhysicsStep();
                 mmt.PhysicsStep();
             }
-            if (publishMovements && Time.time-lastPub>this.publishInterval)
+            if (publishMovementsRos && Time.time-lastPub>this.publishInterval)
             {
                 lastPub = Time.time;
                 mmRobot.PublishJoints();
@@ -326,6 +354,7 @@ namespace KhiDemo
         }
 
         float ctrlQhitTime = 0;
+        float ctrlVhitTime = 0;
         float F5hitTime = 0;
         float F6hitTime = 0;
         float F10hitTime = 0;
@@ -404,6 +433,38 @@ namespace KhiDemo
                 }
                 //mmctrl.SetMode(MmMode.StartTrayToRail, clear: true);
             }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.V))
+            {
+                ctrlVhitTime = Time.time;
+            }
+            if (((Time.time - ctrlVhitTime) < 1) && Input.GetKeyDown(KeyCode.S))
+            {
+                var pos = new Vector3(0, 3, 0);
+                var rot = new Vector3(90, 0, 90);
+                Camera.main.transform.position = pos;
+                Camera.main.transform.rotation = Quaternion.Euler(rot);
+            }
+            if (((Time.time - ctrlVhitTime) < 1) && Input.GetKeyDown(KeyCode.T))
+            {
+                var pos = new Vector3(0, 2.4f, 0);
+                var rot = new Vector3(90, -90, 90);
+                Camera.main.transform.position = pos;
+                Camera.main.transform.rotation = Quaternion.Euler(rot);
+            }
+            if (((Time.time - ctrlVhitTime) < 1) && Input.GetKeyDown(KeyCode.F))
+            {
+                var pos = new Vector3(0, 1.4f, -0.7f);
+                var rot = new Vector3(45, 0, 0);
+                Camera.main.transform.position = pos;
+                Camera.main.transform.rotation = Quaternion.Euler(rot);
+            }
+            if (((Time.time - ctrlVhitTime) < 1) && Input.GetKeyDown(KeyCode.B))
+            {
+                var pos = new Vector3(0, 1.8f, 1.3f);
+                var rot = new Vector3(45, 180, 0);
+                Camera.main.transform.position = pos;
+                Camera.main.transform.rotation = Quaternion.Euler(rot);
+            }
             if (ctrlhit && Input.GetKeyDown(KeyCode.L))
             {
                 Debug.Log("Hit LCtrl-L");
@@ -428,7 +489,6 @@ namespace KhiDemo
                 mmctrl.AdjustRobotSpeedFactor(0.5f);
             }
         }
-
 
         int fupdatecount = 0;
         // Update is called once per frame

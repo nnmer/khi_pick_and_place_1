@@ -242,14 +242,14 @@ namespace KhiDemo
         public void AddPathRails(GameObject parent, bool seggos, bool pathgos)
         {
 
-            var sz = sphrad / 2;
+            var sz = sphrad / 3;
             var pos = this.startpt;
             if (mmt.useMeters)
             {
                 sz *= mmt.UnitsToMeters;
                 pos *= mmt.UnitsToMeters;
             }
-            startgo = UnityUt.CreateSphere(parent, "red", size: sz);
+            startgo = UnityUt.CreateCube(parent, "blue", size: sz);
             startgo.name = $"Start-{name}";
             startgo.transform.position = pos;
             if (seggos)

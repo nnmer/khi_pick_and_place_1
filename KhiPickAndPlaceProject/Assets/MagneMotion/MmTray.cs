@@ -51,16 +51,20 @@ namespace KhiDemo
         {
             this.magmo = magmo;
             this.mmt = magmo.mmt;
-            magmo.rosconnection.Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
-            magmo.rosconnection.RegisterPublisher<MmTray1Msg>("Rs007Tray1");
+            //magmo.rosconnection.RegisterPublisher<MmTray1Msg>("Rs007Tray1");
             // size in cm - 31.4, 28.9, 1.7
             CreateTray(transform);
             CreateTraySlots();
         }
 
+        public void SubscribeToRos()
+        {
+            magmo.rosconnection.Subscribe<MmTray1Msg>("Rs007Tray1", Tray1Change);
+        }
+
         public void PublishTray()
         {
-            if (magmo.publishMovements)
+            if (magmo.publishMovementsRos)
             {
                 for (var i = 0; i < nrow; i++)
                 {
@@ -69,7 +73,7 @@ namespace KhiDemo
                         var key = (i, j);
                         var loaded = loadState[key] ? 1 : 0;
                         var t1msg = new MmTray1Msg(i,j,loaded);
-                        magmo.rosconnection.Publish("Rs007Tray1", t1msg);
+                        //magmo.rosconnection.Publish("Rs007Tray1", t1msg);
                     }
                 }
             }
@@ -171,8 +175,8 @@ namespace KhiDemo
             slotformgo.transform.localScale = new Vector3(slotw, 0.005f, sloth);
             slotformgo.transform.SetParent(slotgo.transform, worldPositionStays: false);
 
-            var gobx = UnityUt.CreateSphere(null, "red", size: 0.01f);
-            gobx.name = "sphere";
+            var gobx = UnityUt.CreateCube(null, "red", size: 0.01f);
+            gobx.name = "centercube";
             gobx.transform.position = new Vector3(0, 0.0164f, 0);
             gobx.transform.SetParent(slotformgo.transform, worldPositionStays: false);
             var sz = 0.01f;
@@ -366,7 +370,7 @@ namespace KhiDemo
 
         void Tray1Change(MmTray1Msg traymsg)
         {
-            if (magmo.echoMovements)
+            if (magmo.echoMovementsRos)
             {
                 //Debug.Log($"Received ROS message on topic Rs007Tray1:{traymsg.ToString()}");
                 var (ok, msg) = CheckIndexes(traymsg.row, traymsg.col, "Tray1Change");

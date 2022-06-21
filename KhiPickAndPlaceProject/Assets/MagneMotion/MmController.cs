@@ -97,6 +97,7 @@ namespace KhiDemo
             {
                 SetMode(newMode, clear: true);
             }
+            magmo.CheckNetworkActivation();
             CheckConsistency();
         }
 
@@ -116,8 +117,8 @@ namespace KhiDemo
                 case MmMode.Echo:
                     mmSubMode = MmSubMode.None;
                     magmo.boxForm = MmBox.BoxForm.Prefab;
-                    magmo.echoMovements = true;
-                    magmo.publishMovements = false;
+                    magmo.echoMovementsRos = true;
+                    magmo.publishMovementsRos = false;
                     magmo.publishMovementsZmq = false;
                     magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
                     mmt.SetupSledSpeeds(SledSpeedDistrib.fixedValue, 0);
@@ -129,8 +130,8 @@ namespace KhiDemo
                 case MmMode.SimuRailToRail:
                     mmSubMode = MmSubMode.None;
                     magmo.boxForm = MmBox.BoxForm.PrefabWithMarkerCube;
-                    magmo.echoMovements = false;
-                    magmo.publishMovements = false;// queue is always full
+                    magmo.echoMovementsRos = false;
+                    magmo.publishMovementsRos = false;// queue is always full
                     magmo.publishMovementsZmq = true;
 
 
@@ -143,9 +144,9 @@ namespace KhiDemo
                     break;
                 case MmMode.StartRailToTray:
                     mmSubMode = MmSubMode.RailToTray;
-                    magmo.echoMovements = false;
-                    magmo.publishMovements = false;// queue is always full
-                    magmo.publishMovementsZmq = false;
+                    magmo.echoMovementsRos = false;
+                    magmo.publishMovementsRos = false;// queue is always full
+                    magmo.publishMovementsZmq = true;
 
                     magmo.boxForm = MmBox.BoxForm.PrefabWithMarkerCube;
                     mmRobot.InitRobotBoxState(startLoadState: false);
@@ -157,9 +158,9 @@ namespace KhiDemo
                 case MmMode.StartTrayToRail:
                     mmSubMode = MmSubMode.TrayToRail;
                     magmo.boxForm = MmBox.BoxForm.PrefabWithMarkerCube;
-                    magmo.echoMovements = false;
-                    magmo.publishMovements = false;// queue is always full
-                    magmo.publishMovementsZmq = false;
+                    magmo.echoMovementsRos = false;
+                    magmo.publishMovementsRos = false;// queue is always full
+                    magmo.publishMovementsZmq = true;
 
                     mmRobot.InitRobotBoxState(startLoadState: false);
                     mmt.SetupSledSpeeds( SledSpeedDistrib.alternateHiLo, 0.5f);
@@ -168,8 +169,10 @@ namespace KhiDemo
                     magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
                     break;
             }
+            magmo.CheckNetworkActivation();
             CheckConsistency();
         }
+
 
         public void AdjustRobotSpeedFactor(float fak)
         {

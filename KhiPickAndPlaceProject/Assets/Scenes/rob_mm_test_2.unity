@@ -1676,14 +1676,20 @@ MonoBehaviour:
   positionOnFloor: 0
   mmRobot: {fileID: 0}
   mmtray: {fileID: 626133821}
-  ros: {fileID: 0}
   planner: {fileID: 0}
   sledForm: 1
   boxForm: 2
-  mmMode: 2
+  mmMode: 1
   stopSimulation: 0
-  echoMovements: 1
-  publishMovements: 0
+  echoMovementsRos: 1
+  publishMovementsZmq: 0
+  publishIntervalZmq: 0.1
+  publishMovementsRos: 0
   publishInterval: 0.1
-  errorMessages: []
-  warningMessages: []
+  rosconnection: {fileID: 0}
+  rosactivated: 0
+  roshost: localhost
+  rosport: 10005
+  zmqactivated: 0
+  zmqhost: localhost
+  zmqport: 10006
