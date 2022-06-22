@@ -13,7 +13,7 @@ namespace KhiDemo
         public MagneMotion magmo;
 
         public GameObject mmtgo;
-        public GameObject pago;
+        public GameObject pathgos;
         public string tableName = "TableName";
         public List<MmPath> paths = new List<MmPath>();
         public float UnitsToMeters = 0.125f;
@@ -313,14 +313,14 @@ namespace KhiDemo
         public GameObject SetupGeometry(bool addPathMarkers, bool positionOnFloor)
         {
             mmtgo = new GameObject(tableName);
-            pago = new GameObject("pago");
-            pago.transform.SetParent(mmtgo.transform, worldPositionStays: false);
+            pathgos = new GameObject("pathgos");
+            pathgos.transform.SetParent(mmtgo.transform, worldPositionStays: false);
 
             if (addPathMarkers)
             {
                 foreach (var p in paths)
                 {
-                    p.AddPathRails(pago, seggos: false, pathgos: true);
+                    p.AddPathRails(pathgos, seggos: false, pathgos: true);
                 }
             }
 

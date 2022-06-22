@@ -17,36 +17,42 @@ namespace KhiDemo
 
     public enum MmTableStyle {  MftDemo, Simple }
 
-    public enum MmMode { None, Echo, SimuRailToRail, StartRailToTray, StartTrayToRail }
+    public enum MmMode { None, Echo, Planning, SimuRailToRail, StartRailToTray, StartTrayToRail }
     public enum MmSubMode { None, RailToTray, TrayToRail }
 
     public enum InfoType {  Info, Warn, Error }
 
     public class MagneMotion : MonoBehaviour
     {
+        [Header("Scene Elements")]
         public MmController mmctrl;
         public MmTable mmt;
-        public MmTableStyle mmTableStyle = MmTableStyle.MftDemo;
-        public GameObject mmtgo;
-        public GameObject mmtctrlgo;
+        public MmRobot mmRobot = null;
+        public MmTray mmtray = null;
+        public GameObject mmego = null;
+        public Rs007TrajectoryPlanner planner = null;
 
+        [Header("Scene Element Forms")]
+        public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
+        public MmBox.BoxForm boxForm = MmBox.BoxForm.Prefab;
+        public MmTableStyle mmTableStyle = MmTableStyle.MftDemo;
         public bool addPathMarkers = false;
         public bool addPathSledsOnStartup = true;
         public bool positionOnFloor = false;
+        public bool enclosureOn = false;
+        public bool enclosureLoaded = false;
 
-        public MmRobot mmRobot = null;
-        public MmTray mmtray = null;
-        public Rs007TrajectoryPlanner planner = null;
-        public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
-        public MmBox.BoxForm boxForm = MmBox.BoxForm.Prefab;
+        [Header("Components")]
+        public GameObject mmtgo;
+        public GameObject mmtctrlgo;
 
+        [Header("Behaviour")]
         public MmMode mmMode = MmMode.None;
-
         public bool stopSimulation = false;
 
+        [Header("Network ROS")]
+        public bool enablePlanning = false;
         public bool echoMovementsRos = true;
-        public bool publishMovementsZmq = false;
-        public float publishIntervalZmq = 0.1f;
         public bool publishMovementsRos = false;
         public float publishInterval = 0.1f;
 
@@ -54,14 +60,16 @@ namespace KhiDemo
         public bool rosactivated = false;
         public string roshost = "localhost";
         public int rosport = 10005;
+
+
+        [Header("Network ZMQ")]
+        public bool publishMovementsZmq = false;
+        public float publishIntervalZmq = 0.1f;
         public bool zmqactivated = false;
         public string zmqhost = "localhost";
         public int zmqport = 10006;
 
-
-
-        public List<(InfoType intyp, DateTime time, string msg)> messages;
-
+        List<(InfoType intyp, DateTime time, string msg)> messages;
 
 
         private void Awake()
@@ -124,6 +132,10 @@ namespace KhiDemo
                 {
                     mmMode = MmMode.SimuRailToRail;
                 }
+                else if (mode == "planning")
+                {
+                    mmMode = MmMode.Planning;
+                }
                 else if (mode=="tray2rail")
                 {
                     mmMode = MmMode.StartTrayToRail;
@@ -142,7 +154,8 @@ namespace KhiDemo
 
         public void CheckNetworkActivation()
         {
-            if (echoMovementsRos && !rosactivated)
+            var needros = echoMovementsRos || enablePlanning;
+            if (needros && !rosactivated)
             {
                 RosSetup();
             }
@@ -151,6 +164,26 @@ namespace KhiDemo
                 ZmqSetup();
             }
         }
+
+        public void Check1Activation(string seekname)
+        {
+            var cango = GameObject.Find(seekname);
+            if (cango == null)
+            {
+                ErrMsg($"MagneMotion.CheckPlanningActivation - Can't find {seekname}");
+                return;
+            }
+            cango.SetActive(enablePlanning);
+        }
+
+        public void CheckPlanningActivation()
+        {
+            Check1Activation("PlanningCanvas");
+            Check1Activation("Target");
+            Check1Activation("TargetPlacement");
+        }
+
+
 
         public void RosSetup()
         {
@@ -233,6 +266,8 @@ namespace KhiDemo
             MmBox.AllocatePools(this);
 
             MmPathSeg.InitDicts();
+
+
 
             switch (mmTableStyle)
             {
@@ -476,6 +511,16 @@ namespace KhiDemo
                 Debug.Log("Hit LCtrl-R");
                 mmctrl.DoReverseTrayRail();
             }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.N))
+            {
+                Debug.Log("Hit LCtrl-N");
+                ToggleEnclosure();
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.P))
+            {
+                Debug.Log("Hit LCtrl-P");
+                mmctrl.SetMode(MmMode.Planning, clear: true);
+            }
             if (ctrlhit && Input.GetKeyDown(KeyCode.F))
             {
                 Debug.Log("Hit LCtrl-F");
@@ -489,6 +534,50 @@ namespace KhiDemo
                 mmctrl.AdjustRobotSpeedFactor(0.5f);
             }
         }
+
+        public void ToggleEnclosure()
+        {
+            enclosureOn = !enclosureOn;
+            CheckEnclosure();
+        }
+
+        public void CheckEnclosure()
+        {
+            if (!enclosureLoaded)
+            {
+                var prefab = Resources.Load<GameObject>("Enclosure/Models/RS007_Enclosure");
+                mmego = Instantiate<GameObject>(prefab);
+                mmego.name = $"Enclosure";
+                mmego.transform.parent = this.mmtgo.transform;
+                mmego.transform.position = new Vector3(0.0f, 0.0f, -0);
+                mmego.transform.localRotation = Quaternion.Euler(0, 0, -0);
+                // Add floor
+                var encfloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+                encfloor.name = "EnclosureFloor";
+                encfloor.transform.position = new Vector3(0, -0.04f, 0);
+                encfloor.transform.localScale = new Vector3(1, 1, 1);
+                encfloor.transform.SetParent(mmego.transform, worldPositionStays: false);
+                enclosureLoaded = true;
+            }
+            if (mmego != null)
+            {
+                mmt.pathgos.SetActive(!enclosureOn);
+                mmego.SetActive(enclosureOn);
+                var fgo = GameObject.Find("FloorObject");
+                if (fgo != null)
+                {
+                    if (enclosureOn)
+                    {
+                        fgo.transform.localScale = new Vector3(0.02f, 1, 0.02f);
+                    }
+                    else
+                    {
+                        fgo.transform.localScale = new Vector3(1, 1, 1);
+                    }
+                }
+            }
+        }
+
 
         int fupdatecount = 0;
         // Update is called once per frame
@@ -515,11 +604,13 @@ namespace KhiDemo
         string[] helptext =
         {
             "Ctrl-E Echo Mode",
+            "Ctrl-P RailToRail Mode",
             "Ctrl-L RailToRail Mode",
             "Ctrl-T TrayToRail Mode",
             "Ctrl-R Reverse TrayRail",
             "Ctrl-F Speed up",
             "Ctrl-S Slow down",
+            "Ctrl-N Toggle Enclosure",
             "Ctrl-D Toggle Stop Simulation",
             "Ctrl-G Toggle Log Screen",
             "Ctrl-H Toggle Help Screen",

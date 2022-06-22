@@ -9,15 +9,15 @@ namespace KhiDemo
     public class MmController : MonoBehaviour
     {
 
-
+        [Header("Modes")]
         public MmMode mmMode = MmMode.None;
         public MmSubMode mmSubMode = MmSubMode.None;
         public MmBoxMode mmBoxMode = MmBoxMode.FakePooled;
+        public bool enablePlanning = false;
 
+        [Header("Scene Components")]
         public MmRobot mmRobot = null;
         public MmTray mmtray = null;
-
-
         MagneMotion magmo;
         MmTable mmt;
 
@@ -25,14 +25,13 @@ namespace KhiDemo
         public bool processStep;
         [Space(10)]
         public bool reverseTrayRail;
-        public bool doubleSpeed;
-        public bool halfSpeed;
-
-        float srobsec = 0.4f;
-        float lrobsec = 1.0f;
-
         public RobStatus robstatus;
 
+        [Header("Speed")]
+        public float shortRobMoveSec = 0.4f;
+        public float longRobMoveSec = 1.0f;
+
+        
         public void Init(MagneMotion magmo)
         {
             this.magmo = magmo;
@@ -64,6 +63,8 @@ namespace KhiDemo
                     return MmBoxMode.FakePooled;
                 case MmMode.SimuRailToRail:
                     return MmBoxMode.RealPooled;
+                case MmMode.Planning:
+                    return MmBoxMode.RealPooled;
                 case MmMode.StartRailToTray:
                     return MmBoxMode.RealPooled;
                 default:
@@ -82,6 +83,7 @@ namespace KhiDemo
                 magmo.mmMode = newMode;
                 switch (newMode)
                 {
+                    case MmMode.Planning:
                     case MmMode.SimuRailToRail:
                         mmSubMode = MmSubMode.None;
                         break;
@@ -98,6 +100,7 @@ namespace KhiDemo
                 SetMode(newMode, clear: true);
             }
             magmo.CheckNetworkActivation();
+            magmo.CheckPlanningActivation();
             CheckConsistency();
         }
 
@@ -118,6 +121,7 @@ namespace KhiDemo
                     mmSubMode = MmSubMode.None;
                     magmo.boxForm = MmBox.BoxForm.Prefab;
                     magmo.echoMovementsRos = true;
+                    magmo.enablePlanning = false;
                     magmo.publishMovementsRos = false;
                     magmo.publishMovementsZmq = false;
                     magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
@@ -127,10 +131,25 @@ namespace KhiDemo
                     mmt.SetupSledLoads(SledLoadDistrib.allLoaded);
                     mmtray.InitAllLoadstate(nbox: 12); 
                     break;
+                case MmMode.Planning:
+                    mmSubMode = MmSubMode.None;
+                    magmo.boxForm = MmBox.BoxForm.PrefabWithMarkerCube;
+                    magmo.echoMovementsRos = false;
+                    magmo.enablePlanning = true;
+                    magmo.publishMovementsRos = false;
+                    magmo.publishMovementsZmq = false;
+                    magmo.mmRobot.RealiseRobotPose(RobotPose.rest);
+                    mmt.SetupSledSpeeds(SledSpeedDistrib.fixedValue, 0);
+
+                    mmRobot.InitRobotBoxState(startLoadState: false);
+                    mmt.SetupSledLoads(SledLoadDistrib.alternateLoadedUnloaded);
+                    mmtray.InitAllLoadstate(nbox: 5);
+                    break;
                 case MmMode.SimuRailToRail:
                     mmSubMode = MmSubMode.None;
                     magmo.boxForm = MmBox.BoxForm.PrefabWithMarkerCube;
                     magmo.echoMovementsRos = false;
+                    magmo.enablePlanning = false;
                     magmo.publishMovementsRos = false;// queue is always full
                     magmo.publishMovementsZmq = true;
 
@@ -145,6 +164,7 @@ namespace KhiDemo
                 case MmMode.StartRailToTray:
                     mmSubMode = MmSubMode.RailToTray;
                     magmo.echoMovementsRos = false;
+                    magmo.enablePlanning = false;
                     magmo.publishMovementsRos = false;// queue is always full
                     magmo.publishMovementsZmq = true;
 
@@ -159,6 +179,7 @@ namespace KhiDemo
                     mmSubMode = MmSubMode.TrayToRail;
                     magmo.boxForm = MmBox.BoxForm.PrefabWithMarkerCube;
                     magmo.echoMovementsRos = false;
+                    magmo.enablePlanning = false;
                     magmo.publishMovementsRos = false;// queue is always full
                     magmo.publishMovementsZmq = true;
 
@@ -170,15 +191,22 @@ namespace KhiDemo
                     break;
             }
             magmo.CheckNetworkActivation();
+            magmo.CheckPlanningActivation();
             CheckConsistency();
         }
 
 
         public void AdjustRobotSpeedFactor(float fak)
         {
-            srobsec /= fak;
-            lrobsec /= fak;
+            if (fak==0)
+            {
+                return;
+            }
+            shortRobMoveSec /= fak;
+            longRobMoveSec /= fak;
         }
+
+
 
 
         public void DoReverseTrayRail()
@@ -207,16 +235,16 @@ namespace KhiDemo
             yield return new WaitUntil(() => robstatus == RobStatus.idle);
             robstatus = RobStatus.busy;
             mmRobot.RealiseRobotPose(RobotPose.fcartup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(RobotPose.fcartdn);
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             var box = sled.DetachhBoxFromSled();
             if (box != null)
             {
                 rob.AttachBoxToRobot(box);
             }
             mmRobot.RealiseRobotPose(RobotPose.fcartup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             if (mmMode == MmMode.SimuRailToRail)
             {
                 mmRobot.RealiseRobotPose(RobotPose.restr2r);
@@ -225,7 +253,7 @@ namespace KhiDemo
             {
                 mmRobot.RealiseRobotPose(RobotPose.rest);
             }
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             robstatus = RobStatus.idle;
         }
 
@@ -234,16 +262,16 @@ namespace KhiDemo
             yield return new WaitUntil(() => robstatus == RobStatus.idle);
             robstatus = RobStatus.busy;
             mmRobot.RealiseRobotPose(RobotPose.ecartup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(RobotPose.ecartdn);
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             var box = rob.DetachhBoxFromRobot();
             if (box != null)
             {
                 sled.AttachBoxToSled(box);
             }
             mmRobot.RealiseRobotPose(RobotPose.ecartup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             if (mmMode == MmMode.SimuRailToRail)
             {
                 mmRobot.RealiseRobotPose(RobotPose.restr2r);
@@ -252,7 +280,7 @@ namespace KhiDemo
             {
                 mmRobot.RealiseRobotPose(RobotPose.rest);
             }
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             robstatus = RobStatus.idle;
         }
 
@@ -262,18 +290,18 @@ namespace KhiDemo
             robstatus = RobStatus.busy;
             var (poseup, posedn) = mmRobot.GetPoses(key);
             mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(posedn);
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             var box = mmtray.DetachhBoxFromTraySlot(key);
             if (box != null)
             {
                 rob.AttachBoxToRobot(box);
             }
             mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(RobotPose.rest);
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             robstatus = RobStatus.idle;
         }
 
@@ -283,18 +311,18 @@ namespace KhiDemo
             robstatus = RobStatus.busy;
             var (poseup, posedn) = mmRobot.GetPoses(key);
             mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(posedn);
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             var box = rob.DetachhBoxFromRobot();
             if (box != null)
             {
                 mmtray.AttachBoxToTraySlot(key, box);
             }
             mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(srobsec);
+            yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(RobotPose.rest);
-            yield return new WaitForSeconds(lrobsec);
+            yield return new WaitForSeconds(longRobMoveSec);
             robstatus = RobStatus.idle;
         }
 
@@ -465,6 +493,11 @@ namespace KhiDemo
                 }
                 switch (mmMode)
                 {
+                    case MmMode.Planning:
+                        {
+                            rv = false;
+                            return rv;
+                        }
                     //case MmMode.SimNew:
                     case MmMode.SimuRailToRail:
                         {
@@ -510,6 +543,10 @@ namespace KhiDemo
             switch (mmMode)
             {
                 //case MmMode.SimNew:
+                case MmMode.Planning:
+                    {
+                        break;
+                    }
                 case MmMode.SimuRailToRail:
                     {
                         if (!rob.loadState)
@@ -596,24 +633,9 @@ namespace KhiDemo
             }
         }
 
-        void AdjustSpeed()
-        {
-            if (doubleSpeed)
-            {
-                doubleSpeed = false;
-                mmt.AdjustSledSpeedFactor(2f);
-            }
-            if (halfSpeed)
-            {
-                halfSpeed = false;
-                mmt.AdjustSledSpeedFactor(0.5f);
-            }
-        }
-
 
         public void PhysicsStep()
         {
-            AdjustSpeed();
             ReverseTrayRail();
 
         }

@@ -1679,7 +1679,7 @@ MonoBehaviour:
   planner: {fileID: 0}
   sledForm: 1
   boxForm: 2
-  mmMode: 1
+  mmMode: 2
   stopSimulation: 0
   echoMovementsRos: 1
   publishMovementsZmq: 0
