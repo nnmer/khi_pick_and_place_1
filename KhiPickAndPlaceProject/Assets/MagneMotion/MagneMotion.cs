@@ -71,9 +71,27 @@ namespace KhiDemo
 
         List<(InfoType intyp, DateTime time, string msg)> messages;
 
+        GameObject planningCanvas;
+        GameObject target;
+        GameObject targetPlacement;
+
+
+        void InitGo(string seekname, ref GameObject cango)
+        {
+            cango = GameObject.Find(seekname);
+            if (cango == null)
+            {
+                ErrMsg($"MagneMotion.InitGo - Can't find {seekname}");
+                return;
+            }
+        }
 
         private void Awake()
         {
+            InitGo("PlanningCanvas", ref planningCanvas);
+            InitGo("Target", ref target);
+            InitGo("TargetPlacement", ref targetPlacement);
+
             rosconnection = ROSConnection.GetOrCreateInstance();
             rosconnection.ShowHud = false;
             rosconnection.ConnectOnStart = false;
@@ -165,12 +183,10 @@ namespace KhiDemo
             }
         }
 
-        public void Check1Activation(string seekname)
+        public void Check1Activation(GameObject cango)
         {
-            var cango = GameObject.Find(seekname);
             if (cango == null)
             {
-                ErrMsg($"MagneMotion.CheckPlanningActivation - Can't find {seekname}");
                 return;
             }
             cango.SetActive(enablePlanning);
@@ -178,9 +194,9 @@ namespace KhiDemo
 
         public void CheckPlanningActivation()
         {
-            Check1Activation("PlanningCanvas");
-            Check1Activation("Target");
-            Check1Activation("TargetPlacement");
+            Check1Activation( planningCanvas );
+            Check1Activation( target );
+            Check1Activation( targetPlacement );
         }
 
 
@@ -551,7 +567,7 @@ namespace KhiDemo
                 mmego.transform.parent = this.mmtgo.transform;
                 mmego.transform.position = new Vector3(0.0f, 0.0f, -0);
                 mmego.transform.localRotation = Quaternion.Euler(0, 0, -0);
-                // Add floor
+                // Add enclosure floor
                 var encfloor = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 encfloor.name = "EnclosureFloor";
                 encfloor.transform.position = new Vector3(0, -0.04f, 0);
