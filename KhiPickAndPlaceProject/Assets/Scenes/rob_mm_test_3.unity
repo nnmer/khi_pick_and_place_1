@@ -898,8 +898,9 @@ Transform:
   - {fileID: 940606760}
   - {fileID: 451371867}
   - {fileID: 977052750}
+  - {fileID: 1834643489}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!1 &1582743173
 GameObject:
@@ -1375,7 +1376,7 @@ RectTransform:
   m_Children:
   - {fileID: 1850408204}
   - {fileID: 1582743174}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1166194119}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1691,7 +1692,7 @@ Transform:
   m_Children:
   - {fileID: 626133820}
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!114 &2109811895
 MonoBehaviour:
@@ -1721,7 +1722,7 @@ MonoBehaviour:
   enclosureLoaded: 0
   mmtgo: {fileID: 0}
   mmtctrlgo: {fileID: 0}
-  mmMode: 1
+  mmMode: 5
   stopSimulation: 0
   enablePlanning: 0
   echoMovementsRos: 1

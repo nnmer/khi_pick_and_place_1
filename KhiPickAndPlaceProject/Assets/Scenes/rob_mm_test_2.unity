@@ -392,6 +392,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4c0b7f6fe8e981f43b3ffa1243e81336, type: 3}
+--- !u!1 &402694378 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 850690186460591414, guid: 43bef545df3e344c4a7e089ca90c15a0, type: 3}
+  m_PrefabInstance: {fileID: 451371861}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &451371861
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -449,15 +454,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 850690186460591414, guid: 43bef545df3e344c4a7e089ca90c15a0, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 43bef545df3e344c4a7e089ca90c15a0, type: 3}
---- !u!1 &451371862 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 850690186460591414, guid: 43bef545df3e344c4a7e089ca90c15a0, type: 3}
-  m_PrefabInstance: {fileID: 451371861}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &451371867 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 850690186460591411, guid: 43bef545df3e344c4a7e089ca90c15a0, type: 3}
@@ -845,15 +845,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5601983281253769233, guid: 3901759e6233748538fffdbc519c1a68, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3901759e6233748538fffdbc519c1a68, type: 3}
---- !u!1 &977052745 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5601983281253769233, guid: 3901759e6233748538fffdbc519c1a68, type: 3}
-  m_PrefabInstance: {fileID: 977052744}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &977052750 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5113255398182140587, guid: 3901759e6233748538fffdbc519c1a68, type: 3}
@@ -1042,7 +1037,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1801130476}
-        m_TargetAssemblyTypeName: Rs007TrajectoryPlanner, Unity.Robotics.PickAndPlace
+        m_TargetAssemblyTypeName: MmTrajPlan, Assembly-CSharp
         m_MethodName: PlanAndExecutePickAndPlace
         m_Mode: 1
         m_Arguments:
@@ -1184,10 +1179,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1801130475}
-  - component: {fileID: 1801130477}
   - component: {fileID: 1801130476}
   m_Layer: 0
-  m_Name: Publisher
+  m_Name: Planner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1216,33 +1210,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1801130474}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c2cd8b33761206a4abb8fd6556075c3c, type: 3}
+  m_Script: {fileID: 11500000, guid: f17332bb30dda034ab0e58558267cf19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_RosServiceName: rs007_moveit
+  movitServiceName: rs007_moveit_poseseq
   m_RobotModel: {fileID: 940606759}
-  m_Target: {fileID: 977052745}
-  m_TargetPlacement: {fileID: 451371862}
-  posePauseSecs: 0
+  m_Target: {fileID: 2007906943}
+  m_TargetPlacement: {fileID: 402694378}
+  posePauseSecs: 2
   vgriptrans: {fileID: 0}
   echoMovements: 1
   publishMovements: 0
---- !u!114 &1801130477
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1801130474}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d9fa68432781a643978c4d4bad3f70a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_TopicName: /rs007_joints
-  m_RobotModel: {fileID: 940606759}
-  m_Target: {fileID: 977052745}
-  m_TargetPlacement: {fileID: 451371862}
 --- !u!1 &1834643485
 GameObject:
   m_ObjectHideFlags: 0
@@ -1256,7 +1234,7 @@ GameObject:
   - component: {fileID: 1834643487}
   - component: {fileID: 1834643486}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: PlanningCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1309,7 +1287,7 @@ Canvas:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1834643485}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 0
   m_Camera: {fileID: 0}
@@ -1493,9 +1471,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1801130477}
-        m_TargetAssemblyTypeName: Rs007SourceDestinationPublisher, Unity.Robotics.PickAndPlace
-        m_MethodName: Publish
+      - m_Target: {fileID: 1801130476}
+        m_TargetAssemblyTypeName: MmTrajPlan, Assembly-CSharp
+        m_MethodName: PlanAndExecutePickAndPlace
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1543,6 +1521,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1850408203}
   m_CullTransparentMesh: 1
+--- !u!1 &2007906943 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5601983281253769233, guid: 3901759e6233748538fffdbc519c1a68, type: 3}
+  m_PrefabInstance: {fileID: 977052744}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2083481875
 GameObject:
   m_ObjectHideFlags: 0
@@ -1668,28 +1651,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mmctrl: {fileID: 0}
   mmt: {fileID: 0}
-  mmTableStyle: 0
-  mmtgo: {fileID: 0}
-  mmtctrlgo: {fileID: 0}
-  addPathMarkers: 1
-  addPathSledsOnStartup: 1
-  positionOnFloor: 0
   mmRobot: {fileID: 0}
   mmtray: {fileID: 626133821}
+  mmego: {fileID: 0}
   planner: {fileID: 0}
   sledForm: 1
   boxForm: 2
-  mmMode: 2
+  mmTableStyle: 0
+  addPathMarkers: 1
+  addPathSledsOnStartup: 1
+  positionOnFloor: 0
+  enclosureOn: 0
+  enclosureLoaded: 0
+  mmtgo: {fileID: 0}
+  mmtctrlgo: {fileID: 0}
+  mmMode: 1
   stopSimulation: 0
+  enablePlanning: 0
   echoMovementsRos: 1
-  publishMovementsZmq: 0
-  publishIntervalZmq: 0.1
   publishMovementsRos: 0
   publishInterval: 0.1
   rosconnection: {fileID: 0}
   rosactivated: 0
   roshost: localhost
   rosport: 10005
+  publishMovementsZmq: 0
+  publishIntervalZmq: 0.1
   zmqactivated: 0
   zmqhost: localhost
   zmqport: 10006

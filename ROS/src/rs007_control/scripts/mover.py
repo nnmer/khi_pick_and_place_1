@@ -39,6 +39,7 @@ else:
 """
 def plan_trajectory(move_group, destination_pose, start_joint_angles): 
     print("rs007_control:mover.py:plan_trajectory")
+    print("======================================")
     print("    move_group:",move_group)
     print("    destination_pose:",destination_pose)
     print("    start_joint_angles:",start_joint_angles)
@@ -56,7 +57,7 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
     move_group.set_pose_target(destination_pose)
     print("    calculating plan")   
     plan = move_group.plan()
-    print("    plan:",plan)   
+    # print("    plan:",plan)   
     
 
     if not plan:
@@ -66,11 +67,12 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
         """.format(destination_pose, destination_pose)
         raise Exception(exception_str)
         
-    print("    returning plan")   
+    print(" plan_trajectory - returning planCompat(plan)")   
     return planCompat(plan)
 
 def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
     print("cartesian_plan")
+    print("==============")
     print("move_group")
     print(move_group)
     print("tu_pose")
@@ -114,14 +116,14 @@ def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
         wpose.orientation.y = -1
         wpose.orientation.z = 0
         wpose.orientation.w = 0
-        print("waypoint:"+str(i+1)+" wx"+str(wx)+" wy:"+str(wy)+" wz:"+str(wz))        
+        # print("waypoint:"+str(i+1)+" wx"+str(wx)+" wy:"+str(wy)+" wz:"+str(wz))        
         waypoints.append(copy.deepcopy(wpose))
 
     waypoints.append(copy.deepcopy(tu_pose))
     
     (plan,fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0 )
-    print("plan")
-    print(plan)
+    print("cartesian_plan finished - returning plan")
+    # print(plan)
     return plan
     
 """
@@ -140,8 +142,10 @@ def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
 """
 
 
-def plan_pick_and_place(req):
-    print("rs007_control:mover.py:plan_pick_and_place")
+def plan_pose_sequence(req):
+    print("rs007_control:mover.py:plan_pose_sequence")
+    print("=========================================")
+    
     print("    req:",req)
     response = MoverServiceResponse()
 
@@ -163,10 +167,10 @@ def plan_pick_and_place(req):
     orig_pick_pose = copy.deepcopy(req.pick_pose)
     pick_pose = copy.deepcopy(req.pick_pose)
     pick_pose.position.z -= 0.05  # Static value coming from Unity, TODO: pass along with request
-    print("current_robot_joint_configuration")
-    print(current_robot_joint_configuration)   
-    print("previous_ending_joint_angles")
-    print(previous_ending_joint_angles)
+    # print("current_robot_joint_configuration")
+    # print(current_robot_joint_configuration)   
+    # print("previous_ending_joint_angles")
+    # print(previous_ending_joint_angles)
     
     # grasp_pose = None
     grasp_pose = cartesian_plan(move_group, pick_pose, req.pick_pose, previous_ending_joint_angles,)
@@ -202,8 +206,10 @@ def plan_pick_and_place(req):
     return response
 
 
-def plan_pick_and_place_original(req):
+def plan_pick_and_place(req):
     print("rs007_control:mover.py:plan_pick_and_place")
+    print("==========================================")
+   
     print("    req:",req)
     response = MoverServiceResponse()
 
@@ -222,19 +228,24 @@ def plan_pick_and_place_original(req):
     previous_ending_joint_angles = pre_grasp_pose.joint_trajectory.points[-1].positions
 
     # Grasp - lower gripper so that fingers are on either side of object
+    orig_pick_pose = copy.deepcopy(req.pick_pose)
     pick_pose = copy.deepcopy(req.pick_pose)
     pick_pose.position.z -= 0.05  # Static value coming from Unity, TODO: pass along with request
-    grasp_pose = plan_trajectory(move_group, pick_pose, previous_ending_joint_angles)
+    # print("current_robot_joint_configuration")
+    # print(current_robot_joint_configuration)   
+    # print("previous_ending_joint_angles")
+    # print(previous_ending_joint_angles)
     
-    if not grasp_pose.joint_trajectory.points:
-        return response
+    # grasp_pose = None
+    grasp_pose = cartesian_plan(move_group, pick_pose, req.pick_pose, previous_ending_joint_angles,)
         
-
 
     previous_ending_joint_angles = grasp_pose.joint_trajectory.points[-1].positions
 
     # Pick Up - raise gripper back to the pre grasp position
-    pick_up_pose = plan_trajectory(move_group, req.pick_pose, previous_ending_joint_angles)
+    #pick_up_pose = plan_trajectory(move_group, req.pick_pose, previous_ending_joint_angles)
+    
+    pick_up_pose = cartesian_plan(move_group, orig_pick_pose, pick_pose, previous_ending_joint_angles)
     
     if not pick_up_pose.joint_trajectory.points:
         return response
@@ -242,7 +253,8 @@ def plan_pick_and_place_original(req):
     previous_ending_joint_angles = pick_up_pose.joint_trajectory.points[-1].positions
 
     # Place - move gripper to desired placement position
-    place_pose = plan_trajectory(move_group, req.place_pose, previous_ending_joint_angles)
+    # place_pose = plan_trajectory(move_group, req.place_pose, previous_ending_joint_angles)
+    place_pose = cartesian_plan(move_group,  req.place_pose, orig_pick_pose, previous_ending_joint_angles)
 
     if not place_pose.joint_trajectory.points:
         return response
@@ -259,12 +271,15 @@ def plan_pick_and_place_original(req):
 
 
 
+
 def moveit_server():
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('rs007_moveit_server')
 
-    s = rospy.Service('rs007_moveit', MoverService, plan_pick_and_place)
-    print("rs007_control:mover.py:Ready to plan - spinning")
+    s1 = rospy.Service('rs007_moveit', MoverService, plan_pick_and_place)
+    s2 = rospy.Service('rs007_moveit_poseseq', MoverService, plan_pose_sequence)
+                        
+    print("rs007_control:mover.py:Ready to plan - with poseseq - spinning")
     rospy.spin()
 
 

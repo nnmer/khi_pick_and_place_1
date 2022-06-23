@@ -30,7 +30,7 @@ namespace KhiDemo
         public MmRobot mmRobot = null;
         public MmTray mmtray = null;
         public GameObject mmego = null;
-        public Rs007TrajectoryPlanner planner = null;
+        public MmTrajPlan planner = null;
 
         [Header("Scene Element Forms")]
         public MmSled.SledForm sledForm = MmSled.SledForm.Prefab;
@@ -76,21 +76,25 @@ namespace KhiDemo
         GameObject targetPlacement;
 
 
-        void InitGo(string seekname, ref GameObject cango)
+        GameObject InitGo(string seekname)
         {
-            cango = GameObject.Find(seekname);
+            //Debug.Log($"Seeking Name {seekname}");
+            var cango = GameObject.Find(seekname);
             if (cango == null)
             {
-                ErrMsg($"MagneMotion.InitGo - Can't find {seekname}");
-                return;
+                ErrMsg($"MagneMotion.InitGo - Can't find object named \"{seekname}\"");
+                return null;
             }
+            return cango;
         }
 
         private void Awake()
         {
-            InitGo("PlanningCanvas", ref planningCanvas);
-            InitGo("Target", ref target);
-            InitGo("TargetPlacement", ref targetPlacement);
+            messages = new List<(InfoType intyp, DateTime time, string msg)>();// has to be first
+
+            planningCanvas = InitGo("PlanningCanvas");
+            target = InitGo("Target");
+            targetPlacement = InitGo("TargetPlacement");
 
             rosconnection = ROSConnection.GetOrCreateInstance();
             rosconnection.ShowHud = false;
@@ -98,7 +102,6 @@ namespace KhiDemo
 
             // UnityUt.AddArgs(new string [] { "--roshost","localhost","BlueTina","--mode","echo" });
 
-            messages = new List<(InfoType intyp, DateTime time, string msg)>();
 
             GetNetworkParms();
             GetOtherParms();
@@ -273,7 +276,7 @@ namespace KhiDemo
         // Start is called before the first frame update
         void Start()
         {
-            planner = GameObject.FindObjectOfType<Rs007TrajectoryPlanner>();
+            planner = GameObject.FindObjectOfType<MmTrajPlan>();
 
             mmtgo = new GameObject("MmTable");
             mmt = mmtgo.AddComponent<MmTable>();
