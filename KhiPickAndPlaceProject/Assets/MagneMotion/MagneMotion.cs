@@ -90,7 +90,21 @@ namespace KhiDemo
 
         private void Awake()
         {
+            // Messages need to be alocated
             messages = new List<(InfoType intyp, DateTime time, string msg)>();// has to be first
+
+            // Now find objects
+            planner = FindObjectOfType<MmTrajPlan>();
+            if (planner == null)
+            {
+                ErrMsg("no planner in scene");
+            }
+
+            mmRobot = FindObjectOfType<MmRobot>();
+            if (mmRobot == null)
+            {
+                ErrMsg("no MnRobot in scene");
+            }
 
             planningCanvas = InitGo("PlanningCanvas");
             target = InitGo("Target");
@@ -107,11 +121,6 @@ namespace KhiDemo
             GetOtherParms();
             // ZmqSendString("Hello world");
         }
-
-
-
-
-
 
         public void GetNetworkParms()
         {
@@ -202,8 +211,6 @@ namespace KhiDemo
             Check1Activation( targetPlacement );
         }
 
-
-
         public void RosSetup()
         {
             //rosconnection = ROSConnection.GetOrCreateInstance();
@@ -276,7 +283,6 @@ namespace KhiDemo
         // Start is called before the first frame update
         void Start()
         {
-            planner = GameObject.FindObjectOfType<MmTrajPlan>();
 
             mmtgo = new GameObject("MmTable");
             mmt = mmtgo.AddComponent<MmTable>();
@@ -285,8 +291,6 @@ namespace KhiDemo
             MmBox.AllocatePools(this);
 
             MmPathSeg.InitDicts();
-
-
 
             switch (mmTableStyle)
             {
@@ -300,11 +304,6 @@ namespace KhiDemo
             }
 
             // Initialize Robot
-            mmRobot = FindObjectOfType<MmRobot>();
-            if (mmRobot==null)
-            {
-                ErrMsg("Robmodel not set in Magnemotion table");
-            }
 
 
             var mmgo = mmt.SetupGeometry(addPathMarkers: addPathMarkers, positionOnFloor: positionOnFloor);
@@ -577,6 +576,8 @@ namespace KhiDemo
                 encfloor.transform.localScale = new Vector3(1, 1, 1);
                 encfloor.transform.SetParent(mmego.transform, worldPositionStays: false);
                 enclosureLoaded = true;
+                var material = encfloor.GetComponent<Renderer>().material;
+                material.color = UnityUt.GetColorByName("steelblue");
             }
             if (mmego != null)
             {
