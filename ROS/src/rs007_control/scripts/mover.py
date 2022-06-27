@@ -5,6 +5,7 @@
 from __future__ import print_function
 
 import rospy
+from typing import Tuple
 
 import sys
 import copy
@@ -19,6 +20,9 @@ import geometry_msgs.msg
 from geometry_msgs.msg import Quaternion, Pose
 from std_msgs.msg import String
 from moveit_commander.conversions import pose_to_list
+from moveit_commander import MoveGroupCommander
+from moveit_commander import RobotTrajectory
+
 
 from rs007_control.srv import MoverService, MoverServiceRequest, MoverServiceResponse
 print("loading rs007_control:mover.py")
@@ -28,22 +32,31 @@ print("joint_names",joint_names)
 
 # Between Melodic and Noetic, the return type of plan() changed. moveit_commander has no __version__ variable, so checking the python version as a proxy
 if sys.version_info >= (3, 0):
-    def planCompat(plan):
+    def planCompat(plan: Tuple[int,RobotTrajectory,float,int]) -> RobotTrajectory:
+        # Note - here are all the values
+        # return (
+        #     error_code.val == MoveItErrorCodes.SUCCESS,
+        #     plan.deserialize(trajectory_msg),
+        #     planning_time,
+        #     error_code,
+        # )        
         return plan[1]
 else:
-    def planCompat(plan):
+    def planCompat(plan : RobotTrajectory) -> RobotTrajectory:
         return plan
         
 """
     Given the start angles of the robot, plan a trajectory that ends at the destination pose.
 """
-def plan_trajectory(move_group, destination_pose, start_joint_angles): 
+def plan_trajectory(move_group:MoveGroupCommander, destination_pose:Pose, start_joint_angles:JointState) -> RobotTrajectory:  
     print("rs007_control:mover.py:plan_trajectory")
     print("======================================")
     print("    move_group:",move_group)
+    print("    type(destination_pose):",type(destination_pose))
     print("    destination_pose:",destination_pose)
+    print("    type(start_joint_angles):",type(start_joint_angles))
     print("    start_joint_angles:",start_joint_angles)
-    print("    ------------------")
+    print("    --------------------------------------------")
     current_joint_state = JointState()
     current_joint_state.name = joint_names
     current_joint_state.position = start_joint_angles
@@ -53,7 +66,7 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
     print("    moveit_robot_state:",moveit_robot_state)
     moveit_robot_state.joint_state = current_joint_state
     move_group.set_start_state(moveit_robot_state)
-
+    
     move_group.set_pose_target(destination_pose)
     print("    calculating plan")   
     plan = move_group.plan()
@@ -70,16 +83,19 @@ def plan_trajectory(move_group, destination_pose, start_joint_angles):
     print(" plan_trajectory - returning planCompat(plan)")   
     return planCompat(plan)
 
-def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
+def cartesian_plan(move_group:MoveGroupCommander,tu_pose:Pose,fr_pose:Pose,current_joints,nbetween=2):
     print("cartesian_plan")
     print("==============")
+    print("type(move_group)",type(move_group))
     print("move_group")
     print(move_group)
+    print("type(tu_pose)",type(tu_pose))
     print("tu_pose")
     print(tu_pose)
+    print("type(fr_pose)",type(fr_pose))
     print("fr_pose")
     print(fr_pose)
-    print("current_joints")
+    print("type(current_joints)",type(current_joints))
     print(current_joints)    
     print("nbetween:"+str(nbetween))
 
@@ -102,7 +118,8 @@ def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
     deltx = tu_pose.position.x-fr_pose.position.x
     delty = tu_pose.position.y-fr_pose.position.y
     deltz = tu_pose.position.z-fr_pose.position.z
-    
+
+  
     for i in range(0,nbetween):
         frac = (i+1.0)/(nbetween+1.0)
         wpose = fr_pose
@@ -142,12 +159,15 @@ def cartesian_plan(move_group,tu_pose,fr_pose,current_joints,nbetween=2):
 """
 
 
-def plan_pose_sequence(req):
+def plan_pose_sequence(req:MoverServiceRequest):
     print("rs007_control:mover.py:plan_pose_sequence")
     print("=========================================")
     
+    print("    type(req):",type(req))
     print("    req:",req)
     response = MoverServiceResponse()
+
+    ji = req.joints_input
 
     group_name = "manipulator"
     move_group = moveit_commander.MoveGroupCommander(group_name)
@@ -206,15 +226,17 @@ def plan_pose_sequence(req):
     return response
 
 
-def plan_pick_and_place(req):
+def plan_pick_and_place(req:MoverServiceRequest):
     print("rs007_control:mover.py:plan_pick_and_place")
     print("==========================================")
    
+    print("    type(req):",type(req))
     print("    req:",req)
     response = MoverServiceResponse()
 
+
     group_name = "manipulator"
-    move_group = moveit_commander.MoveGroupCommander(group_name)
+    move_group = MoveGroupCommander(group_name)
 
     current_robot_joint_configuration = req.joints_input.joints
 
@@ -279,7 +301,7 @@ def moveit_server():
     s1 = rospy.Service('rs007_moveit', MoverService, plan_pick_and_place)
     s2 = rospy.Service('rs007_moveit_poseseq', MoverService, plan_pose_sequence)
                         
-    print("rs007_control:mover.py:Ready to plan - with poseseq - spinning")
+    print("rs007_control:mover.py:Ready to plan - with poseseq - spinning - ver 27 June 2022")
     rospy.spin()
 
 
