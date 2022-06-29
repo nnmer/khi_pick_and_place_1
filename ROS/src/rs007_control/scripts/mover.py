@@ -48,7 +48,8 @@ else:
 """
     Given the start angles of the robot, plan a trajectory that ends at the destination pose.
 """
-def plan_trajectory(move_group:MoveGroupCommander, destination_pose:Pose, start_joint_angles:JointState) -> RobotTrajectory:  
+def plan_trajectory(move_group:MoveGroupCommander, destination_pose:Pose, 
+                   start_joint_angles:Tuple[float,float,float,float,float,float]) -> RobotTrajectory:  
     print("rs007_control:mover.py:plan_trajectory")
     print("======================================")
     print("    move_group:",move_group)
@@ -83,7 +84,8 @@ def plan_trajectory(move_group:MoveGroupCommander, destination_pose:Pose, start_
     print(" plan_trajectory - returning planCompat(plan)")   
     return planCompat(plan)
 
-def cartesian_plan(move_group:MoveGroupCommander,tu_pose:Pose,fr_pose:Pose,current_joints,nbetween=2):
+def cartesian_plan(move_group:MoveGroupCommander,tu_pose:Pose,fr_pose:Pose,
+                   current_joints:Tuple[float,float,float,float,float,float],nbetween=2):
     print("cartesian_plan")
     print("==============")
     print("type(move_group)",type(move_group))
@@ -138,7 +140,10 @@ def cartesian_plan(move_group:MoveGroupCommander,tu_pose:Pose,fr_pose:Pose,curre
 
     waypoints.append(copy.deepcopy(tu_pose))
     
-    (plan,fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0 )
+    eef_step_in_meters = 0.01
+    jump_threshold = 0
+
+    (plan,fraction) = move_group.compute_cartesian_path(waypoints, eef_step_in_meters, jump_threshold )
     print("cartesian_plan finished - returning plan")
     # print(plan)
     return plan
@@ -167,63 +172,99 @@ def plan_pose_sequence(req:MoverServiceRequest):
     print("    req:",req)
     response = MoverServiceResponse()
 
-    ji = req.joints_input
+    group_name = "manipulator"
+    move_group = moveit_commander.MoveGroupCommander(group_name)
+
+    current_robot_joint_configuration = req.joints_input.joints
+
+    i = 0
+    for pose in req.joints_input.poses:
+        print(f"pose[{i}]:\n{pose}")
+        i += 1
+
+
+    # Pre grasp - position gripper directly above target object
+    curpose = req.joints_input.poses[0]
+    trajpt = plan_trajectory(move_group, curpose, current_robot_joint_configuration)
+    response.trajectories.append(trajpt)
+    prev_angles = trajpt.joint_trajectory.points[-1].positions
+
+    for pose in req.joints_input.poses:
+        trajpt = cartesian_plan(move_group, pose, curpose, prev_angles)
+        if not trajpt.joint_trajectory.points:
+            return response        
+        response.trajectories.append(trajpt)
+        prev_angles = trajpt.joint_trajectory.points[-1].positions
+        curpose = pose
+   
+    # If the trajectory has no points, planning has failed and we return an empty response
+    move_group.clear_pose_targets()
+
+    return response
+
+def plan_pose_sequence_old(req:MoverServiceRequest):
+    print("rs007_control:mover.py:plan_pose_sequence")
+    print("=========================================")
+    
+    print("    type(req):",type(req))
+    print("    req:",req)
+    response = MoverServiceResponse()
 
     group_name = "manipulator"
     move_group = moveit_commander.MoveGroupCommander(group_name)
 
     current_robot_joint_configuration = req.joints_input.joints
 
+    req_pick_pose = req.joints_input.poses[0]
+    print("req_pick_pose",req_pick_pose)
+    grasp_pick_pose = req.joints_input.poses[1]
+    print("grasp_pick_pose",grasp_pick_pose)
+    # grasp_pick_pose = copy.deepcopy(req.pick_pose)
+    # grasp_pick_pose.position.z -= 0.05  # Static value coming from Unity, TODO: pass along with request
+    req_place_pose = req.joints_input.poses[2]
+    print("req_place_pose",req_place_pose)
+
     # Pre grasp - position gripper directly above target object
-    pre_grasp_pose = plan_trajectory(move_group, req.pick_pose, current_robot_joint_configuration)
+    pre_grasp_trajpt = plan_trajectory(move_group, req_pick_pose, current_robot_joint_configuration)
     
     # If the trajectory has no points, planning has failed and we return an empty response
-    if not pre_grasp_pose.joint_trajectory.points:
+    if not pre_grasp_trajpt.joint_trajectory.points:
         return response
 
-    previous_ending_joint_angles = pre_grasp_pose.joint_trajectory.points[-1].positions
+    previous_ending_joint_angles = pre_grasp_trajpt.joint_trajectory.points[-1].positions
 
     # Grasp - lower gripper so that fingers are on either side of object
-    orig_pick_pose = copy.deepcopy(req.pick_pose)
-    pick_pose = copy.deepcopy(req.pick_pose)
-    pick_pose.position.z -= 0.05  # Static value coming from Unity, TODO: pass along with request
-    # print("current_robot_joint_configuration")
-    # print(current_robot_joint_configuration)   
-    # print("previous_ending_joint_angles")
-    # print(previous_ending_joint_angles)
     
     # grasp_pose = None
-    grasp_pose = cartesian_plan(move_group, pick_pose, req.pick_pose, previous_ending_joint_angles,)
-        
+    grasp_trajpt = cartesian_plan(move_group, grasp_pick_pose, req_pick_pose, previous_ending_joint_angles)
+       
 
-    previous_ending_joint_angles = grasp_pose.joint_trajectory.points[-1].positions
+    previous_ending_joint_angles = grasp_trajpt.joint_trajectory.points[-1].positions
 
     # Pick Up - raise gripper back to the pre grasp position
-    #pick_up_pose = plan_trajectory(move_group, req.pick_pose, previous_ending_joint_angles)
     
-    pick_up_pose = cartesian_plan(move_group, orig_pick_pose, pick_pose, previous_ending_joint_angles)
+    pick_up_trajpt = cartesian_plan(move_group, req_pick_pose, grasp_pick_pose, previous_ending_joint_angles)
     
-    if not pick_up_pose.joint_trajectory.points:
+    if not pick_up_trajpt.joint_trajectory.points:
         return response
 
-    previous_ending_joint_angles = pick_up_pose.joint_trajectory.points[-1].positions
+    previous_ending_joint_angles = pick_up_trajpt.joint_trajectory.points[-1].positions
 
     # Place - move gripper to desired placement position
-    # place_pose = plan_trajectory(move_group, req.place_pose, previous_ending_joint_angles)
-    place_pose = cartesian_plan(move_group,  req.place_pose, orig_pick_pose, previous_ending_joint_angles)
+    place_trajpt = cartesian_plan(move_group,  req_place_pose, req_pick_pose, previous_ending_joint_angles)
 
-    if not place_pose.joint_trajectory.points:
+    if not place_trajpt.joint_trajectory.points:
         return response
 
     # If trajectory planning worked for all pick and place stages, add plan to response
-    response.trajectories.append(pre_grasp_pose)
-    response.trajectories.append(grasp_pose)
-    response.trajectories.append(pick_up_pose)
-    response.trajectories.append(place_pose)
+    response.trajectories.append(pre_grasp_trajpt)
+    response.trajectories.append(grasp_trajpt)
+    response.trajectories.append(pick_up_trajpt)
+    response.trajectories.append(place_trajpt)
 
     move_group.clear_pose_targets()
 
-    return response
+    return response    
 
 
 def plan_pick_and_place(req:MoverServiceRequest):
@@ -301,7 +342,7 @@ def moveit_server():
     s1 = rospy.Service('rs007_moveit', MoverService, plan_pick_and_place)
     s2 = rospy.Service('rs007_moveit_poseseq', MoverService, plan_pose_sequence)
                         
-    print("rs007_control:mover.py:Ready to plan - with poseseq - spinning - ver 27 June 2022")
+    print("rs007_control:mover.py:Ready to plan - with poseseq - spinning - ver 29 June 2022 - 14:33")
     rospy.spin()
 
 

@@ -253,10 +253,10 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     /// </summary>
     /// <returns>NiryoMoveitJoints</returns>
     // NiryoMoveitJoints CurrentJointConfig()
-    Rs007MoveitJointsMsg CurrentJointConfig()
+    Rs007MoveitJointsAndPoseSeqMsg CurrentJointConfig()
     {
         // var joints = new NiryoMoveitJointsMsg();
-        var joints = new Rs007MoveitJointsMsg();
+        var joints = new Rs007MoveitJointsAndPoseSeqMsg();
 
         for (var i = 0; i < k_NumRobotJoints; i++)
         {
@@ -303,7 +303,7 @@ public class Rs007TrajectoryPlanner : MonoBehaviour
     public void PlanAndExecutePickAndPlace()
     {
         var request = new MoverServiceRequest();
-        request.joints_input = CurrentJointConfig();
+        request.joints_poses_input = CurrentJointConfig();
 
 
         // Pick Pose

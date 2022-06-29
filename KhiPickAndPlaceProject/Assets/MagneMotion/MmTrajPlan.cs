@@ -232,11 +232,11 @@ namespace KhiDemo
         ///     Get the current values of the robot's joint angles.
         /// </summary>
         /// <returns>Rs007MoveitJointsMsg</returns>
-        // Rs007MoveitJointsMsg CurrentJointConfig()
-        Rs007MoveitJointsMsg CurrentJointConfig()
+        // Rs007MoveitJointsAndPoseSeqMsg CurrentJointConfig()
+        Rs007MoveitJointsAndPoseSeqMsg CurrentJointConfig()
         {
             // var joints = new NiryoMoveitJointsMsg();
-            var joints = new Rs007MoveitJointsMsg();
+            var joints = new Rs007MoveitJointsAndPoseSeqMsg();
 
             for (var i = 0; i < k_NumRobotJoints; i++)
             {
@@ -245,6 +245,17 @@ namespace KhiDemo
 
             return joints;
         }
+
+
+        Rs007MoveitJointsAndPoseSeqMsg AddPoses(Rs007MoveitJointsAndPoseSeqMsg orig, PoseMsg p1, PoseMsg p2, PoseMsg p3)
+        {
+            // var joints = new NiryoMoveitJointsMsg();
+            var poses = new PoseMsg[3] { p1, p2,p3 };
+            var rv = new Rs007MoveitJointsAndPoseSeqMsg(orig.joints, poses );
+            return rv;
+        }
+
+
         public Vector3 TransformToRobotCoordinates(Vector3 pt, string cmt = "", string frcolor = "blue", string toculor = "cyan")
         {
             var rm = this.RobotModel;
@@ -259,19 +270,6 @@ namespace KhiDemo
 
             Debug.Log($"TransformToRobotCoordinates rot:{rot} pivotpt:{pivotpt:f3} mapped:{pt:f3} to {tpt:f3}");
 
-            //if (cmt != "")
-            //{
-            //    var sz = 0.02f;
-            //    var go0 = UnityUt.CreateSphere(null, "yellow", size: sz);
-            //    go0.name = $"PivotPoint";
-            //    go0.transform.position = pivotpt;
-            //    var go1 = UnityUt.CreateSphere(null, frcolor, size: sz);
-            //    go1.name = $"{cmt} - pt";
-            //    go1.transform.position = pt;
-            //    var go2 = UnityUt.CreateSphere(null, toculor, size: sz);
-            //    go2.name = $"{cmt} - tpt";
-            //    go2.transform.position = tpt;
-            //}
             return tpt;
         }
         /// <summary>
@@ -283,7 +281,7 @@ namespace KhiDemo
         public void PlanAndExecutePickAndPlace()
         {
             var request = new MoverServiceRequest();
-            request.joints_input = CurrentJointConfig();
+            request.joints_poses_input = CurrentJointConfig();
 
 
             // Pick Pose
@@ -314,6 +312,12 @@ namespace KhiDemo
             };
             var msg2 = $"PlacePose (FLU) position:{pt2:f3} orientation:{or2:f3}";
             Debug.Log(msg2);
+
+            var p1 = request.pick_pose;
+            var pm2 = new PointMsg(p1.position.x, p1.position.y, p1.position.z - 0.05f);
+            var p2 = new PoseMsg(pm2, p1.orientation);
+            var p3 = request.place_pose;
+            request.joints_poses_input = AddPoses(request.joints_poses_input, p1,p2,p3 );
 
             magmo.rosconnection.SendServiceMessage<MoverServiceResponse>(movitServiceName, request, TrajectoryResponse);
         }

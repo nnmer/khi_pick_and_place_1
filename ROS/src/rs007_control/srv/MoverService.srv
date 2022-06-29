@@ -1,4 +1,4 @@
-Rs007MoveitJoints joints_input
+Rs007MoveitJointsAndPoseSeq joints_input
 geometry_msgs/Pose pick_pose
 geometry_msgs/Pose place_pose
 ---
