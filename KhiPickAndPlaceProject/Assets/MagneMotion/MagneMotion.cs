@@ -470,21 +470,18 @@ namespace KhiDemo
             if (ctrlhit && Input.GetKeyDown(KeyCode.E))
             {
                 Debug.Log("Hit LCtrl-E");
-                mmctrl.SetMode(MmMode.Echo,clear:true);
+                mmctrl.SetModeWhenIdle(MmMode.Echo,clear:true);
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.T))
             {
                 Debug.Log("Hit LCtrl-T");
                 var traycount = mmtray.CountLoaded();
+                var newmode = MmMode.StartRailToTray;
                 if (traycount > 0)
                 {
-                    mmctrl.SetModeFast(MmMode.StartTrayToRail);
+                    newmode = MmMode.StartTrayToRail;
                 }
-                else
-                {
-                    mmctrl.SetModeFast(MmMode.StartRailToTray);
-                }
-                //mmctrl.SetMode(MmMode.StartTrayToRail, clear: true);
+                mmctrl.SetModeWhenIdle(newmode);
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.V))
             {
@@ -521,7 +518,7 @@ namespace KhiDemo
             if (ctrlhit && Input.GetKeyDown(KeyCode.L))
             {
                 Debug.Log("Hit LCtrl-L");
-                mmctrl.SetModeFast(MmMode.SimuRailToRail);
+                mmctrl.SetModeWhenIdle(MmMode.SimuRailToRail);
                 //mmctrl.SetMode(MmMode.SimuRailToRail, clear: true);
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.R))
@@ -537,7 +534,7 @@ namespace KhiDemo
             if (ctrlhit && Input.GetKeyDown(KeyCode.P))
             {
                 Debug.Log("Hit LCtrl-P");
-                mmctrl.SetMode(MmMode.Planning, clear: true);
+                mmctrl.SetModeWhenIdle(MmMode.Planning, clear: true);
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.F))
             {

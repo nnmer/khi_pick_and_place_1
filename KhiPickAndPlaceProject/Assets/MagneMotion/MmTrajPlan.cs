@@ -13,6 +13,8 @@ public enum MmMovementStyle { PhysicsForces, MagicMovement };
 
 namespace KhiDemo
 {
+    public enum RosService { Original, PoseSeq }
+
     public class MmTrajPlan : MonoBehaviour
     {
         // Hardcoded variables
@@ -23,9 +25,13 @@ namespace KhiDemo
         MagneMotion magmo;
 
         // Variables required for ROS communication
-        [SerializeField]
-        string movitServiceName = "rs007_moveit_poseseq";
-        public string RosServiceName { get => movitServiceName; set => movitServiceName = value; }
+        string movitServiceNamePoseSeq = "rs007_moveit_poseseq";
+        string movitServiceNameOrig =    "rs007_moveit";
+
+        public RosService rosService = RosService.Original;
+
+        string serviceName;
+
 
         [SerializeField]
         GameObject m_RobotModel;
@@ -79,7 +85,19 @@ namespace KhiDemo
         {
             // Get ROS connection static instance
             //m_Ros = ROSConnection.GetOrCreateInstance();
-            magmo.rosconnection.RegisterRosService<MoverServiceRequest, MoverServiceResponse>(movitServiceName);
+
+            switch (rosService)
+            {
+                case RosService.Original:
+                    serviceName = movitServiceNameOrig;
+                    break;
+                default:
+                case RosService.PoseSeq:
+                    serviceName = movitServiceNamePoseSeq;
+                    break;
+            }
+            Debug.Log($"ROSConnection service name:{serviceName}");
+            magmo.rosconnection.RegisterRosService<MoverServiceRequest, MoverServiceResponse>(serviceName);
 
             //MmMovementStyle = MmMovementStyle.MagicMovement;
             MmMovementStyle = MmMovementStyle.PhysicsForces;
@@ -250,7 +268,7 @@ namespace KhiDemo
         Rs007MoveitJointsAndPoseSeqMsg AddPoses(Rs007MoveitJointsAndPoseSeqMsg orig, PoseMsg p1, PoseMsg p2, PoseMsg p3)
         {
             // var joints = new NiryoMoveitJointsMsg();
-            var poses = new PoseMsg[3] { p1, p2,p3 };
+            var poses = new PoseMsg[4] { p1, p2, p1, p3 };
             var rv = new Rs007MoveitJointsAndPoseSeqMsg(orig.joints, poses );
             return rv;
         }
@@ -319,7 +337,7 @@ namespace KhiDemo
             var p3 = request.place_pose;
             request.joints_poses_input = AddPoses(request.joints_poses_input, p1,p2,p3 );
 
-            magmo.rosconnection.SendServiceMessage<MoverServiceResponse>(movitServiceName, request, TrajectoryResponse);
+            magmo.rosconnection.SendServiceMessage<MoverServiceResponse>(serviceName, request, TrajectoryResponse);
         }
 
         void TrajectoryResponse(MoverServiceResponse response)

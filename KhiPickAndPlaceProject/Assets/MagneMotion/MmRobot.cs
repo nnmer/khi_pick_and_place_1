@@ -268,6 +268,7 @@ namespace KhiDemo
                 return;
             }
             this.box = box;
+            Debug.Log($"Attaching Box to Robot - {box.boxid1} {box.boxid2} {box.boxclr})");
             box.transform.parent = null;
             box.transform.localRotation = Quaternion.Euler(90, 0, 0);
             box.transform.localPosition = new Vector3(0, -0.14f, 0);
@@ -280,7 +281,12 @@ namespace KhiDemo
             var oldbox = box;
             if (oldbox != null)
             {
+                Debug.Log($"Detaching Box from Robot - {oldbox.boxid1} {oldbox.boxid2} {oldbox.boxclr})");
                 oldbox.SetBoxStatus(BoxStatus.free);
+            }
+            else
+            {
+                Debug.Log($"Detaching Box from Robot (null box)");
             }
             box = null;
             loadState = false;
@@ -300,6 +306,10 @@ namespace KhiDemo
                 if( startLoadState)
                 {
                     AddBoxToRobot();
+                }
+                else
+                {
+                    DetachhBoxFromRobot();
                 }
             }
         }

@@ -17,6 +17,7 @@ namespace KhiDemo
         BoxForm boxform;
         public string boxid1;
         public string boxid2;
+        public string boxclr="none";
         public int seqnum;
         public BoxStatus lastStatus;
         public BoxStatus boxStatus;
@@ -244,8 +245,8 @@ namespace KhiDemo
 
                         if (boxform == BoxForm.PrefabWithMarkerCube)
                         {
-                            var clr = UnityUt.GetSequentialColorString();
-                            var gobx = UnityUt.CreateCube(null, clr, size: 0.02f);
+                            boxclr = UnityUt.GetSequentialColorString();
+                            var gobx = UnityUt.CreateCube(null, boxclr, size: 0.02f);
                             gobx.name = "markercube";
                             gobx.transform.position = new Vector3(0, 0.0164f, 0);
                             gobx.transform.SetParent(go1.transform, worldPositionStays: false);

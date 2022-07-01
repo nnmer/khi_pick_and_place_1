@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -73,11 +74,12 @@ namespace KhiDemo
             }
         }
 
+        List<MmMode> fastModes = new List<MmMode>() { MmMode.SimuRailToRail, MmMode.StartRailToTray, MmMode.StartTrayToRail };
         public void SetModeFast(MmMode newMode)
         {
-            Debug.Log($"SetModeFast {newMode}");
-            var newBoxMode = InferBoxMode(newMode);
-            if (newBoxMode == MmBoxMode.RealPooled && newBoxMode == mmBoxMode)
+            var okForFast = fastModes.Contains(magmo.mmMode) && fastModes.Contains(newMode);
+            Debug.Log($"SetModeFast {newMode} okForFast:{okForFast}");
+            if (okForFast)
             {
                 mmMode = newMode;
                 magmo.mmMode = newMode;
@@ -230,6 +232,29 @@ namespace KhiDemo
             DoReverseTrayRail();
         }
 
+        public void SetModeWhenIdle(MmMode newmode, bool clear = false)
+        {
+            StartCoroutine(CoSetModeWhenIdle(newmode,clear));
+        }
+
+        public IEnumerator CoSetModeWhenIdle(MmMode newmode,bool clear=false)
+        {
+            Debug.Log($"SetModeWhenIdle {newmode} stat:{robstatus}");
+            yield return new WaitUntil(() => robstatus == RobStatus.idle);
+            Debug.Log($"robstat now idle - stat:{robstatus}");
+            robstatus = RobStatus.busy;
+            if (clear)
+            {
+                SetMode(newmode, clear);
+            }
+            else
+            {
+                SetModeFast(newmode);
+            }
+            robstatus = RobStatus.idle;
+        }
+
+
         IEnumerator TransferBoxFromSledToRobot(MmSled sled,MmRobot rob)
         {
             yield return new WaitUntil(() => robstatus == RobStatus.idle);
@@ -254,6 +279,7 @@ namespace KhiDemo
                 mmRobot.RealiseRobotPose(RobotPose.rest);
             }
             yield return new WaitForSeconds(longRobMoveSec);
+            coroutineCount--;
             robstatus = RobStatus.idle;
         }
 
@@ -281,6 +307,7 @@ namespace KhiDemo
                 mmRobot.RealiseRobotPose(RobotPose.rest);
             }
             yield return new WaitForSeconds(longRobMoveSec);
+            coroutineCount--;
             robstatus = RobStatus.idle;
         }
 
@@ -302,6 +329,7 @@ namespace KhiDemo
             yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(RobotPose.rest);
             yield return new WaitForSeconds(longRobMoveSec);
+            coroutineCount--;
             robstatus = RobStatus.idle;
         }
 
@@ -323,12 +351,22 @@ namespace KhiDemo
             yield return new WaitForSeconds(shortRobMoveSec);
             mmRobot.RealiseRobotPose(RobotPose.rest);
             yield return new WaitForSeconds(longRobMoveSec);
+            coroutineCount--;
             robstatus = RobStatus.idle;
         }
 
         public enum TranferType { SledToRob, RobToSled, TrayToRob, RobToTray }
 
         public float coroutineStart;
+        public int coroutineCount = 0;
+        void CheckCount(string roo)
+        {
+            if (coroutineCount!=0)
+            {
+                Debug.LogWarning($"coroutineCount!=0 roo:{roo}");
+            }
+            coroutineCount++;
+        }
 
         public void StartCoroutineSledTransferBox(TranferType tt, MmSled sled)
         {
@@ -344,6 +382,7 @@ namespace KhiDemo
                             rob.ActivateRobBox(true);
                             break;
                         case MmBoxMode.RealPooled:
+                            CheckCount("TransferBoxFromSledToRobot");
                             StartCoroutine(TransferBoxFromSledToRobot(sled,rob));
                             break;
                     }
@@ -356,6 +395,7 @@ namespace KhiDemo
                             rob.ActivateRobBox(false);
                             break;
                         case MmBoxMode.RealPooled:
+                            CheckCount("TransferBoxFromRobotToSled");
                             StartCoroutine(TransferBoxFromRobotToSled(rob,sled));
                             break;
                     }
@@ -383,6 +423,7 @@ namespace KhiDemo
                         case MmBoxMode.RealPooled:
                             Debug.Log($"TransferBoxFromTrayToRobot {key}");
                             //yield return new WaitUntil(() => robstatus == RobStatus.idle);
+                            CheckCount("TransferBoxFromTrayToRobot");
                             StartCoroutine(TransferBoxFromTrayToRobot(key, rob));
                             break;
                     }
@@ -395,6 +436,7 @@ namespace KhiDemo
                             rob.ActivateRobBox(false);
                             break;
                         case MmBoxMode.RealPooled:
+                            CheckCount("TransferBoxFromRobotToTray");
                             StartCoroutine(TransferBoxFromRobotToTray(rob,key));
                             break;
                     }

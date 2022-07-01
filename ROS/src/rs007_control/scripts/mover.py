@@ -52,19 +52,19 @@ def plan_trajectory(move_group:MoveGroupCommander, destination_pose:Pose,
                    start_joint_angles:Tuple[float,float,float,float,float,float]) -> RobotTrajectory:  
     print("rs007_control:mover.py:plan_trajectory")
     print("======================================")
-    print("    move_group:",move_group)
-    print("    type(destination_pose):",type(destination_pose))
-    print("    destination_pose:",destination_pose)
-    print("    type(start_joint_angles):",type(start_joint_angles))
-    print("    start_joint_angles:",start_joint_angles)
-    print("    --------------------------------------------")
+    # print("    move_group:",move_group)
+    # print("    type(destination_pose):",type(destination_pose))
+    print("destination_pose:",destination_pose)
+    # print("    type(start_joint_angles):",type(start_joint_angles))
+    print("start_joint_angles:",start_joint_angles)
+    print("--------------------------------------------")
     current_joint_state = JointState()
     current_joint_state.name = joint_names
     current_joint_state.position = start_joint_angles
-    print("    current_joint_state:",current_joint_state)
+    # print("    current_joint_state:",current_joint_state)
     
     moveit_robot_state = RobotState()
-    print("    moveit_robot_state:",moveit_robot_state)
+    # print("    moveit_robot_state:",moveit_robot_state)
     moveit_robot_state.joint_state = current_joint_state
     move_group.set_start_state(moveit_robot_state)
     
@@ -88,27 +88,27 @@ def cartesian_plan(move_group:MoveGroupCommander,tu_pose:Pose,fr_pose:Pose,
                    current_joints:Tuple[float,float,float,float,float,float],nbetween=2):
     print("cartesian_plan")
     print("==============")
-    print("type(move_group)",type(move_group))
-    print("move_group")
-    print(move_group)
-    print("type(tu_pose)",type(tu_pose))
+    # print("type(move_group)",type(move_group))
+    # print("move_group")
+    # print(move_group)
+    # print("type(tu_pose)",type(tu_pose))
     print("tu_pose")
     print(tu_pose)
-    print("type(fr_pose)",type(fr_pose))
+    # print("type(fr_pose)",type(fr_pose))
     print("fr_pose")
     print(fr_pose)
-    print("type(current_joints)",type(current_joints))
+    # print("type(current_joints)",type(current_joints))
     print(current_joints)    
     print("nbetween:"+str(nbetween))
 
     current_joint_state = JointState()
     current_joint_state.name = joint_names
     current_joint_state.position = current_joints
-    print("    current_joint_state:",current_joint_state)
+    # print("    current_joint_state:",current_joint_state)
  
 
     moveit_robot_state = RobotState()
-    print("    moveit_robot_state:",moveit_robot_state)
+    # print("    moveit_robot_state:",moveit_robot_state)
     moveit_robot_state.joint_state = current_joint_state
     move_group.set_start_state(moveit_robot_state)
     move_group.set_pose_target(tu_pose)    
@@ -168,8 +168,8 @@ def plan_pose_sequence(req:MoverServiceRequest):
     print("rs007_control:mover.py:plan_pose_sequence")
     print("=========================================")
     
-    print("    type(req):",type(req))
-    print("    req:",req)
+    # print("    type(req):",type(req))
+    # print("    req:",req)
     response = MoverServiceResponse()
 
     group_name = "manipulator"
