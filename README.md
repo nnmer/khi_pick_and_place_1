@@ -3,7 +3,7 @@
 # Kawaski RS007 Robot / Rockwell MagneMotion Pick-and-Place Demo
 
 Derived from the Unity Robotics Hub Pick-and-Place tutorial
-
+This unity app simulates the Rs007 Robot and Rockwell MagneMotion table features in the Build 2022 Keynote Demo (at the end of Satya Nadella's portion)
 
 # Getting started
 - prerequisites Windows 10 or 11, Docker Desktop, Unity
@@ -33,10 +33,7 @@ Derived from the Unity Robotics Hub Pick-and-Place tutorial
       - `. devel\setup.bash`
       - `rosnode list`
       
-  
-This unity app simulates the Rs007 Robot and Rockwell MagneMotion table features in the Build 2022 Keynote Demo (at the end of Satya Nadella's portion)
-
-  
+# Notes
 The application has different modes:
   - Simulation mode in which it can run in 
        - moving boxes from rail to rail
@@ -82,9 +79,13 @@ Parameters:
    --mode rail2tray
  
  
- Start two instances with one echoing the other
+ # Start two instances with one echoing the other
+   - Make sure you have a ROS container running and know what port it is using for the ROS-Unity communication (below example localhost:10005)
+   
    - Open a cmd window
-   - Enter: `khidemosim --mode tray2rail --zmqport 1006
+   - Enter: `khidemosim --mode tray2rail --zmqport 10006`
+   - (note: If you are using a local host you should see output echoing the statusrunning in the container window)
    - Open a second cmd window
-   - Enter: `khidemosim --mode echo --roshost localhost --rosport 10005
+   - Enter: `khidemosim --mode echo --roshost localhost --rosport 10005`
+   - The upper left communication HUD IP window should be showing green communication arrows
 

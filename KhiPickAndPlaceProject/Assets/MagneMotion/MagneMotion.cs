@@ -673,7 +673,7 @@ namespace KhiDemo
         {
             GUIStyle textstyle = GUI.skin.GetStyle("Label");
             textstyle.alignment = TextAnchor.UpperLeft;
-            textstyle.fontSize = 24;
+            textstyle.fontSize = 12;
             textstyle.clipping = TextClipping.Overflow;
             textstyle.fontStyle = FontStyle.Bold;
             textstyle.normal.textColor = UnityUt.GetColorByName("indigo");
@@ -681,8 +681,8 @@ namespace KhiDemo
             var w = 400;
             var h = 20;
             var dy = textstyle.fontSize*1.1f;
-            var x1 = Screen.width / 2 - 220;
-            var x2 = Screen.width / 2 - 200;
+            var x1 = Screen.width / 2 - 270;
+            var x2 = Screen.width / 2 - 250;
             var y = 10f;
 
             if (showHelpText)

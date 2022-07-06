@@ -5,13 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Tests/PlayMode/PlayModeTestScenes/TargetPlacementTest.unity
-    guid: 3d328f38f71b71e47bb8d96869012ffe
-  - enabled: 0
-    path: Assets/Tests/PlayMode/PlayModeTestScenes/TargetPlacementTest.unity
-    guid: 3d328f38f71b71e47bb8d96869012ffe
   - enabled: 1
-    path: Assets/Scenes/khisimapp0.unity
-    guid: e5252b9cf0e81894da4e200a4d6e7729
+    path: Assets/Scenes/build1.unity
+    guid: 72001213bf4cba44fa1b24bb0a977e55
   m_configObjects: {}
