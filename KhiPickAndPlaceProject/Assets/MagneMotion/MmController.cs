@@ -243,116 +243,196 @@ namespace KhiDemo
             yield return new WaitUntil(() => robstatus == RobStatus.idle);
             Debug.Log($"robstat now idle - stat:{robstatus}");
             robstatus = RobStatus.busy;
-            if (clear)
+            try
             {
-                SetMode(newmode, clear);
+                if (clear)
+                {
+                    SetMode(newmode, clear);
+                }
+                else
+                {
+                    SetModeFast(newmode);
+                }
             }
-            else
+            finally
             {
-                SetModeFast(newmode);
+                robstatus = RobStatus.idle;
             }
-            robstatus = RobStatus.idle;
         }
 
 
-        IEnumerator TransferBoxFromSledToRobot(MmSled sled,MmRobot rob)
+        IEnumerator TransferBoxFromSledToRobot(MmMode launchMode,MmSled sled,MmRobot rob)
         {
-            yield return new WaitUntil(() => robstatus == RobStatus.idle);
-            robstatus = RobStatus.busy;
-            mmRobot.RealiseRobotPose(RobotPose.fcartup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            mmRobot.RealiseRobotPose(RobotPose.fcartdn);
-            yield return new WaitForSeconds(longRobMoveSec);
-            var box = sled.DetachhBoxFromSled();
-            if (box != null)
+            try
             {
-                rob.AttachBoxToRobot(box);
+                yield return new WaitUntil(() => robstatus == RobStatus.idle);
+                if (Interrupt(launchMode)) yield break;
+
+                robstatus = RobStatus.busy;
+                mmRobot.RealiseRobotPose(RobotPose.fcartup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                mmRobot.RealiseRobotPose(RobotPose.fcartdn);
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                var box = sled.DetachhBoxFromSled();
+                if (box != null)
+                {
+                    if (Interrupt(launchMode)) yield break;
+                    rob.AttachBoxToRobot(box);
+                }
+                mmRobot.RealiseRobotPose(RobotPose.fcartup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                if (mmMode == MmMode.SimuRailToRail)
+                {
+                    mmRobot.RealiseRobotPose(RobotPose.restr2r);
+                }
+                else
+                {
+                    mmRobot.RealiseRobotPose(RobotPose.rest);
+                }
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
             }
-            mmRobot.RealiseRobotPose(RobotPose.fcartup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            if (mmMode == MmMode.SimuRailToRail)
+            finally
             {
-                mmRobot.RealiseRobotPose(RobotPose.restr2r);
+                coroutineCount--;
+                robstatus = RobStatus.idle;
             }
-            else
+        }
+
+        IEnumerator TransferBoxFromRobotToSled(MmMode launchMode, MmRobot rob, MmSled sled)
+        {
+            try
             {
+                yield return new WaitUntil(() => robstatus == RobStatus.idle);
+                if (Interrupt(launchMode)) yield break;
+
+                robstatus = RobStatus.busy;
+                mmRobot.RealiseRobotPose(RobotPose.ecartup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                mmRobot.RealiseRobotPose(RobotPose.ecartdn);
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                var box = rob.DetachhBoxFromRobot();
+                if (box != null)
+                {
+                    sled.AttachBoxToSled(box);
+                }
+                mmRobot.RealiseRobotPose(RobotPose.ecartup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                if (mmMode == MmMode.SimuRailToRail)
+                {
+                    mmRobot.RealiseRobotPose(RobotPose.restr2r);
+                }
+                else
+                {
+                    mmRobot.RealiseRobotPose(RobotPose.rest);
+                }
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+            }
+            finally
+            {
+                coroutineCount--;
+                robstatus = RobStatus.idle;
+            }
+        }
+
+        IEnumerator TransferBoxFromTrayToRobot(MmMode launchMode, (int,int) key, MmRobot rob)
+        {
+            try
+            {
+                yield return new WaitUntil(() => robstatus == RobStatus.idle);
+                if (Interrupt(launchMode)) yield break;
+
+                robstatus = RobStatus.busy;
+                var (poseup, posedn) = mmRobot.GetPoses(key);
+                mmRobot.RealiseRobotPose(poseup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                mmRobot.RealiseRobotPose(posedn);
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                var box = mmtray.DetachhBoxFromTraySlot(key);
+                if (box != null)
+                {
+                    if (Interrupt(launchMode)) yield break;
+                    rob.AttachBoxToRobot(box);
+                }
+                mmRobot.RealiseRobotPose(poseup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
                 mmRobot.RealiseRobotPose(RobotPose.rest);
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
             }
-            yield return new WaitForSeconds(longRobMoveSec);
-            coroutineCount--;
-            robstatus = RobStatus.idle;
+            finally
+            {
+                coroutineCount--;
+                robstatus = RobStatus.idle;
+            }
         }
 
-        IEnumerator TransferBoxFromRobotToSled(MmRobot rob, MmSled sled)
+
+
+        IEnumerator TransferBoxFromRobotToTray(MmMode launchMode, MmRobot rob, (int, int) key )
         {
-            yield return new WaitUntil(() => robstatus == RobStatus.idle);
-            robstatus = RobStatus.busy;
-            mmRobot.RealiseRobotPose(RobotPose.ecartup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            mmRobot.RealiseRobotPose(RobotPose.ecartdn);
-            yield return new WaitForSeconds(longRobMoveSec);
-            var box = rob.DetachhBoxFromRobot();
-            if (box != null)
+            try
             {
-                sled.AttachBoxToSled(box);
-            }
-            mmRobot.RealiseRobotPose(RobotPose.ecartup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            if (mmMode == MmMode.SimuRailToRail)
-            {
-                mmRobot.RealiseRobotPose(RobotPose.restr2r);
-            }
-            else
-            {
+                yield return new WaitUntil(() => robstatus == RobStatus.idle);
+                if (Interrupt(launchMode)) yield break;
+                robstatus = RobStatus.busy;
+                var (poseup, posedn) = mmRobot.GetPoses(key);
+                mmRobot.RealiseRobotPose(poseup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                mmRobot.RealiseRobotPose(posedn);
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
+                var box = rob.DetachhBoxFromRobot();
+                if (box != null)
+                {
+                    mmtray.AttachBoxToTraySlot(key, box);
+                }
+                mmRobot.RealiseRobotPose(poseup);
+                yield return new WaitForSeconds(shortRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
+
                 mmRobot.RealiseRobotPose(RobotPose.rest);
+                yield return new WaitForSeconds(longRobMoveSec);
+                if (Interrupt(launchMode)) yield break;
             }
-            yield return new WaitForSeconds(longRobMoveSec);
-            coroutineCount--;
-            robstatus = RobStatus.idle;
+            finally
+            {
+                coroutineCount--;
+                robstatus = RobStatus.idle;
+            }
         }
 
-        IEnumerator TransferBoxFromTrayToRobot((int,int) key, MmRobot rob)
-        {
-            yield return new WaitUntil(() => robstatus == RobStatus.idle);
-            robstatus = RobStatus.busy;
-            var (poseup, posedn) = mmRobot.GetPoses(key);
-            mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            mmRobot.RealiseRobotPose(posedn);
-            yield return new WaitForSeconds(longRobMoveSec);
-            var box = mmtray.DetachhBoxFromTraySlot(key);
-            if (box != null)
-            {
-                rob.AttachBoxToRobot(box);
-            }
-            mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            mmRobot.RealiseRobotPose(RobotPose.rest);
-            yield return new WaitForSeconds(longRobMoveSec);
-            coroutineCount--;
-            robstatus = RobStatus.idle;
-        }
 
-        IEnumerator TransferBoxFromRobotToTray(MmRobot rob, (int, int) key )
+
+        bool Interrupt(MmMode launchMode)
         {
-            yield return new WaitUntil(() => robstatus == RobStatus.idle);
-            robstatus = RobStatus.busy;
-            var (poseup, posedn) = mmRobot.GetPoses(key);
-            mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            mmRobot.RealiseRobotPose(posedn);
-            yield return new WaitForSeconds(longRobMoveSec);
-            var box = rob.DetachhBoxFromRobot();
-            if (box != null)
-            {
-                mmtray.AttachBoxToTraySlot(key, box);
-            }
-            mmRobot.RealiseRobotPose(poseup);
-            yield return new WaitForSeconds(shortRobMoveSec);
-            mmRobot.RealiseRobotPose(RobotPose.rest);
-            yield return new WaitForSeconds(longRobMoveSec);
-            coroutineCount--;
-            robstatus = RobStatus.idle;
+            if (launchMode == magmo.mmMode) return false;
+            return true;
         }
 
         public enum TranferType { SledToRob, RobToSled, TrayToRob, RobToTray }
@@ -383,7 +463,7 @@ namespace KhiDemo
                             break;
                         case MmBoxMode.RealPooled:
                             CheckCount("TransferBoxFromSledToRobot");
-                            StartCoroutine(TransferBoxFromSledToRobot(sled,rob));
+                            StartCoroutine(TransferBoxFromSledToRobot(magmo.mmMode, sled,rob));
                             break;
                     }
                     break;
@@ -396,7 +476,7 @@ namespace KhiDemo
                             break;
                         case MmBoxMode.RealPooled:
                             CheckCount("TransferBoxFromRobotToSled");
-                            StartCoroutine(TransferBoxFromRobotToSled(rob,sled));
+                            StartCoroutine(TransferBoxFromRobotToSled(magmo.mmMode, rob,sled));
                             break;
                     }
                     break;
@@ -424,7 +504,7 @@ namespace KhiDemo
                             Debug.Log($"TransferBoxFromTrayToRobot {key}");
                             //yield return new WaitUntil(() => robstatus == RobStatus.idle);
                             CheckCount("TransferBoxFromTrayToRobot");
-                            StartCoroutine(TransferBoxFromTrayToRobot(key, rob));
+                            StartCoroutine(TransferBoxFromTrayToRobot(magmo.mmMode, key, rob));
                             break;
                     }
                     break;
@@ -437,7 +517,7 @@ namespace KhiDemo
                             break;
                         case MmBoxMode.RealPooled:
                             CheckCount("TransferBoxFromRobotToTray");
-                            StartCoroutine(TransferBoxFromRobotToTray(rob,key));
+                            StartCoroutine(TransferBoxFromRobotToTray(magmo.mmMode,rob,key));
                             break;
                     }
                     break;

@@ -189,7 +189,9 @@ def plan_pose_sequence(req:MoverServiceRequest):
     response.trajectories.append(trajpt)
     prev_angles = trajpt.joint_trajectory.points[-1].positions
 
-    for pose in req.joints_input.poses:
+    nposes = len(req.joints_input.poses)
+    for i in range(1,nposes):
+        pose = req.joints_input.poses[i]
         trajpt = cartesian_plan(move_group, pose, curpose, prev_angles)
         if not trajpt.joint_trajectory.points:
             return response        

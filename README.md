@@ -1,6 +1,6 @@
 <p align="center"><img src="img/0_pick_place.gif"/></p>
 
-# Kawaski Heavy Industry Pick-and-Place 
+# Kawaski RS007 Robot / Rockwell MagneMotion Pick-and-Place Demo
 
 Derived from the Unity Robotics Hub Pick-and-Place tutorial
 
@@ -26,50 +26,65 @@ Derived from the Unity Robotics Hub Pick-and-Place tutorial
 	- if successful you should be able to see a new image with `docker images`
 - To run image: `startnoetic.bat`
       - should see the `..../catkin_ws#` prompt
+      - you can then start a launch file for eample with `. devel/rs007_launch.txt
+      
+- To open a sencond window enter:
+      - `newroswindow.bat`
+      - `. devel\setup.bash`
+      - `rosnode list`
+      
+  
+This unity app simulates the Rs007 Robot and Rockwell MagneMotion table features in the Build 2022 Keynote Demo (at the end of Satya Nadella's portion)
 
-### ROS2 - Foxy
-- To build docker image: `makefoxy.bat`
-	- if successful you should be able to see a new image with `docker images`
-- To run image: `startfoxy.bat`
+  
+The application has different modes:
+  - Simulation mode in which it can run in 
+       - moving boxes from rail to rail
+       - moving boxes from tray to rail
+       - moving boxes from rail to tray
+  - Echo mode
+       - echos the box and robot motions that are occuring somewhere else, either on a physical robot or on a virtual one (for example another instance of this appoication)
+
+
+Keyboard Commands:
+
+   Ctrl-E Echo Mode
+   Ctrl-P RailToRail Mode
+   Ctrl-L RailToRail Mode
+   Ctrl-T TrayToRail Mode
+   Ctrl-R Reverse TrayRail
+            
+   Ctrl-F Speed up
+   Ctrl-S Slow down
+            
+   Ctrl-N Toggle Enclosure
+   Ctrl-D Toggle Stop Simulation
+   Ctrl-G Toggle Log Screen
+            
+   Ctrl-V Ctrl-F View from Front
+   Ctrl-V Ctrl-B View from Back
+   Ctrl-V Ctrl-T View from Top
+   Ctrl-V Ctrl-S View from Top (rotated)
+   Ctrl-V Ctrl-R View from Right
+   Ctrl-V Ctrl-L View from Left
+            
+   Ctrl-H Toggle Help Screen
+   Ctrl-Q Ctrl-Q Quit Application
+
+Parameters:
+   --roshost localhost
+   --rosport 10004
+   --zmqport 10006
+   --mode echo
+   --mode rail2rail
+   --mode rail2rail
+   --mode tray2rail
+   --mode rail2tray
  
-
-     
-
-## Unity
-### Background
-- All of this is based on the "Unity Robotics Hub" tutorial project "Pick and Place", you should read that documentation to understand the baseline project
-     - Home Page: https://github.com/Unity-Technologies/Unity-Robotics-Hub
-     - Pick and Place tutorial: https://github.com/Unity-Technologies/Unity-Robotics-Hub/blob/main/tutorials/pick_and_place/README.md b
-     - This Pick and Place tutorial was cut out of the original repo, the 3 submodules it had were "deleted" so that code is now just part of a single git repo
-     - Some necessary files were in the `.gitignore` because they were considered "configurable" - those lines have been commmented out in the .gitignore because 
-     - Khi robotics repo was added to the project but not as a submodule
-
-### Instructions
-- Open Unity Hub
-- Create a project from a directory with `Open Project` 
-    - choose any Unity 2020 LTS version
-    - Browse to `KhiPickAndPlace`
-    - Unless you get the same version the repo was last saved with, it should take awhile to open as it will need to convert the project
-    - But then it should open without errors
-- Once loaded there are various scenes you can load interesting ones are :
-    - `Part3worksa` - A scene with the Niyro_one robot arm (the Robot arm thatis used in the Unity Robotics Hub demo)
-    - `Part3worksb` - A scene with the Niyro_one robot arm but without a table, just a plane that everything rests on
-    - `Part3worksc` - A scene with the rs007n KHI robot arm without a table, just a plane that everything rests on
-
-
-# Changes:
-- Unity
- - Added scene with khi rs007n robot
- - Added scene with flat plane to accomodate the larger khi robots rs007n and rs007l
- - Added gripper from niryo_one robot to rs007n robot
  
-# Docker
- - Added khi_robot packages to ROS packages
- - Added bat files to make docker builds
- - Added docker build for noetic
- - Added docker build for noetic and melodic with khi_robot packages
- 
-# Robot control
- - Got moveit control to work with khi rs007n robot but not correctly (using internal niryo_one geometry)
+ Start two instances with one echoing the other
+   - Open a cmd window
+   - Enter: `khidemosim --mode tray2rail --zmqport 1006
+   - Open a second cmd window
+   - Enter: `khidemosim --mode echo --roshost localhost --rosport 10005
 
-# New Repo without submodiles

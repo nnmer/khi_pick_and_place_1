@@ -1270,8 +1270,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f17332bb30dda034ab0e58558267cf19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movitServiceNamePoseSeq: rs007_moveit_poseseq
-  rosService: 0
+  rosService: 1
   m_RobotModel: {fileID: 940606759}
   m_Target: {fileID: 977052745}
   m_TargetPlacement: {fileID: 451371862}

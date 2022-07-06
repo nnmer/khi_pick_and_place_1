@@ -515,6 +515,20 @@ namespace KhiDemo
                 Camera.main.transform.position = pos;
                 Camera.main.transform.rotation = Quaternion.Euler(rot);
             }
+            if (((Time.time - ctrlVhitTime) < 1) && Input.GetKeyDown(KeyCode.L))
+            {
+                var pos = new Vector3(-1.4f, 1.8f, 0f);
+                var rot = new Vector3(45, 90, 0);
+                Camera.main.transform.position = pos;
+                Camera.main.transform.rotation = Quaternion.Euler(rot);
+            }
+            if (((Time.time - ctrlVhitTime) < 1) && Input.GetKeyDown(KeyCode.R))
+            {
+                var pos = new Vector3(1.4f, 1.8f, 0f);
+                var rot = new Vector3(45, 270, 0);
+                Camera.main.transform.position = pos;
+                Camera.main.transform.rotation = Quaternion.Euler(rot);
+            }
             if (ctrlhit && Input.GetKeyDown(KeyCode.L))
             {
                 Debug.Log("Hit LCtrl-L");
@@ -625,11 +639,21 @@ namespace KhiDemo
             "Ctrl-L RailToRail Mode",
             "Ctrl-T TrayToRail Mode",
             "Ctrl-R Reverse TrayRail",
+            "",
             "Ctrl-F Speed up",
             "Ctrl-S Slow down",
+            "",
             "Ctrl-N Toggle Enclosure",
             "Ctrl-D Toggle Stop Simulation",
             "Ctrl-G Toggle Log Screen",
+            "",
+            "Ctrl-V Ctrl-F View from Front",
+            "Ctrl-V Ctrl-B View from Back",
+            "Ctrl-V Ctrl-T View from Top",
+            "Ctrl-V Ctrl-S View from Top (rotated)",
+            "Ctrl-V Ctrl-R View from Right",
+            "Ctrl-V Ctrl-L View from Left",
+            "",
             "Ctrl-H Toggle Help Screen",
             "Ctrl-Q Ctrl-Q Quit Application"
         };
@@ -641,6 +665,7 @@ namespace KhiDemo
             "--zmqport 10006",
             "--mode echo",
             "--mode rail2rail",
+            "--mode rail2rail",
             "--mode tray2rail",
             "--mode rail2tray",
         };
@@ -648,15 +673,17 @@ namespace KhiDemo
         {
             GUIStyle textstyle = GUI.skin.GetStyle("Label");
             textstyle.alignment = TextAnchor.UpperLeft;
-            textstyle.fontSize = 14;
-            textstyle.normal.textColor = Color.blue;
+            textstyle.fontSize = 24;
+            textstyle.clipping = TextClipping.Overflow;
+            textstyle.fontStyle = FontStyle.Bold;
+            textstyle.normal.textColor = UnityUt.GetColorByName("indigo");
 
             var w = 400;
             var h = 20;
-            var dy = 20;
+            var dy = textstyle.fontSize*1.1f;
             var x1 = Screen.width / 2 - 220;
             var x2 = Screen.width / 2 - 200;
-            var y = 10;
+            var y = 10f;
 
             if (showHelpText)
             {

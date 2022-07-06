@@ -265,10 +265,10 @@ namespace KhiDemo
         }
 
 
-        Rs007MoveitJointsAndPoseSeqMsg AddPoses(Rs007MoveitJointsAndPoseSeqMsg orig, PoseMsg p1, PoseMsg p2, PoseMsg p3)
+        Rs007MoveitJointsAndPoseSeqMsg AddPoses(Rs007MoveitJointsAndPoseSeqMsg orig, PoseMsg p1, PoseMsg p2, PoseMsg p3, PoseMsg p4)
         {
             // var joints = new NiryoMoveitJointsMsg();
-            var poses = new PoseMsg[4] { p1, p2, p1, p3 };
+            var poses = new PoseMsg[] { p1, p2, p3, p4 };
             var rv = new Rs007MoveitJointsAndPoseSeqMsg(orig.joints, poses );
             return rv;
         }
@@ -335,21 +335,22 @@ namespace KhiDemo
             var pm2 = new PointMsg(p1.position.x, p1.position.y, p1.position.z - 0.05f);
             var p2 = new PoseMsg(pm2, p1.orientation);
             var p3 = request.place_pose;
-            request.joints_poses_input = AddPoses(request.joints_poses_input, p1,p2,p3 );
+            request.joints_poses_input.poses = new PoseMsg[] { p1, p2, p1, p3 };
 
             magmo.rosconnection.SendServiceMessage<MoverServiceResponse>(serviceName, request, TrajectoryResponse);
         }
 
         void TrajectoryResponse(MoverServiceResponse response)
         {
-            if (response.trajectories.Length > 0)
+            var ln = response.trajectories.Length;
+            if (ln > 0)
             {
-                Debug.Log("Trajectory returned.");
+                Debug.Log($"Trajectory returned length:{ln}");
                 StartCoroutine(ExecuteTrajectories(response));
             }
             else
             {
-                Debug.LogError("No trajectory returned from MoverService.");
+                Debug.LogError("No trajectory returned from MoverService");
             }
         }
         string[] poses = { "PreGrasp", "Grasp", "Pickup", "Place" };
