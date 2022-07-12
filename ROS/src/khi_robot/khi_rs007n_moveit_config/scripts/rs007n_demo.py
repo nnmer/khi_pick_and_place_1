@@ -10,6 +10,7 @@ if __name__ == '__main__':
     rospy.init_node('message', anonymous=True)
     group = MoveGroupCommander("manipulator")
     exec_vel = 0.5
+    group.SetGoalTolerance(0.01)
 
     while True:
 

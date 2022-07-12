@@ -1,4 +1,4 @@
-<p align="center"><img src="img/0_pick_place.gif"/></p>
+<p align="center"><img src="img/SimTrayToRail.gif"/></p>
 
 # Kawaski RS007 Robot / Rockwell MagneMotion Pick-and-Place Demo
 
