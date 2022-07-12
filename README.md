@@ -43,6 +43,16 @@ The application has different modes:
        - echos the box and robot motions that are occuring somewhere else, either on a physical robot or on a virtual one (for example another instance of this appoication)
 
 
+# Compiling the Unity Project
+- The Unity Project root is in `KhiPickAndPlaceProject` Subdirectory in this repo, that is where you have to point Unity Hub
+- The packages needed should install themselves, I beleive - not sure about this
+- One small change needs to be made after the UnityRoboticsHub package is installed to make this compile:
+   - the `KhiPickAndPlaceProject\Library\PackageCache\com.unity.robotics.ros-tcp-connector@c27f00c6cf\Runtime\TcpConnector\ROSConnection.cs` file has a method (`InitializeHUD`) that needs to be made public like this on line 1016:
+   - `public void InitializeHUD()` 
+   - I will see if I can find another workaround for it later
+
+   
+
 Keyboard Commands:
 
    Ctrl-E Echo Mode
