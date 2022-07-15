@@ -124,24 +124,30 @@ namespace KhiDemo
 
         public void GetNetworkParms()
         {
-            var (ok1, host1) = UnityUt.ParmString("--roshost");
+            var (ok1, hostros) = UnityUt.ParmString("--roshost");
             if (ok1)
             {
-                InfoMsg($"Found roshos {host1}");
-                roshost = host1;
-                zmqhost = host1;
+                InfoMsg($"Found roshost {hostros}");
+                roshost = hostros;
+                zmqhost = hostros;
             }
-            var (ok2, port2) = UnityUt.ParmInt("--rosport");
+            var (ok2, hostzmq) = UnityUt.ParmString("--zmqhost");
             if (ok2)
             {
-                InfoMsg($"Found rosport {port2}");
-                rosport = port2;
+                InfoMsg($"Found zmqhost {hostzmq}");
+                zmqhost = hostzmq;
             }
-            var (ok3, port3) = UnityUt.ParmInt("--zmqport");
+            var (ok3, portros) = UnityUt.ParmInt("--rosport");
             if (ok3)
             {
-                InfoMsg($"Found zmqport {port3}");
-                zmqport = port3;
+                InfoMsg($"Found rosport {portros}");
+                rosport = portros;
+            }
+            var (ok4, portzmq) = UnityUt.ParmInt("--zmqport");
+            if (ok4)
+            {
+                InfoMsg($"Found zmqport {portzmq}");
+                zmqport = portzmq;
             }
         }
 
@@ -458,6 +464,16 @@ namespace KhiDemo
                     showLogText = false;
                 }
             }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.Plus))
+            {
+                Debug.Log("Hit LCtrl-Plus");
+                fontsize += 2;
+            }
+            if (ctrlhit && Input.GetKeyDown(KeyCode.Minus))
+            {
+                Debug.Log("Hit LCtrl-Minus");
+                fontsize -= 2;
+            }
             if (ctrlhit && Input.GetKeyDown(KeyCode.G))
             {
                 Debug.Log("Hit LCtrl-G");
@@ -662,6 +678,7 @@ namespace KhiDemo
         {
             "--roshost localhost",
             "--rosport 10004",
+            "--zmqhost localhost",
             "--zmqport 10006",
             "--mode echo",
             "--mode rail2rail",
@@ -669,11 +686,13 @@ namespace KhiDemo
             "--mode tray2rail",
             "--mode rail2tray",
         };
+
+        static int fontsize = 16;
         public void DoHelpScreen()
         {
             GUIStyle textstyle = GUI.skin.GetStyle("Label");
             textstyle.alignment = TextAnchor.UpperLeft;
-            textstyle.fontSize = 12;
+            textstyle.fontSize = fontsize;
             textstyle.clipping = TextClipping.Overflow;
             textstyle.fontStyle = FontStyle.Bold;
             textstyle.normal.textColor = UnityUt.GetColorByName("indigo");

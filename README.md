@@ -9,7 +9,7 @@ This unity app simulates the Rs007 Robot and Rockwell MagneMotion table features
 - prerequisites Windows 10 or 11, Docker Desktop, Unity
 - You will want to build the ROS Docker images 
    - we have scripts to build and run them for ROS1: Melodic and Noetic
-   - we are looking to build them for ROS2: Foxy
+   - we are looking to build them for ROS2: Foxy but they are not done yet
 
 ## Docker
 - Start Docker desktop (you should see the whale in the Windows tray)
@@ -26,7 +26,7 @@ This unity app simulates the Rs007 Robot and Rockwell MagneMotion table features
 	- if successful you should be able to see a new image with `docker images`
 - To run image: `startnoetic.bat`
       - should see the `..../catkin_ws#` prompt
-      - you can then start a launch file for eample with `. devel/rs007_launch.txt
+      - you can then start a launch file for eample with `. devel/rs007_launch.txt`
       
 - To open a sencond window enter:
       - `newroswindow.bat`
@@ -80,6 +80,7 @@ Keyboard Commands:
 
 Parameters:
    --roshost localhost
+   --zmqhost localhost
    --rosport 10004
    --zmqport 10006
    --mode echo
@@ -87,13 +88,18 @@ Parameters:
    --mode rail2rail
    --mode tray2rail
    --mode rail2tray
+
+# Addresses as of 15 July 2022:
+   Western Europe - 20.234.234.190
+   USA -  20.225.161.122
+
  
  
  # Start two instances with one echoing the other
    - Make sure you have a ROS container running and know what port it is using for the ROS-Unity communication (below example localhost:10005)
    
    - Open a cmd window
-   - Enter: `khidemosim --mode tray2rail --zmqport 10006`
+   - Enter: `khidemosim --mode tray2rail --zmqhost localhost --zmqport 10006`
    - (note: If you are using a local host you should see output echoing the statusrunning in the container window)
    - Open a second cmd window
    - Enter: `khidemosim --mode echo --roshost localhost --rosport 10005`
