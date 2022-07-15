@@ -53,32 +53,32 @@ The application has different modes:
 
    
 
-Keyboard Commands:
+### Keyboard Commands:
 
-   Ctrl-E Echo Mode
-   Ctrl-P RailToRail Mode
-   Ctrl-L RailToRail Mode
-   Ctrl-T TrayToRail Mode
-   Ctrl-R Reverse TrayRail
+   - Ctrl-E Echo Mode
+   - Ctrl-P RailToRail Mode
+   - Ctrl-L RailToRail Mode
+   - Ctrl-T TrayToRail Mode
+   - Ctrl-R Reverse TrayRail
             
-   Ctrl-F Speed up
-   Ctrl-S Slow down
+   - Ctrl-F Speed up
+   - Ctrl-S Slow down
             
-   Ctrl-N Toggle Enclosure
-   Ctrl-D Toggle Stop Simulation
-   Ctrl-G Toggle Log Screen
+   - Ctrl-N Toggle Enclosure
+   - Ctrl-D Toggle Stop Simulation
+   - Ctrl-G Toggle Log Screen
             
-   Ctrl-V Ctrl-F View from Front
-   Ctrl-V Ctrl-B View from Back
-   Ctrl-V Ctrl-T View from Top
-   Ctrl-V Ctrl-S View from Top (rotated)
-   Ctrl-V Ctrl-R View from Right
-   Ctrl-V Ctrl-L View from Left
+   - Ctrl-V Ctrl-F View from Front
+   - Ctrl-V Ctrl-B View from Back
+   - Ctrl-V Ctrl-T View from Top
+   - Ctrl-V Ctrl-S View from Top (rotated)
+   - Ctrl-V Ctrl-R View from Right
+   - Ctrl-V Ctrl-L View from Left
             
-   Ctrl-H Toggle Help Screen
-   Ctrl-Q Ctrl-Q Quit Application
+   - Ctrl-H Toggle Help Screen
+   - Ctrl-Q Ctrl-Q Quit Application
 
-Parameters:
+### Parameters:
    --roshost localhost
    --zmqhost localhost
    --rosport 10004
@@ -89,7 +89,7 @@ Parameters:
    --mode tray2rail
    --mode rail2tray
 
-# Addresses as of 15 July 2022:
+### Addresses as of 15 July 2022:
    Western Europe - 20.234.234.190
    USA -  20.225.161.122
 
