@@ -122,20 +122,51 @@ namespace KhiDemo
             // ZmqSendString("Hello world");
         }
 
+
+        string HostShortcuts(string oname)
+        {
+            var rname = oname;
+            var loname = oname.ToLower();
+            switch(loname)
+            {
+                case "nl":
+                case "we": 
+                    rname = "20.234.234.190";
+                    break;
+                case "us":
+                case "usa":
+                    rname = "20.225.161.122";
+                    break;
+                case "tx":
+                    rname = "10.100.101.95";
+                    break;
+                case "sg":
+                    rname = "52.187.116.1";
+                    break;
+                case "fr":
+                    rname = "20.111.14.13";
+                    break;
+                case "de":
+                    rname = "20.111.14.13";
+                    break;
+            }
+            return rname;
+        }
+
         public void GetNetworkParms()
         {
             var (ok1, hostros) = UnityUt.ParmString("--roshost");
             if (ok1)
             {
                 InfoMsg($"Found roshost {hostros}");
-                roshost = hostros;
-                zmqhost = hostros;
+                roshost = HostShortcuts(hostros);
+                zmqhost = roshost;
             }
             var (ok2, hostzmq) = UnityUt.ParmString("--zmqhost");
             if (ok2)
             {
                 InfoMsg($"Found zmqhost {hostzmq}");
-                zmqhost = hostzmq;
+                zmqhost = HostShortcuts(hostzmq);
             }
             var (ok3, portros) = UnityUt.ParmInt("--rosport");
             if (ok3)
@@ -240,7 +271,7 @@ namespace KhiDemo
         RequestSocket socket;
         public void ZmqSetup()
         {
-            InfoMsg($"Opening ZMQ connection {zmqhost}:{zmqport}");
+            InfoMsg($"Opening zmq connection {zmqhost}:{zmqport}");
             AsyncIO.ForceDotNet.Force();
             socket = new RequestSocket();
             socket.Connect($"tcp://{zmqhost}:{zmqport}");
@@ -257,6 +288,8 @@ namespace KhiDemo
 
         public void ZmqSendString(string str)
         {
+            if (!zmqactivated) return;
+
             var timeout1 = new System.TimeSpan(0, 0, 3);
             socket.TrySendFrame(timeout1,str);
             // Debug.Log($"Zmq sent {str}");
@@ -264,7 +297,8 @@ namespace KhiDemo
             var ok = socket.TryReceiveFrameString(timeout2, out var response);
             if (!ok)
             {
-                Debug.Log($"Zmq received not okay after sending {str}");
+                Debug.LogError($"Zmq received not okay after sending {str} - deactivating zmq");
+                zmqactivated = false;
             }
         }
 
@@ -417,8 +451,12 @@ namespace KhiDemo
         float F5hitTime = 0;
         float F6hitTime = 0;
         float F10hitTime = 0;
+        float plusHitTime = 0;
+        float minusHitTime = 0;
         public void KeyProcessing()
         {
+            var plushit = Input.GetKey(KeyCode.Plus) || Input.GetKey(KeyCode.KeypadPlus);
+            var minushit = Input.GetKey(KeyCode.Minus) || Input.GetKey(KeyCode.KeypadMinus);
             var ctrlhit = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             if (ctrlhit && Input.GetKeyDown(KeyCode.Q))
             {
@@ -464,15 +502,19 @@ namespace KhiDemo
                     showLogText = false;
                 }
             }
-            if (ctrlhit && Input.GetKeyDown(KeyCode.Plus))
+            if (ctrlhit && plushit && Time.time - plusHitTime > 0.1f)
             {
                 Debug.Log("Hit LCtrl-Plus");
                 fontsize += 2;
+                if (fontsize > 30) fontsize = 30;
+                plusHitTime = Time.time;
             }
-            if (ctrlhit && Input.GetKeyDown(KeyCode.Minus))
+            if (ctrlhit && minushit && Time.time - minusHitTime > 0.1f)
             {
                 Debug.Log("Hit LCtrl-Minus");
                 fontsize -= 2;
+                if (fontsize < 12) fontsize = 12;
+                minusHitTime = Time.time;
             }
             if (ctrlhit && Input.GetKeyDown(KeyCode.G))
             {
@@ -669,6 +711,10 @@ namespace KhiDemo
             "Ctrl-V Ctrl-S View from Top (rotated)",
             "Ctrl-V Ctrl-R View from Right",
             "Ctrl-V Ctrl-L View from Left",
+            "",
+            "",
+            "Ctrl-+ (plus) Increase text size",
+            "Ctrl-- (minus) Decrease text size",
             "",
             "Ctrl-H Toggle Help Screen",
             "Ctrl-Q Ctrl-Q Quit Application"

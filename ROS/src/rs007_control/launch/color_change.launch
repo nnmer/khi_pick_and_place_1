@@ -1,5 +1,0 @@
-<launch>
-
-  <node name="color_publisher" pkg="unity_robotics_demo" type="color_publisher.py" args="--wait" output="screen"/>
-
-</launch>

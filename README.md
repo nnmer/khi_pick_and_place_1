@@ -33,7 +33,7 @@ This unity app simulates the Rs007 Robot and Rockwell MagneMotion table features
       - `. devel\setup.bash`
       - `rosnode list`
       
-# Notes
+# Usage Notes
 The application has different modes:
   - Simulation mode in which it can run in 
        - moving boxes from rail to rail
@@ -43,14 +43,24 @@ The application has different modes:
        - echos the box and robot motions that are occuring somewhere else, either on a physical robot or on a virtual one (for example another instance of this appoication)
 
 
-# Compiling the Unity Project
+## Compiling the Unity Project
 - The Unity Project root is in `KhiPickAndPlaceProject` Subdirectory in this repo, that is where you have to point Unity Hub
+- The scene you should use for building is `Assets/Scenes/build1.unity`
 - The packages needed should install themselves, I beleive - not sure about this
 - One small change needs to be made after the UnityRoboticsHub package is installed to make this compile:
    - the `KhiPickAndPlaceProject\Library\PackageCache\com.unity.robotics.ros-tcp-connector@c27f00c6cf\Runtime\TcpConnector\ROSConnection.cs` file has a method (`InitializeHUD`) that needs to be made public like this on line 1016:
    - `public void InitializeHUD()` 
    - I will see if I can find another workaround for it later
 
+## Building an exe
+- We want this app to run in its own window, the setting for this is kind of buried deep in Unity
+- Go the the dialog box opened with the menu command `Edit/Build Settings`
+    - Press the `Player Settings` button in the lower left of that window
+    - Select the `Player` settings from the list of about 20 settings on the left 
+    - Expand the `Resolution and Presentation` tab that you can find on the right of the same window then
+    - Select "Windowed" from the `Fullscreen Mode` setting
+- We build in the "Build" subdirectory (which is standard in Unity and excluded in their usual .gitignore).
+- We build to the name `KhiDemoSim.exe`
    
 
 ### Keyboard Commands:

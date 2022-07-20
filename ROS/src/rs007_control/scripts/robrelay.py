@@ -33,8 +33,8 @@ def wait_for_connections(pub, topic):
     topic = rosgraph.names.script_resolve_name('rostopic', topic)
     num_subs = 0
     for sub in ros_master.getSystemState()[1]:
-        print(num_subs)
-        print(sub)
+        # print(num_subs)
+        # print(sub)
         if sub[0] == topic:
             num_subs+=1
     print("wait_for_connections num_subs:"+str(num_subs))
@@ -44,7 +44,7 @@ def wait_for_connections(pub, topic):
         if pub_num_connects == num_subs:
             return
         time.sleep(0.1)
-    print("pub_num_connects:"+str(pub_num_connects))
+    print("      pub_num_connects:"+str(pub_num_connects))
     # raise RuntimeError("failed to get publisher pub_num_connects:"+str(pub_num_connects))
 
 def rosinit():
