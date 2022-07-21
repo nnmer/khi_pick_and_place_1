@@ -44,7 +44,7 @@
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->
-  <include file="$(find khi_rs007n_moveit_config)/launch/moveit_rviz.launch">
+  <include file="$(find rs007_control)/launch/moveit_rviz.launch">
     <arg name="config" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
   </include>
