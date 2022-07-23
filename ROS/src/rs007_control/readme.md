@@ -18,3 +18,10 @@
    - Add MarkerArray visualizer to RVIZ window with `Add` button
   - `cd rs007_control/scripts`
   - `python marker1.py`
+
+
+- Running Tutorials
+  - Moveit C++ Interface
+    - Link: (https://ros-planning.github.io/moveit_tutorials/doc/move_group_interface/move_group_interface_tutorial.html#planning-with-path-constraints)
+    - Ubuntu shell1: `roslaunch panda_moveit_config demo.launch`
+    - Ubuntu shell2: `roslaunch moveit_tutorials move_group_interface_tutorial.launch`
